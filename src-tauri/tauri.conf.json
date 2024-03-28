@@ -6,7 +6,7 @@
         "distDir": "../out"
     },
     "package": {
-        "productName": "desktop-app-template",
+        "productName": "roseate",
         "version": "0.1.0"
     },
     "tauri": {
@@ -28,8 +28,8 @@
                 "icons/icon.icns",
                 "icons/icon.ico"
             ],
-            "identifier": "com.tauri.dev",
-            "longDescription": "",
+            "identifier": "xyz.devgoldy.cloudy.roseate",
+            "longDescription": "A simple, small and fast image viewer built with Rust and Typescript.",
             "macOS": {
                 "entitlements": null,
                 "exceptionDomain": "",
@@ -57,7 +57,7 @@
                 "fullscreen": false,
                 "height": 600,
                 "resizable": true,
-                "title": "desktop app template",
+                "title": "Roseate",
                 "width": 800
             }
         ]

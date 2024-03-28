@@ -1,7 +1,7 @@
 [package]
-name = "desktop-app-template"
+name = "roseate"
 version = "0.1.0"
-description = "A template we use to get started with desktop apps."
+description = "A simple, small and fast image viewer built in Rust and Typescript."
 authors = ["Goldy <goldy@devgoldy.xyz>"]
 license = "GPL-3.0"
 repository = ""

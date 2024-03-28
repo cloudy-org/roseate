@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "desktop-app-template",
-    description: "A template we use to get started with desktop apps.",
+    title: "Roseate",
+    description: "A simple, small and fast image viewer built with Rust and Typescript.",
 };
 
 export default function RootLayout({

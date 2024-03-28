@@ -1,7 +1,7 @@
 <div align="center">
 
-  # 📦 desktop-app-template
-  <sub>A template we use to get started with desktop apps.</sub>
+  # 🌹 roseate
+  <sub>A simple, small and fast image viewer built with Rust and Typescript.</sub>
 
 </div>
 
