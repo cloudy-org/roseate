@@ -1,11 +1,12 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A simple, small and fast image viewer built with Rust and Typescript.</sub>
+  <sub>A simple and small image viewer built with Rust and Typescript.</sub>
 
 </div>
 
-<br>
+> [!WARNING]
+> This project is currently a work in progress.
 
 # 🛠️ How to install for development.
 
@@ -26,6 +27,10 @@ make install-deps
 3. Run ``make run``.
 ```sh
 make run
+```
+To run Roseate in development with an image use this make command:
+```sh
+make run ARGS="./anime_girl.png"
 ```
 
 <br>

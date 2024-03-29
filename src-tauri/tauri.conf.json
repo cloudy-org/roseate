@@ -11,7 +11,16 @@
     },
     "tauri": {
         "allowlist": {
-            "all": false
+            "all": false,
+            "fs": {
+                "readFile": true,
+                "readDir": true,
+                "scope": ["**"]
+            },
+            "window": {
+                "all": false,
+                "setMinSize": true
+            }
         },
         "bundle": {
             "active": true,
@@ -29,7 +38,7 @@
                 "icons/icon.ico"
             ],
             "identifier": "xyz.devgoldy.cloudy.roseate",
-            "longDescription": "A simple, small and fast image viewer built with Rust and Typescript.",
+            "longDescription": "A simple and small image viewer built with Rust and Typescript.",
             "macOS": {
                 "entitlements": null,
                 "exceptionDomain": "",

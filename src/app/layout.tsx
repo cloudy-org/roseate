@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "Roseate",
-    description: "A simple, small and fast image viewer built with Rust and Typescript.",
+    description: "A simple and small image viewer built with Rust and Typescript.",
 };
 
 export default function RootLayout({

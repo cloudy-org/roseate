@@ -4,8 +4,10 @@ build:
 install-deps:
 	npm i
 
+ARGS = ""
+
 run:
-	cargo tauri dev
+	cargo tauri dev -- -- $(ARGS)
 
 generate-icon: # Can be used like so: make generate-icon ICON="./assets/icon.ico"
 	cargo tauri icon $(ICON)
