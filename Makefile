@@ -1,6 +1,9 @@
 build:
 	cargo tauri build
 
+install:
+	cp ./src-tauri/target/release/roseate $(HOME)/.cargo/bin/
+
 install-deps:
 	npm i
 

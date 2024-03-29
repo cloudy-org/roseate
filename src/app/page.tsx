@@ -1,4 +1,4 @@
-import RoseImage from "./dynamic_image";
+import RoseImage from "./components/dynamic_image";
 
 export default function Home() {
     return (

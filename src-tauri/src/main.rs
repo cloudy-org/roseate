@@ -13,7 +13,6 @@ fn get_image() -> Option<(String, (u32, u32))> {
 
     match image_path {
         Some(path) => {
-            println!(">> {}", path);
             let dimensions = image::open(&path).expect(
                 "Failed to extract image dimensions!"
             ).dimensions();
