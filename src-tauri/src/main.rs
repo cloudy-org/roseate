@@ -5,22 +5,11 @@ use std::{env, sync::OnceLock};
 
 use image::GenericImageView;
 
-static _IMAGE_PATH: OnceLock<String> = OnceLock::new();
+static _IMAGE: OnceLock<(String, (u32, u32))> = OnceLock::new();
 
 #[tauri::command]
 fn get_image() -> Option<(String, (u32, u32))> {
-    let image_path = _IMAGE_PATH.get().cloned();
-
-    match image_path {
-        Some(path) => {
-            let dimensions = image::open(&path).expect(
-                "Failed to extract image dimensions!"
-            ).dimensions();
-
-            Some((path, dimensions))
-        },
-        None => None
-    }
+    _IMAGE.get().cloned()
 }
 
 fn main() {
@@ -29,7 +18,13 @@ fn main() {
     let image_path = cli_args.get(1);
 
     if image_path != None && !["", " "].contains(&image_path.unwrap().as_str()) {
-        let _ = _IMAGE_PATH.set(image_path.unwrap().to_owned());
+        let path = image_path.unwrap().to_owned();
+
+        let dimensions = image::open(&path).expect(
+            "Failed to extract image dimensions!"
+        ).dimensions();
+
+        let _ = _IMAGE.set((path, dimensions));
     }
 
     tauri::Builder::default()

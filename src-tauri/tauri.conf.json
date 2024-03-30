@@ -18,8 +18,7 @@
                 "scope": ["**"]
             },
             "window": {
-                "all": false,
-                "setMinSize": true
+                "all": true
             }
         },
         "bundle": {
