@@ -1,7 +1,7 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A simple and small image viewer built with Rust and Typescript.</sub>
+  <sub>A small and simple but fancy image viewer built with Rust & Typescript that's cross platform.</sub>
 
 </div>
 
