@@ -42,12 +42,14 @@ export default function RoseImage(props: Props) {
         });
     };
 
+    // Keeps track of tauri window size.
     useEffect(() => {
         appWindow.innerSize().then(
             (size) => setWindowSize({width: size.width, height: size.height})
         );
     });
 
+    // Scales image on window resize and reset's zoom.
     useEffect(() => {
         if (window_size !== null) {
             const width = window_size.width - IMAGE_PADDING * 2;
@@ -59,8 +61,6 @@ export default function RoseImage(props: Props) {
             }
         }
     }, [image_bounds, window_size]);
-
-    //document.getElementById("image-dev")?.addEventListener("contextmenu", event => event.preventDefault());
 
     return (
         <div onWheelCapture={on_scroll} className="select-none cursor-default">
