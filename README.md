@@ -20,7 +20,7 @@
 ```sh
 git clone https://github.com/cloudy-org/desktop-app-template
 ```
-2. Pull the cirrus tool kit.
+2. Pull the submodules (includes [ctk](https://github.com/cloudy-org/cirrus)).
 ```sh
 git submodule update --init --recursive
 ```
