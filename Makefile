@@ -7,6 +7,12 @@ install:
 install-deps:
 	npm i
 
+pull-submodules:
+	git submodule update --init --recursive
+
+update-submodules:
+	git submodule update --recursive --remote
+
 ARGS = ""
 
 run:
