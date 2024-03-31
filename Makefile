@@ -1,5 +1,7 @@
+BUNDLES = "none"
+
 build:
-	cargo tauri build
+	cargo tauri build --bundles $(BUNDLES)
 
 install:
 	cp ./src-tauri/target/release/roseate $(HOME)/.cargo/bin/
