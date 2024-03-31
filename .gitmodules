@@ -1,3 +1,4 @@
 [submodule "cirrus"]
 	path = cirrus
 	url = https://github.com/cloudy-org/cirrus
+	branch = main
