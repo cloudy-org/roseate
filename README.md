@@ -20,11 +20,15 @@
 ```sh
 git clone https://github.com/cloudy-org/desktop-app-template
 ```
-2. Install npm dependencies.
+2. Pull the cirrus tool kit.
+```sh
+git submodule update --init --recursive
+```
+3. Install npm dependencies.
 ```sh
 make install-deps
 ```
-3. Run ``make run``.
+4. Run ``make run``.
 ```sh
 make run
 ```

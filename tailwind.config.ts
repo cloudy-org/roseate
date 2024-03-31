@@ -11,6 +11,8 @@ const config: Config = {
             "dosis": ["Dosis"],
         },
     },
-    plugins: [],
+    plugins: [
+        require("./cirrus/tailwind/colours")
+    ],
 };
 export default config;
