@@ -5,8 +5,8 @@
 
 </div>
 
-> [!WARNING]
-> This project is currently a work in progress.
+> [!CAUTION]
+> This project is HEAVEALY a work in progress, if may crash or harm your system. Github issues are welcome. 🤝
 
 # 🛠️ How to install for development.
 
