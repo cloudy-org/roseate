@@ -1,17 +1,59 @@
 "use client";
 
 import NextImage from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, WheelEventHandler } from "react";
 
 import { invoke } from "@tauri-apps/api/tauri";
-import { readBinaryFile } from "@tauri-apps/api/fs";
 import { appWindow } from "@tauri-apps/api/window";
+import { readBinaryFile } from "@tauri-apps/api/fs";
 
 const IMAGE_PADDING = 8;
 
+type Dimensions = {
+    width: number,
+    height: number
+}
+
 export default function RoseImage() {
     const [image, setImage] = useState<[string, [number, number]] | null>(null);
-    const [image_bound, setImageBounds] = useState<[number, number] | null>(null);
+    const [zoom_position, setZoomPosition] = useState({ x: 0, y: 0, scale: 1 });
+    const [image_bounds, setImageBounds] = useState<Dimensions | null>(null);
+    const [window_size, setWindowSize] = useState<Dimensions | null>(null);
+
+    const on_scroll: WheelEventHandler = (event) => {
+        const delta = event.deltaY * -0.005 * (zoom_position.scale / 2);
+        const new_scale = zoom_position.scale + delta;
+
+        const ratio = 1 - new_scale / zoom_position.scale;
+
+        if (new_scale < 0) return;
+
+        console.log(delta, new_scale);
+
+        setZoomPosition({
+            scale: new_scale,
+            x: zoom_position.x + (event.clientX - zoom_position.x) * ratio,
+            y: zoom_position.y + (event.clientY - zoom_position.y) * ratio
+        });
+    };
+
+    useEffect(() => {
+        appWindow.innerSize().then(
+            (size) => setWindowSize({width: size.width, height: size.height})
+        );
+    });
+
+    useEffect(() => {
+        if (window_size !== null) {
+            const width = window_size.width - IMAGE_PADDING * 2;
+            const height = window_size.height - IMAGE_PADDING * 2;
+
+            if (width !== image_bounds?.width || height !== image_bounds?.height || image_bounds == null) {
+                setZoomPosition({ x: 0, y: 0, scale: 1 });
+                setImageBounds({width: width, height: height});
+            }
+        }
+    }, [image_bounds, window_size]);
 
     useEffect(() => {
         invoke<[string, [number, number]] | null>("get_image").then(
@@ -19,10 +61,6 @@ export default function RoseImage() {
                 if (image !== null) {
                     const path = image[0];
                     const dimensions = image[1];
-
-                    const image_aspect_ratio = 1.0 * dimensions[1] / dimensions[0];
-
-                    console.log(">>", image_aspect_ratio);
 
                     readBinaryFile(path).then(
                         (contents) => {
@@ -35,24 +73,31 @@ export default function RoseImage() {
         ).catch(console.error);
     }, []);
 
-    useEffect(() => {
-        appWindow.innerSize().then((size) => setImageBounds(
-            [size.width - IMAGE_PADDING * 2, size.height - IMAGE_PADDING * 2]
-        ));
-    });
-
     //document.getElementById("image-dev")?.addEventListener("contextmenu", event => event.preventDefault());
 
     return (
-        <div id="image-dev" className="select-none cursor-default relative">
-            <div style={{padding: IMAGE_PADDING}} className="flex items-center justify-center h-screen">
+        <div 
+            id="image-dev" onWheelCapture={on_scroll}
+            className="select-none cursor-default relative">
+
+            <div 
+                className="flex items-center justify-center h-screen transition-transform duration-500" 
+                style={{
+                    padding: IMAGE_PADDING, 
+
+                    transformOrigin: "0 0", 
+                    transform: `translate(${zoom_position.x}px, ${zoom_position.y}px) scale(${zoom_position.scale})`
+                }}>
                 {
                     image === null ? 
                         <h1 className="font-dosis font-medium text-white text-5xl">🌹</h1> : 
                         <figure className="rounded-lg size-max overflow-hidden">
-                            <NextImage 
+                            <NextImage
                                 className="w-auto h-auto transition-all duration-1000 delay-500"
-                                style={{maxHeight: `${image_bound?.[1]}px`, maxWidth: `${image_bound?.[0]}px`}} 
+                                style={{
+                                    maxHeight: `${image_bounds?.height}px`, 
+                                    maxWidth: `${image_bounds?.width}px`, 
+                                }}
                                 src={image[0]} width={image[1][0]} height={image[1][1]} alt=""/>
                         </figure>
                 }
