@@ -23,10 +23,10 @@ export default function Home() {
                         (contents) => {
                             const blob = new Blob([contents], { type: "image/png" });
                             setImage([URL.createObjectURL(blob), dimensions]);
+
+                            setTimeout(() => setImageOpacity(1), 1200);
                         }
                     ).catch(console.error);
-            
-                    setTimeout(() => setImageOpacity(1), 2000);
                 }
             }
         ).catch(console.error);
@@ -42,7 +42,7 @@ export default function Home() {
                         <div onClick={ () => {invoke("select_image").then(() => load_image());} }>
                             <Rose></Rose>
                         </div> : 
-                        <div id="opacity-div" className="opacity-0 transition-opacity duration-300" style={{opacity: image_opacity}}>
+                        <div className="opacity-0 transition-opacity duration-300" style={{opacity: image_opacity}}>
                             <RoseImage url={image[0]} width={image[1][0]} height={image[1][1]}></RoseImage>
                         </div>
                 }

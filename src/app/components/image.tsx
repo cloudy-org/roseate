@@ -64,7 +64,7 @@ export default function RoseImage(props: Props) {
 
     return (
         <div onWheelCapture={on_scroll} className="select-none cursor-default">
-            <div className="transition-transform duration-500" 
+            <div className="transition-transform duration-700 delay-0" 
                 style={{
                     padding: IMAGE_PADDING, 
 
