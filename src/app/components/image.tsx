@@ -3,9 +3,7 @@
 import NextImage from "next/image";
 import { useEffect, useState, WheelEventHandler } from "react";
 
-import { invoke } from "@tauri-apps/api/tauri";
 import { appWindow } from "@tauri-apps/api/window";
-import { readBinaryFile } from "@tauri-apps/api/fs";
 
 const IMAGE_PADDING = 8;
 
@@ -14,10 +12,15 @@ type Dimensions = {
     height: number
 }
 
-export default function RoseImage() {
-    const [image, setImage] = useState<[string, [number, number]] | null>(null);
+type Props = {
+    url: string,
+    width: number,
+    height: number
+}
+
+export default function RoseImage(props: Props) {
     const [zoom_position, setZoomPosition] = useState({ x: 0, y: 0, scale: 1 });
-    const [image_bounds, setImageBounds] = useState<Dimensions | null>(null);
+    const [image_bounds, setImageBounds] = useState<Dimensions>({width: props.width, height: props.height});
     const [window_size, setWindowSize] = useState<Dimensions | null>(null);
 
     const on_scroll: WheelEventHandler = (event) => {
@@ -55,52 +58,27 @@ export default function RoseImage() {
         }
     }, [image_bounds, window_size]);
 
-    useEffect(() => {
-        invoke<[string, [number, number]] | null>("get_image").then(
-            image => {
-                if (image !== null) {
-                    const path = image[0];
-                    const dimensions = image[1];
-
-                    readBinaryFile(path).then(
-                        (contents) => {
-                            const blob = new Blob([contents], { type: "image/png" });
-                            setImage([URL.createObjectURL(blob), dimensions]);
-                        }
-                    ).catch(console.error);
-                }
-            }
-        ).catch(console.error);
-    }, []);
-
     //document.getElementById("image-dev")?.addEventListener("contextmenu", event => event.preventDefault());
 
     return (
-        <div 
-            id="image-dev" onWheelCapture={on_scroll}
-            className="select-none cursor-default relative">
-
-            <div 
-                className="flex items-center justify-center h-screen transition-transform duration-500" 
+        <div onWheelCapture={on_scroll} className="select-none cursor-default">
+            <div className="transition-transform duration-500" 
                 style={{
                     padding: IMAGE_PADDING, 
 
                     transformOrigin: "0 0", 
-                    transform: `translate(${zoom_position.x}px, ${zoom_position.y}px) scale(${zoom_position.scale})`
+                    transform: `translate(${zoom_position.x}px, ${zoom_position.y}px) scale(${zoom_position.scale})`,
                 }}>
-                {
-                    image === null ? 
-                        <h1 className="font-dosis font-medium text-white text-5xl">🌹</h1> : 
-                        <figure className="rounded-lg size-max overflow-hidden">
-                            <NextImage
-                                className="w-auto h-auto transition-all duration-1000 delay-500"
-                                style={{
-                                    maxHeight: `${image_bounds?.height}px`, 
-                                    maxWidth: `${image_bounds?.width}px`, 
-                                }}
-                                src={image[0]} width={image[1][0]} height={image[1][1]} alt=""/>
-                        </figure>
-                }
+
+                <figure className="rounded-lg size-max overflow-hidden">
+                    <NextImage
+                        className="w-auto h-auto transition-all duration-1000 delay-500"
+                        style={{
+                            maxHeight: `${image_bounds?.height}px`, 
+                            maxWidth: `${image_bounds?.width}px`, 
+                        }}
+                        src={props.url} width={props.width} height={props.height} alt=""/>
+                </figure>
             </div>
         </div>
     );

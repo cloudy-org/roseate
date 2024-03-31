@@ -1,6 +1,11 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
+import * as CTKTailwind from "./cirrus/tailwind";
+
+const config: Config = {    
+    plugins: [
+        CTKTailwind.Colours
+    ],
     content: [
         "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
         "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,8 +16,6 @@ const config: Config = {
             "dosis": ["Dosis"],
         },
     },
-    plugins: [
-        require("./cirrus/tailwind/colours")
-    ],
+
 };
 export default config;
