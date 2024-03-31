@@ -29,7 +29,9 @@ export default function RoseImage(props: Props) {
 
         const ratio = 1 - new_scale / zoom_position.scale;
 
-        if (new_scale < 0) return;
+        if (new_scale < 1) {
+            setTimeout(() => setZoomPosition({ x: 0, y: 0, scale: 1 }), 1000);
+        }
 
         console.log(delta, new_scale);
 
