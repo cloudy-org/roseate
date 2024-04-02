@@ -24,7 +24,7 @@ export default function Home() {
                             const blob = new Blob([contents], { type: "image/png" });
                             setImage([URL.createObjectURL(blob), dimensions]);
 
-                            setTimeout(() => setImageOpacity(1), 1200);
+                            setTimeout(() => setImageOpacity(1), 1000);
                         }
                     ).catch(console.error);
                 }
