@@ -1,7 +1,7 @@
 "use client";
 
 import NextImage from "next/image";
-import { useEffect, useState, WheelEventHandler } from "react";
+import { useEffect, useRef, useState, WheelEventHandler } from "react";
 
 import { appWindow } from "@tauri-apps/api/window";
 
@@ -19,21 +19,21 @@ type Props = {
 }
 
 export default function RoseImage(props: Props) {
+    const last_zoom_event = useRef(Date.now());
+
     const [zoom_position, setZoomPosition] = useState({ x: 0, y: 0, scale: 1 });
     const [image_bounds, setImageBounds] = useState<Dimensions>({width: props.width, height: props.height});
+    const [image_will_change, warnImageChange] = useState<string>("unset");
     const [window_size, setWindowSize] = useState<Dimensions | null>(null);
 
     const on_scroll: WheelEventHandler = (event) => {
+        last_zoom_event.current = Date.now();
+        warnImageChange("transform");
+
         const delta = event.deltaY * -0.005 * (zoom_position.scale / 2);
         const new_scale = zoom_position.scale + delta;
 
         const ratio = 1 - new_scale / zoom_position.scale;
-
-        if (new_scale < 1) {
-            setTimeout(() => setZoomPosition({ x: 0, y: 0, scale: 1 }), 1000);
-        }
-
-        console.log(delta, new_scale);
 
         setZoomPosition({
             scale: new_scale,
@@ -41,6 +41,22 @@ export default function RoseImage(props: Props) {
             y: zoom_position.y + (event.clientY - zoom_position.y) * ratio
         });
     };
+
+    // Set's "will-change" css attribute back to "unset" and zoom scale 
+    // to 1 if exceeded the zoom out boundaries when the user is no longer zooming in/out.
+    useEffect(() => {
+        const id = setInterval(() => {
+            if (last_zoom_event.current + 700 < Date.now() && image_will_change !== "unset") {
+                warnImageChange("unset");
+
+                if (zoom_position.scale < 1) {
+                    setZoomPosition({ x: 0, y: 0, scale: 1 });
+                }
+            }
+        }, 200);
+
+        return () => clearInterval(id);
+    }, [zoom_position, image_will_change]);
 
     // Keeps track of tauri window size.
     useEffect(() => {
@@ -64,17 +80,17 @@ export default function RoseImage(props: Props) {
 
     return (
         <div onWheelCapture={on_scroll} className="select-none cursor-default">
-            <div className="transition-transform duration-500 delay-0" 
+            <div className="transition-transform duration-500 delay-0"
                 style={{
                     padding: IMAGE_PADDING, 
 
                     transformOrigin: "0 0", 
                     transform: `translate(${zoom_position.x}px, ${zoom_position.y}px) scale(${zoom_position.scale})`,
+                    willChange: image_will_change
                 }}>
 
                 <figure className="rounded-lg size-max overflow-hidden">
-                    <NextImage
-                        className="w-auto h-auto transition-all duration-1000 delay-500"
+                    <NextImage className="w-auto h-auto transition-all duration-1000 delay-500"
                         style={{
                             maxHeight: `${image_bounds?.height}px`, 
                             maxWidth: `${image_bounds?.width}px`, 
