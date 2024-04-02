@@ -3,13 +3,13 @@
 
 use std::path::PathBuf;
 use rfd::AsyncFileDialog;
-use image::{GenericImageView, ImageFormat};
+use image::ImageFormat;
 use std::{env, sync::OnceLock};
 
-static _IMAGE: OnceLock<(String, (u32, u32))> = OnceLock::new();
+static _IMAGE: OnceLock<(String, (usize, usize))> = OnceLock::new();
 
 #[tauri::command]
-fn get_image() -> Option<(String, (u32, u32))> {
+fn get_image() -> Option<(String, (usize, usize))> {
     _IMAGE.get().cloned()
 }
 
@@ -51,9 +51,11 @@ pub async fn pick_image() -> PathBuf {
 }
 
 fn set_image(path: &String) {
-    let dimensions = image::open(&path).expect(
-        "Failed to extract image dimensions!"
-    ).dimensions();
+    let image_result = imagesize::size(path).expect(
+        &format!("Failed to retrieve size of the image '{}'", path)
+    );
+
+    let dimensions = (image_result.width, image_result.height);
 
     let _ = _IMAGE.set((path.to_owned(), dimensions));
 }
