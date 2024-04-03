@@ -3,7 +3,8 @@
 import NextImage from "next/image";
 import { useEffect, useRef, useState, WheelEventHandler } from "react";
 
-import { appWindow } from "@tauri-apps/api/window";
+import { appWindow, PhysicalSize } from "@tauri-apps/api/window";
+import { Event } from "@tauri-apps/api/event";
 
 const IMAGE_PADDING = 8;
 
@@ -58,12 +59,30 @@ export default function RoseImage(props: Props) {
         return () => clearInterval(id);
     }, [zoom_position, image_will_change]);
 
-    // Keeps track of tauri window size.
+    // Set window size on first time application launch.
     useEffect(() => {
         appWindow.innerSize().then(
             (size) => setWindowSize({width: size.width, height: size.height})
         );
-    });
+    }, []);
+
+    // Sets the window size on window resize event.
+    useEffect(() => {
+        const unlisten = appWindow.listen(
+            "tauri://resize", 
+            (event: Event<PhysicalSize>) => {
+                const size = event.payload;
+
+                if (window_size == null || (size.width !== window_size.width && size.height !== window_size.height)) {
+                    setWindowSize({width: size.width, height: size.height});
+                }
+            }
+        );
+
+        return () => {
+            unlisten.then(f => f());
+        };
+    }, [window_size]);
 
     // Scales image on window resize and reset's zoom.
     useEffect(() => {
