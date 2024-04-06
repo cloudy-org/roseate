@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A template we use to get started with desktop apps."
 authors = ["Goldy <goldy@devgoldy.xyz>"]
 license = "GPL-3.0"
-repository = ""
+repository = "https://github.com/cloudy-org/desktop-app-template"
 edition = "2021"
 rust-version = "1.60"
 

@@ -1,16 +1,15 @@
-import type { Config } from "tailwindcss";
-
+/** @type {import('tailwindcss').Config} */
 import * as CTKTailwind from "./cirrus/tailwind";
 
-const config: Config = {
+const config = {
     plugins: [
         CTKTailwind.Colours
     ],
     content: [
-        "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/**/*.{js,ts,jsx,tsx,mdx}",
         "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-        "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     ],
     theme: {},
 };
+
 export default config;
