@@ -6,8 +6,7 @@
         "distDir": "../dist"
     },
     "package": {
-        "productName": "roseate",
-        "version": "0.1.0"
+        "productName": "roseate"
     },
     "tauri": {
         "allowlist": {
