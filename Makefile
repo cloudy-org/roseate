@@ -22,6 +22,5 @@ generate-icon: # Can be used like so: make generate-icon ICON="./assets/icon.ico
 
 clean:
 	cd src-tauri && cargo clean && cd ..
-	rm -r .next
 	rm -r node_modules
 	rm package-lock.json
