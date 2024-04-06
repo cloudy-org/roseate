@@ -27,7 +27,7 @@ git submodule update --init --recursive
 ```sh
 make install-deps
 ```
-4. Run ``make run``.
+4. Run the application in development mode.
 ```sh
 make run
 ```

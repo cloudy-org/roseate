@@ -2,8 +2,8 @@
     "build": {
         "beforeBuildCommand": "npm run build",
         "beforeDevCommand": "npm run dev",
-        "devPath": "http://localhost:3000",
-        "distDir": "../out"
+        "devPath": "http://localhost:5173",
+        "distDir": "../build"
     },
     "package": {
         "productName": "desktop-app-template",
@@ -57,7 +57,7 @@
                 "fullscreen": false,
                 "height": 600,
                 "resizable": true,
-                "title": "desktop app template",
+                "title": "Desktop App Template",
                 "width": 800
             }
         ]

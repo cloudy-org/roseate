@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-cloudyLight dark:bg-cloudyDark dark:selection:bg-gray-400
+    }
+}
