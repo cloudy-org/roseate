@@ -4,6 +4,11 @@
 
 @layer base {
     body {
-        @apply bg-cloudyLight dark:bg-cloudyDark dark:selection:bg-gray-400
+        @apply bg-cloudyLight dark:bg-cloudyDark dark:selection:bg-gray-400 h-screen overflow-hidden
     }
+}
+
+@font-face {
+    font-family: "Dosis";
+    src: url("../fonts/Dosis.ttf");
 }

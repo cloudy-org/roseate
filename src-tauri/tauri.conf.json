@@ -6,12 +6,20 @@
         "distDir": "../dist"
     },
     "package": {
-        "productName": "desktop-app-template",
+        "productName": "roseate",
         "version": "0.1.0"
     },
     "tauri": {
         "allowlist": {
-            "all": false
+            "all": false,
+            "fs": {
+                "readFile": true,
+                "readDir": true,
+                "scope": ["**"]
+            },
+            "window": {
+                "all": true
+            }
         },
         "bundle": {
             "active": true,
@@ -28,8 +36,8 @@
                 "icons/icon.icns",
                 "icons/icon.ico"
             ],
-            "identifier": "xyz.devgoldy.dev",
-            "longDescription": "",
+            "identifier": "xyz.devgoldy.cloudy.roseate",
+            "longDescription": "A small and simple but fancy image viewer built with Rust & Typescript that's cross platform.",
             "macOS": {
                 "entitlements": null,
                 "exceptionDomain": "",
@@ -57,7 +65,7 @@
                 "fullscreen": false,
                 "height": 600,
                 "resizable": true,
-                "title": "Desktop App Template",
+                "title": "Roseate",
                 "width": 800
             }
         ]
