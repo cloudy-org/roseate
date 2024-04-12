@@ -8,15 +8,13 @@ import Rose from "./components/rose";
 import RoseImage from "./components/image";
 
 export default function Home() {
-    console.log("jeff!");
-
-    const is_image_loaded = useRef(false);
+    const [image_loading, setImageLoading] = useState(false);
 
     const [image_opacity, setImageOpacity] = useState<number>(0);
     const [image, setImage] = useState<[string, [number, number]] | null>(null);
 
     function load_image() {
-        if (is_image_loaded.current == false) {
+        if (image_loading == false && image == null) {
             invoke<[string, [number, number]] | null>("get_image").then(
                 image_data => {
                     if (image_data !== null) {
@@ -28,26 +26,33 @@ export default function Home() {
                                 const blob = new Blob([contents], { type: "image/png" });
                                 setImage([URL.createObjectURL(blob), dimensions]);
 
-                                setTimeout(() => setImageOpacity(1), 1000);
+                                setTimeout(() => {
+                                    setImageLoading(false);
+                                    setImageOpacity(1);
+                                }, 1000);
                             }
                         ).catch(console.error);
                     }
                 }
             ).catch(console.error);
 
-            is_image_loaded.current = true;
+            setImageLoading(true);
         }
     }
 
-    useEffect(() => load_image(), []);
+    useEffect(() => load_image());
 
     return (
         <div className="relative">
             <div className="flex items-center justify-center h-screen">
                 {
                     image === null ? 
-                        <div onClick={ () => {invoke("select_image").then(() => load_image());} }>
-                            <Rose></Rose>
+                        <div onClick={() => {
+                            if (!image_loading) {
+                                invoke("select_image").then(() => load_image());
+                            }
+                        }}>
+                            <Rose image_loading={image_loading}></Rose>
                         </div> : 
                         <div className="opacity-0 transition-opacity duration-300" style={{opacity: image_opacity}}>
                             <RoseImage url={image[0]} width={image[1][0]} height={image[1][1]}></RoseImage>
