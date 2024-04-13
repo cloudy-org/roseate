@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, WheelEventHandler } from "react";
 import { appWindow, PhysicalSize } from "@tauri-apps/api/window";
 import { Event } from "@tauri-apps/api/event";
 
+import { Image } from "../App";
+
 const IMAGE_PADDING = 8;
 
 type Dimensions = {
@@ -12,20 +14,18 @@ type Dimensions = {
 }
 
 type Props = {
-    url: string,
-    width: number,
-    height: number
+    image: Image
 }
 
 export default function RoseImage(props: Props) {
     const last_zoom_event = useRef(Date.now());
 
     const [zoom_position, setZoomPosition] = useState({ x: 0, y: 0, scale: 1 });
-    const [image_bounds, setImageBounds] = useState<Dimensions>({width: props.width, height: props.height});
+    const [image_bounds, setImageBounds] = useState<Dimensions>({width: props.image.width, height: props.image.height});
     const [image_will_change, warnImageChange] = useState<string>("unset");
     const [window_size, setWindowSize] = useState<Dimensions | null>(null);
 
-    const on_scroll: WheelEventHandler = (event) => {
+    const on_scroll: WheelEventHandler<HTMLDivElement> = (event) => {
         last_zoom_event.current = Date.now();
         warnImageChange("transform");
 
@@ -34,10 +34,12 @@ export default function RoseImage(props: Props) {
 
         const ratio = 1 - new_scale / zoom_position.scale;
 
+        const rect = event.currentTarget.getBoundingClientRect();
+
         setZoomPosition({
             scale: new_scale,
-            x: zoom_position.x + (event.clientX - zoom_position.x) * ratio,
-            y: zoom_position.y + (event.clientY - zoom_position.y) * ratio
+            x: zoom_position.x + ((event.clientX - rect.left) - zoom_position.x) * ratio,
+            y: zoom_position.y + ((event.clientY - rect.top) - zoom_position.y) * ratio
         });
     };
 
@@ -112,7 +114,7 @@ export default function RoseImage(props: Props) {
                             maxHeight: `${image_bounds?.height}px`, 
                             maxWidth: `${image_bounds?.width}px`, 
                         }}
-                        src={props.url} width={props.width} height={props.height} alt=""/>
+                        src={props.image.url} width={props.image.width} height={props.image.height} alt=""/>
                 </figure>
             </div>
         </div>

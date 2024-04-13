@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/tauri";
 import { readBinaryFile } from "@tauri-apps/api/fs";
@@ -7,11 +7,17 @@ import { readBinaryFile } from "@tauri-apps/api/fs";
 import Rose from "./components/rose";
 import RoseImage from "./components/image";
 
+export type Image = {
+    url: string,
+    width: number,
+    height: number
+}
+
 export default function Home() {
     const [image_loading, setImageLoading] = useState(false);
 
     const [image_opacity, setImageOpacity] = useState<number>(0);
-    const [image, setImage] = useState<[string, [number, number]] | null>(null);
+    const [image, setImage] = useState<Image | null>(null);
 
     function load_image() {
         if (image_loading == false && image == null) {
@@ -24,7 +30,12 @@ export default function Home() {
                         readBinaryFile(path).then(
                             (contents) => {
                                 const blob = new Blob([contents], { type: "image/png" });
-                                setImage([URL.createObjectURL(blob), dimensions]);
+                                const url = URL.createObjectURL(blob);
+                                setImage({
+                                    url: url,
+                                    width: dimensions[0],
+                                    height: dimensions[1]
+                                });
 
                                 setTimeout(() => {
                                     setImageLoading(false);
@@ -55,7 +66,7 @@ export default function Home() {
                             <Rose image_loading={image_loading}></Rose>
                         </div> : 
                         <div className="opacity-0 transition-opacity duration-300" style={{opacity: image_opacity}}>
-                            <RoseImage url={image[0]} width={image[1][0]} height={image[1][1]}></RoseImage>
+                            <RoseImage image={image}></RoseImage>
                         </div>
                 }
             </div>
