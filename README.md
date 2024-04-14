@@ -11,7 +11,7 @@
 # 🛠️ Installation
 As Roseate is in heavy development I won't offer packages and binaries yet so you'll need to compile the application from source.
 
-## 🪄 Build from source
+## 🏗 Build from source
 ### Prerequisites:
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - [Tauri CLI](https://crates.io/crates/tauri-cli) ( `cargo install tauri-cli` )
