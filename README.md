@@ -20,8 +20,8 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 
 1. Clone the repo.
 ```sh
-git clone https://github.com/cloudy-org/desktop-app-template
-cd desktop-app-template
+git clone https://github.com/cloudy-org/roseate
+cd roseate
 ```
 2. Pull the submodules (includes [ctk](https://github.com/cloudy-org/cirrus)).
 ```sh
