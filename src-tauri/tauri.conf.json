@@ -20,6 +20,25 @@
                 "all": true
             }
         },
+        "cli": {
+            "description": "🌹 A fancy image viewer.",
+            "longDescription": "🌹 A small and simple but fancy image viewer built with Rust & Typescript that's cross platform.",
+            "beforeHelp": "",
+            "afterHelp": "",
+            "args": [
+                {
+                    "name": "theme",
+                    "takesValue": true,
+                    "multiple": false,
+                    "possibleValues": ["dark", "light"]
+                },
+                {
+                    "index": 1,
+                    "name": "source",
+                    "takesValue": true
+                }
+            ]
+        },
         "bundle": {
             "active": true,
             "category": "DeveloperTool",

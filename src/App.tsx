@@ -15,12 +15,15 @@ export type Image = {
 
 export default function Home() {
     const [image_loading, setImageLoading] = useState(false);
+    const [no_image_available, setNoImageAvailable] = useState(false);
 
     const [image_opacity, setImageOpacity] = useState<number>(0);
     const [image, setImage] = useState<Image | null>(null);
 
     function load_image() {
-        if (image_loading == false && image == null) {
+        if (image_loading == false && image == null && no_image_available == false) {
+            setImageLoading(true);
+
             invoke<[string, [number, number]] | null>("get_image").then(
                 image_data => {
                     if (image_data !== null) {
@@ -43,11 +46,12 @@ export default function Home() {
                                 }, 1000);
                             }
                         ).catch(console.error);
+                    } else {
+                        setNoImageAvailable(true);
+                        setImageLoading(false);
                     }
                 }
             ).catch(console.error);
-
-            setImageLoading(true);
         }
     }
 
@@ -60,7 +64,10 @@ export default function Home() {
                     image === null ? 
                         <div onClick={() => {
                             if (!image_loading) {
-                                invoke("select_image").then(() => load_image());
+                                invoke("select_image").then(() => {
+                                    setNoImageAvailable(false);
+                                    load_image();
+                                });
                             }
                         }}>
                             <Rose image_loading={image_loading}></Rose>

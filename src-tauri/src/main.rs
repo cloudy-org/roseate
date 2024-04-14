@@ -1,9 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use tauri_plugin_theme::ThemePlugin;
+
 use std::path::PathBuf;
 use rfd::AsyncFileDialog;
 use image::ImageFormat;
+use serde::{de::IntoDeserializer, Deserialize};
 use std::{env, sync::OnceLock};
 
 static _IMAGE: OnceLock<(String, (usize, usize))> = OnceLock::new();
@@ -19,15 +22,29 @@ async fn select_image() {
 }
 
 fn main() {
-    let cli_args: Vec<String> = env::args().collect();
-
-    let image_path = cli_args.get(1);
-
-    if image_path != None && !["", " "].contains(&image_path.unwrap().as_str()) {
-        set_image(&image_path.unwrap().to_owned());
-    }
+    let mut ctx = tauri::generate_context!();
 
     tauri::Builder::default()
+        .plugin(ThemePlugin::init(ctx.config_mut()))
+        .setup(|app| {
+            match app.get_cli_matches() {
+                Ok(matches) => {
+                    let source = matches.args.get("source").unwrap();
+                    let source: Result<Option<&str>, serde_json::Error> = empty_string_as_none(source.value.clone());
+                    let source = &source.expect("Source must be a string!");
+
+                    println!("{:?}", source);
+
+                    if !source.is_none() {
+                        let image_path = source.unwrap();
+                        set_image(&image_path.to_string());
+                    }
+                }
+                Err(_) => {}
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![get_image, select_image])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -58,4 +75,17 @@ fn set_image(path: &String) {
     let dimensions = (image_result.width, image_result.height);
 
     let _ = _IMAGE.set((path.to_owned(), dimensions));
+}
+
+fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::Deserialize<'de>,
+{
+    let opt = Option::<String>::deserialize(de)?;
+    let opt = opt.as_ref().map(String::as_str);
+    match opt {
+        None | Some("") => Ok(None),
+        Some(s) => T::deserialize(s.into_deserializer()).map(Some)
+    }
 }
