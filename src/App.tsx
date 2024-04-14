@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { invoke } from "@tauri-apps/api/tauri";
 import { readBinaryFile } from "@tauri-apps/api/fs";
@@ -14,15 +14,22 @@ export type Image = {
 }
 
 export default function Home() {
+    const image_load_called = useRef(false);
+
     const [image_loading, setImageLoading] = useState(false);
     const [no_image_available, setNoImageAvailable] = useState(false);
 
     const [image_opacity, setImageOpacity] = useState<number>(0);
+    const [image_display, setImageDisplay] = useState<string>("hidden");
+
     const [image, setImage] = useState<Image | null>(null);
 
     function load_image() {
-        if (image_loading == false && image == null && no_image_available == false) {
+        if (image_load_called.current == false && image == null && no_image_available == false) {
+            image_load_called.current = true;
             setImageLoading(true);
+
+            console.debug("Attempting to load image from backend...");
 
             invoke<[string, [number, number]] | null>("get_image").then(
                 image_data => {
@@ -34,19 +41,26 @@ export default function Home() {
                             (contents) => {
                                 const blob = new Blob([contents], { type: "image/png" });
                                 const url = URL.createObjectURL(blob);
+
+                                console.debug("Setting image...");
                                 setImage({
                                     url: url,
                                     width: dimensions[0],
                                     height: dimensions[1]
                                 });
 
+                                // WHY THE FUCK DOES A 20 MILLISECOND TIMEOUT FIX MY ANIMATION PROBLEMS!!!
+                                setTimeout(() => setImageDisplay("unset"), 20);
+
                                 setTimeout(() => {
+                                    console.debug("Displaying image...");
                                     setImageLoading(false);
                                     setImageOpacity(1);
-                                }, 1000);
+                                }, 50);
                             }
                         ).catch(console.error);
                     } else {
+                        console.debug("No image found in backend.");
                         setNoImageAvailable(true);
                         setImageLoading(false);
                     }
@@ -72,7 +86,7 @@ export default function Home() {
                         }}>
                             <Rose image_loading={image_loading}></Rose>
                         </div> : 
-                        <div className="opacity-0 transition-opacity duration-300" style={{opacity: image_opacity}}>
+                        <div className="hidden opacity-0 transition-opacity duration-1000" style={{display: image_display, opacity: image_opacity}}>
                             <RoseImage image={image}></RoseImage>
                         </div>
                 }
