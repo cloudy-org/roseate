@@ -45,12 +45,15 @@ make run ARGS="./anime_girl.png"
 ```
 
 #### 🎀 Install into your system.
-
-4. Install to your system.
+4. Build the release binary.
+```sh
+make
+```
+5. Install to your system.
 ```sh
 make install
 ```
-5. Then the `roseate` binary will be available in your terminal.
+6. Then the `roseate` binary will be available in your terminal.
 ```sh
 roseate
 ```
