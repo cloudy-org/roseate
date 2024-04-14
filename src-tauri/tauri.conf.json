@@ -18,6 +18,9 @@
             },
             "window": {
                 "all": true
+            },
+            "os": {
+                "all": false
             }
         },
         "cli": {
