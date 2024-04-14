@@ -30,14 +30,15 @@ fn main() {
             match app.get_cli_matches() {
                 Ok(matches) => {
                     let source = matches.args.get("source").unwrap();
-                    let source: Result<Option<&str>, serde_json::Error> = empty_string_as_none(source.value.clone());
-                    let source = &source.expect("Source must be a string!");
 
-                    println!("{:?}", source);
+                    if !source.value.is_boolean() { // if tauri decides to return a 'true' boolean here SHIT WILL BLOW UP!!!
+                        let source: Result<Option<String>, serde_json::Error> = empty_string_as_none(&source.value);
+                        let source = source.expect("Source must be a string!");
 
-                    if !source.is_none() {
-                        let image_path = source.unwrap();
-                        set_image(&image_path.to_string());
+                        if !source.is_none() {
+                            let image_path = source.unwrap();
+                            set_image(&image_path.to_string());
+                        }
                     }
                 }
                 Err(_) => {}
