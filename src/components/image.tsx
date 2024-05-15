@@ -73,7 +73,7 @@ export default function RoseImage(props: Props) {
             (event: Event<PhysicalSize>) => {
                 const size = event.payload;
 
-                if (window_size == null || (size.width !== window_size.width && size.height !== window_size.height)) {
+                if (window_size == null || size.width !== window_size.width || size.height !== window_size.height) {
                     setWindowSize({width: size.width, height: size.height});
                 }
             }
