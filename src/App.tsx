@@ -1,8 +1,7 @@
 import React from "react";
 import { useEffect, useState, useRef } from "react";
 
-import { invoke } from "@tauri-apps/api/tauri";
-import { readBinaryFile } from "@tauri-apps/api/fs";
+import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import Rose from "./components/rose";
 import RoseImage from "./components/image";
@@ -24,6 +23,8 @@ export default function Home() {
 
     const [image, setImage] = useState<Image | null>(null);
 
+    console.log("jeff");
+
     function load_image() {
         if (image_load_called.current == false && image == null && no_image_available == false) {
             image_load_called.current = true;
@@ -37,28 +38,23 @@ export default function Home() {
                         const path = image_data[0];
                         const dimensions = image_data[1];
 
-                        readBinaryFile(path).then(
-                            (contents) => {
-                                const blob = new Blob([contents], { type: "image/png" });
-                                const url = URL.createObjectURL(blob);
+                        const url = convertFileSrc(path);
 
-                                console.debug("Setting image...");
-                                setImage({
-                                    url: url,
-                                    width: dimensions[0],
-                                    height: dimensions[1]
-                                });
+                        console.debug("Setting image...");
+                        setImage({
+                            url: url,
+                            width: dimensions[0],
+                            height: dimensions[1]
+                        });
 
-                                // WHY THE FUCK DOES A 20 MILLISECOND TIMEOUT FIX MY ANIMATION PROBLEMS!!!
-                                setTimeout(() => setImageDisplay("unset"), 20);
+                        // WHY THE FUCK DOES A 20 MILLISECOND TIMEOUT FIX MY ANIMATION PROBLEMS!!!
+                        setTimeout(() => setImageDisplay("unset"), 20);
 
-                                setTimeout(() => {
-                                    console.debug("Displaying image...");
-                                    setImageLoading(false);
-                                    setImageOpacity(1);
-                                }, 50);
-                            }
-                        ).catch(console.error);
+                        setTimeout(() => {
+                            console.debug("Displaying image...");
+                            setImageLoading(false);
+                            setImageOpacity(1);
+                        }, 50);
                     } else {
                         console.debug("No image found in backend.");
                         setNoImageAvailable(true);
