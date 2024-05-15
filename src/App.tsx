@@ -23,7 +23,7 @@ export default function Home() {
 
     const [image, setImage] = useState<Image | null>(null);
 
-    console.log("jeff");
+    useEffect(() => {invoke("show_window");}, []);
 
     function load_image() {
         if (image_load_called.current == false && image == null && no_image_available == false) {
