@@ -20,7 +20,6 @@ tauri = { version = "1.6.1", features = [ "cli", "window-all", "fs-read-dir", "f
 image = "0.25.0"
 rfd = "0.14.0"
 imagesize = "0.12.0"
-tauri-plugin-theme = "0.2.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
