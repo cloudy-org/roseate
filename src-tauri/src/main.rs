@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
 use std::path::PathBuf;
 use rfd::AsyncFileDialog;
 use image::ImageFormat;
@@ -20,13 +19,9 @@ async fn select_image() {
     set_image(&pick_image().await.to_str().unwrap().to_string());
 }
 
-#[tauri::command]
-fn show_window(window: tauri::Window) {
-    window.get_window("main").unwrap().show().unwrap();
-}
-
 fn main() {
     tauri::Builder::default()
+        .plugin(cirrus_tauri::init())
         .setup(|app| {
             match app.get_cli_matches() {
                 Ok(matches) => {
@@ -47,7 +42,7 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_image, select_image, show_window])
+        .invoke_handler(tauri::generate_handler![get_image, select_image])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

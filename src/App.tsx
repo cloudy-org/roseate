@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from "react";
 
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
+import { initWindow } from "../cirrus/tauri_typescript";
+
 import Rose from "./components/rose";
 import RoseImage from "./components/image";
 
@@ -23,7 +25,7 @@ export default function Home() {
 
     const [image, setImage] = useState<Image | null>(null);
 
-    useEffect(() => {invoke("show_window");}, []);
+    useEffect(() => initWindow(), []);
 
     function load_image() {
         if (image_load_called.current == false && image == null && no_image_available == false) {
