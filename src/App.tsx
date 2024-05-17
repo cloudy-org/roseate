@@ -73,6 +73,25 @@ export default function Home() {
 
     return (
         <div className="relative">
+            <div className="absolute right-0 m-2 opacity-60 hover:opacity-100 transition-opacity duration-300 z-50">
+                <div className="flex flex-row overflow-hidden rounded-xl">
+                    <button type="button" className="py-3 px-4 inline-flex items-center text-sm font-bold shadow-sm 
+                    bg-white dark:bg-zinc-800 text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-500
+                    transition-colors">
+                        <svg className="fill-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                            <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path>
+                        </svg>
+                    </button>
+                    <button type="button" className="p-3 px-4 inline-flex items-center text-sm font-bold shadow-sm 
+                    bg-white dark:bg-zinc-800 text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-500
+                    transition-colors">
+                        <svg className="fill-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                            <path d="M5 11h14v2H5z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
             <div className="flex items-center justify-center h-screen">
                 {
                     image === null ? 
