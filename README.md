@@ -6,7 +6,7 @@
 </div>
 
 > [!CAUTION]
-> This project is HEAVEALY a work in progress, hence it may crash or harm your system. Github issues are welcome. 🤝
+> This project is HEAVILY a work in progress, hence it may crash or harm your system. Github issues are welcome. 🤝
 
 # 🛠️ Installation
 As Roseate is in heavy development I won't offer packages and binaries yet so you'll need to compile the application from source.

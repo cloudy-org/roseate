@@ -2,6 +2,7 @@
 import * as CTKTailwind from "./cirrus/tailwind";
 
 const config = {
+    darkMode: "selector",
     plugins: [
         CTKTailwind.Colours
     ],
