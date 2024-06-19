@@ -20,7 +20,10 @@
             "protocol": {
                 "all": false,
                 "asset": true,
-                "assetScope": ["**"]
+                "assetScope": {
+                    "allow": ["**"],
+                    "requireLiteralLeadingDot": false
+                }
             }
         },
         "cli": {
