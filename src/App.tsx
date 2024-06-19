@@ -77,6 +77,7 @@ export default function Home() {
                         <div onClick={() => {
                             if (!image_loading) {
                                 invoke("select_image").then(() => {
+                                    image_load_called.current = false;
                                     setNoImageAvailable(false);
                                     load_image();
                                 });
