@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from "react";
 
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
+import { listen } from '@tauri-apps/api/event'
+
 import { initWindow } from "../cirrus/tauri_typescript";
 
 import Rose from "./components/rose";
@@ -69,6 +71,15 @@ export default function Home() {
 
     useEffect(() => load_image());
 
+    useEffect(() => {
+        listen('tauri://file-drop', event => {
+            image_load_called.current = false;
+
+            invoke("set_image_drag_drop", {path: event.payload})
+            load_image()
+        });
+      });
+    
     return (
         <div className="relative">
             <div className="flex items-center justify-center h-screen">

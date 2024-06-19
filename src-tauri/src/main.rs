@@ -42,7 +42,7 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_image, select_image])
+        .invoke_handler(tauri::generate_handler![get_image, select_image, set_image_drag_drop])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -72,6 +72,13 @@ fn set_image(path: &String) {
     let dimensions = (image_result.width, image_result.height);
 
     let _ = _IMAGE.set((path.to_owned(), dimensions));
+}
+
+#[tauri::command]
+fn set_image_drag_drop(path: Vec<String>) {
+    let first_item = path.get(0).unwrap();
+
+    set_image(first_item);
 }
 
 fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
