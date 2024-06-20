@@ -7,7 +7,7 @@ type Props = {
 }
 
 export default function RoseDialog(props: Props) {
-    const [filePath, setFilePath] = useState(String);
+    const [filePath, setFilePath] = useState<string>();
 
     useEffect(() => {
         resolveResource("resources/osaka.png").then((value) => {
@@ -21,7 +21,7 @@ export default function RoseDialog(props: Props) {
 
     return (
         <div className="select-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/4 max-w-98">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/4 max-w-screen-sm">
                 <div className="relative dark:bg-goldyDarky bg-goldyPink text-white text-center rounded-lg">
                     <img src={filePath} alt="osaka" className="mx-auto"></img>
 
