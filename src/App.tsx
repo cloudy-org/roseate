@@ -78,7 +78,7 @@ export default function Home() {
             return () => {
                 unlisten.then(f => f());
             };
-        }, [eventName, handler]);
+        }, []);
     };
 
     useEffect(() => load_image());
