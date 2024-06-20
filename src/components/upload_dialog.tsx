@@ -10,7 +10,7 @@ export default function RoseDialog(props: Props) {
     const [filePath, setFilePath] = useState<string>();
 
     useEffect(() => {
-        resolveResource("resources/osaka.png").then((value) => {
+        resolveResource("../public/osaka.png").then((value) => {
             setFilePath(convertFileSrc(value));
         });
     }, []);

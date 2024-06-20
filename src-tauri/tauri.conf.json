@@ -72,7 +72,7 @@
                 "providerShortName": null,
                 "signingIdentity": null
             },
-            "resources": ["resources/*"],
+            "resources": ["../public/*"],
             "shortDescription": "",
             "targets": "all",
             "windows": {
