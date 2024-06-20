@@ -17,6 +17,9 @@
             "os": {
                 "all": false
             },
+            "path": {
+                "all": true
+            },
             "protocol": {
                 "all": false,
                 "asset": true,
@@ -69,7 +72,7 @@
                 "providerShortName": null,
                 "signingIdentity": null
             },
-            "resources": [],
+            "resources": ["resources/*"],
             "shortDescription": "",
             "targets": "all",
             "windows": {
