@@ -9,6 +9,7 @@ import { initWindow } from "../cirrus/tauri_typescript";
 
 import Rose from "./components/rose";
 import RoseImage from "./components/image";
+import RoseDialog from "./components/upload_dialog";
 
 export type Image = {
     url: string,
@@ -21,7 +22,7 @@ export default function Home() {
 
     const [image_loading, setImageLoading] = useState(false);
     const [no_image_available, setNoImageAvailable] = useState(false);
-    const [listen_running, setListenRunning] = useState(false);
+    const [file_hover, setFileHover] = useState(false);
 
     const [image_opacity, setImageOpacity] = useState<number>(0);
     const [image_display, setImageDisplay] = useState<string>("hidden");
@@ -70,23 +71,33 @@ export default function Home() {
         }
     }
 
+    function useFileDropEvent(eventName, handler) {
+        useEffect(() => {
+            const unlisten = listen(eventName, handler);
+    
+            return () => {
+                unlisten.then(f => f());
+            };
+        }, []);
+    };
+
     useEffect(() => load_image());
 
     useEffect(() => {
         const unlisten = listen('tauri://file-drop', event => {
             image_load_called.current = false;
 
-            console.log(event.payload);
-
             invoke("set_image_drag_drop", {path: event.payload})
             load_image()
         });
 
         return () => {
-            console.log("return");
             unlisten.then(f => f());
         };
-      }, []);
+    }, []);
+
+    useFileDropEvent('tauri://file-drop-hover', () => setFileHover(true));
+    useFileDropEvent('tauri://file-drop-cancelled', () => setFileHover(false));
     
     return (
         <div className="relative">
@@ -103,6 +114,7 @@ export default function Home() {
                             }
                         }}>
                             <Rose image_loading={image_loading}></Rose>
+                            <RoseDialog show={file_hover}></RoseDialog>
                         </div> : 
                         <div className="hidden opacity-0 transition-opacity duration-1000" style={{display: image_display, opacity: image_opacity}}>
                             <RoseImage image={image}></RoseImage>
