@@ -9,7 +9,7 @@ import { initWindow } from "../cirrus/tauri_typescript";
 
 import Rose from "./components/rose";
 import RoseImage from "./components/image";
-import RoseDialog from "./components/upload_dialog";
+import RoseDragDropDialog from "./components/rose_drag_drop";
 
 export type Image = {
     url: string,
@@ -71,20 +71,18 @@ export default function Home() {
         }
     }
 
-    function useFileDropEvent(eventName, handler) {
-        useEffect(() => {
-            const unlisten = listen(eventName, handler);
-    
-            return () => {
-                unlisten.then(f => f());
-            };
-        }, []);
-    };
+    useEffect(() => {
+        const dropHoverUnlisten = listen("tauri://file-drop-hover", () => setFileHover(true));
+        const dropCancelUnlisten = listen("tauri://file-drop-cancelled", () => setFileHover(false));
 
-    useEffect(() => load_image());
+        return () => {
+            dropHoverUnlisten.then(f => f());
+            dropCancelUnlisten.then(f => f());
+        };
+    }, []);
 
     useEffect(() => {
-        const unlisten = listen('tauri://file-drop', event => {
+        const unlisten = listen("tauri://file-drop", event => {
             image_load_called.current = false;
 
             invoke("set_image_drag_drop", {path: event.payload})
@@ -96,9 +94,8 @@ export default function Home() {
         };
     }, []);
 
-    useFileDropEvent('tauri://file-drop-hover', () => setFileHover(true));
-    useFileDropEvent('tauri://file-drop-cancelled', () => setFileHover(false));
-    
+    useEffect(() => load_image());
+
     return (
         <div className="relative">
             <div className="flex items-center justify-center h-screen">
@@ -114,7 +111,7 @@ export default function Home() {
                             }
                         }}>
                             <Rose image_loading={image_loading}></Rose>
-                            <RoseDialog show={file_hover}></RoseDialog>
+                            <RoseDragDropDialog show={file_hover}></RoseDragDropDialog>
                         </div> : 
                         <div className="hidden opacity-0 transition-opacity duration-1000" style={{display: image_display, opacity: image_opacity}}>
                             <RoseImage image={image}></RoseImage>
