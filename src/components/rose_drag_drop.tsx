@@ -26,8 +26,8 @@ export default function RoseDragDropDialog(props: Props) {
                 dark:bg-goldyDarky bg-rose-100 text-white text-center rounded-lg">
                     <img src={filePath} alt="osaka" className="mx-auto w-36 rounded-full mt-2"></img>
 
-                    <div className="bg-rose-500 dark:bg-transparent min-w-fit">
-                        <h3 className="m-2 text-white dark:text-red-400 font-extrabold">Drag and Drop</h3>
+                    <div className="bg-rose-500 dark:bg-transparent m-2 min-w-fit rounded-md">
+                        <h3 className="text-white dark:text-red-400 font-extrabold">Drag and Drop</h3>
                     </div>
                 </div>
             </div>
