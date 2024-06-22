@@ -17,10 +17,16 @@
             "os": {
                 "all": false
             },
+            "path": {
+                "all": true
+            },
             "protocol": {
                 "all": false,
                 "asset": true,
-                "assetScope": ["**"]
+                "assetScope": {
+                    "allow": ["**"],
+                    "requireLiteralLeadingDot": false
+                }
             }
         },
         "cli": {
@@ -66,7 +72,7 @@
                 "providerShortName": null,
                 "signingIdentity": null
             },
-            "resources": [],
+            "resources": ["../public/*"],
             "shortDescription": "",
             "targets": "all",
             "windows": {

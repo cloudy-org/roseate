@@ -13,7 +13,9 @@ install:
 ifeq ($(detected_os), Windows)
 	copy ".\src-tauri\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
 else
-	cp ./src-tauri/target/release/roseate $(HOME)/.cargo/bin/
+	sudo cp ./src-tauri/target/release/roseate /usr/bin/
+	sudo mkdir /usr/lib/roseate -p
+	sudo cp ./src-tauri/target/release/_up_ /usr/lib/roseate/ -r
 endif
 
 install-deps:
@@ -32,6 +34,9 @@ run:
 
 generate-icon: # Can be used like so: make generate-icon ICON="./assets/icon.ico"
 	cargo tauri icon $(ICON)
+
+test:
+	npx eslint . --ext .ts,.tsx
 
 clean:
 	cd src-tauri && cargo clean && cd ..
