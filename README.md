@@ -14,6 +14,7 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 ## 🏗 Build from source
 ### Prerequisites:
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [WebkitGTK](https://webkitgtk.org/)
 - [Tauri CLI](https://crates.io/crates/tauri-cli) ( `cargo install tauri-cli` )
 - [Rust](https://www.rust-lang.org/tools/install) (must be **1.60+**)
 - [Make](https://www.gnu.org/software/make) (recommended, otherwise you'll need to run commands from the [Makefile](./Makefile) manually)
@@ -51,16 +52,15 @@ make
 ```
 5. Install to your system.
 ```sh
-make install
+sudo make install
 ```
 6. Then the `roseate` binary will be available in your terminal.
 ```sh
 roseate
 ```
-> **Make sure to add ``~/.cargo/bin`` to path.** You can do so by adding ``export PATH=$PATH:~/.cargo/bin`` to your ``.bashrc`` or an equivalent. On Windows, it should [already be in path](https://users.rust-lang.org/t/cargo-bin-path-issue-on-windows-absolute-beginner/38932/2).
 
 Open an image by passing its path.
 ```sh
 roseate ./anime_girls.png
 ```
-You might want to also set the binary at ``~/.cargo/bin/roseate`` as your default image viewer so double clicking on images calls it. Look up how to perform that for your desktop environment or OS.
+You might want to also set the binary at ``/usr/bin/roseate`` as your default image viewer so double clicking on images calls it. Look up how to perform that for your desktop environment or OS.
