@@ -33,6 +33,9 @@ run:
 generate-icon: # Can be used like so: make generate-icon ICON="./assets/icon.ico"
 	cargo tauri icon $(ICON)
 
+test:
+	npx eslint . --ext .ts,.tsx
+
 clean:
 	cd src-tauri && cargo clean && cd ..
 	rm -r node_modules
