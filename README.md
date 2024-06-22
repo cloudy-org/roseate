@@ -14,6 +14,7 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 ## 🏗 Build from source
 ### Prerequisites:
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+- [WebkitGTK](https://webkitgtk.org/)
 - [Tauri CLI](https://crates.io/crates/tauri-cli) ( `cargo install tauri-cli` )
 - [Rust](https://www.rust-lang.org/tools/install) (must be **1.60+**)
 - [Make](https://www.gnu.org/software/make) (recommended, otherwise you'll need to run commands from the [Makefile](./Makefile) manually)
@@ -51,7 +52,7 @@ make
 ```
 5. Install to your system.
 ```sh
-make install
+sudo make install
 ```
 6. Then the `roseate` binary will be available in your terminal.
 ```sh
