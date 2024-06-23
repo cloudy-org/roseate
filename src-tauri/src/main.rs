@@ -4,8 +4,9 @@
 use std::path::PathBuf;
 use rfd::AsyncFileDialog;
 use image::ImageFormat;
-use serde::{de::IntoDeserializer, Deserialize};
 use std::{env, sync::OnceLock};
+
+use cirrus_tauri::serde::empty_string_as_none;
 
 static _IMAGE: OnceLock<(String, (usize, usize))> = OnceLock::new();
 
@@ -39,10 +40,8 @@ fn main() {
                 }
                 Err(_) => {}
             }
-
             Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![get_image, select_image, set_image_drag_drop])
+        }).invoke_handler(tauri::generate_handler![get_image, select_image, set_image_drag_drop])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -79,17 +78,4 @@ fn set_image_drag_drop(path: Vec<String>) {
     let first_item = path.get(0).unwrap();
 
     set_image(first_item);
-}
-
-fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-    T: serde::Deserialize<'de>,
-{
-    let opt = Option::<String>::deserialize(de)?;
-    let opt = opt.as_ref().map(String::as_str);
-    match opt {
-        None | Some("") => Ok(None),
-        Some(s) => T::deserialize(s.into_deserializer()).map(Some)
-    }
 }
