@@ -55,7 +55,7 @@ impl Roseate {
     fn scale_image_on_window_resize(&mut self, window_rect: &Rect) {
         if let Some(timer) = self.resize_timer {
             // If the timer has expired (no new resize events)
-            if timer.elapsed() >= Duration::from_millis(500) {
+            if timer.elapsed() >= Duration::from_millis(300) {
                 // Reset the timer
                 self.resize_timer = None;
 
@@ -117,7 +117,7 @@ impl eframe::App for Roseate {
                 });
             });
 
-            ctx.request_repaint_after_secs(1.0); // We need to request repaints just in 
+            ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
             // just in case one doesn't happen when the window is resized in a certain circumstance 
             // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
         });
