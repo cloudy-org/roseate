@@ -1,13 +1,17 @@
 [package]
-name = "roseate-native"
-version = "0.1.0"
+name = "roseate"
 edition = "2021"
+version = "0.1.0-alpha.5"
+description = "A small and simple but fancy image viewer built with Rust that's cross platform."
+authors = ["Goldy <goldy@devgoldy.xyz>"]
+license = "GPL-3.0"
+repository = "https://github.com/cloudy-org/roseate/"
 
 [dependencies]
 rfd = "0.15.0"
 imagesize = "0.13.0"
 eframe = { version = "0.29.1", features = ["default"] }
-egui_extras = { version = "0.29.1", features = ["default", "all_loaders"]}
+egui_extras = { version = "0.29.1", features = ["all_loaders"]}
 image = {version = "0.25.2", features = ["jpeg", "png"]}
 egui_animation = "0.6.0"
 simple-easing = "1.0.1"
