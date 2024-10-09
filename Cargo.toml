@@ -1,0 +1,13 @@
+[package]
+name = "roseate-native"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rfd = "0.15.0"
+imagesize = "0.13.0"
+eframe = { version = "0.29.1", features = ["default"] }
+egui_extras = { version = "0.29.1", features = ["default", "all_loaders"]}
+image = {version = "0.25.2", features = ["jpeg", "png"]}
+egui_animation = "0.6.0"
+simple-easing = "1.0.1"

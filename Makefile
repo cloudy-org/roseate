@@ -4,41 +4,21 @@ else
     detected_os := $(shell uname)  # same as "uname -s"
 endif
 
-BUNDLES = "none"
-
 build:
-	cargo tauri build --bundles $(BUNDLES)
+	cargo build --release
 
 install:
 ifeq ($(detected_os), Windows)
 	copy ".\src-tauri\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
 else
 	sudo cp ./src-tauri/target/release/roseate /usr/bin/
-	sudo mkdir /usr/lib/roseate -p
-	sudo cp ./src-tauri/target/release/_up_ /usr/lib/roseate/ -r
 endif
 
-install-deps:
-	npm i
+clean:
+	cargo clean
 
 pull-submodules:
 	git submodule update --init --recursive
 
 update-submodules:
 	git submodule update --recursive --remote
-
-ARGS = ""
-
-run:
-	cargo tauri dev -- -- $(ARGS)
-
-generate-icon: # Can be used like so: make generate-icon ICON="./assets/icon.ico"
-	cargo tauri icon $(ICON)
-
-test:
-	npx eslint . --ext .ts,.tsx
-
-clean:
-	cd src-tauri && cargo clean && cd ..
-	rm -r node_modules
-	rm package-lock.json
