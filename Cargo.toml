@@ -16,7 +16,6 @@ image = {version = "0.25.2", features = ["jpeg", "png"]}
 egui_animation = "0.6.0"
 simple-easing = "1.0.1"
 rdev = "0.5.3"
-fast_image_resize = "5.0.0"
 log = "0.4.22"
 env_logger = "0.11.5"
 

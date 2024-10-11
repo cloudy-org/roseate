@@ -136,11 +136,9 @@ impl eframe::App for Roseate {
                         ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                     ) as u32;
 
-                    let image_bytes = image.image_bytes.unwrap().clone();
-
                     ui.add(
                         egui::Image::from_bytes(
-                            format!("bytes://{}", image.image_path.to_string_lossy()), image_bytes
+                            format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
                         ).max_width(scaled_image_width_animated as f32).max_height(scaled_image_height_animated as f32).rounding(10.0)
                     );
                 });

@@ -1,4 +1,4 @@
-use std::{fs, io::Cursor, path::{Path, PathBuf}, sync::Arc};
+use std::{fs::{self, File}, io::{BufReader, Cursor}, path::{Path, PathBuf}, sync::Arc};
 
 use log::debug;
 use image::{ImageFormat, ImageReader};
@@ -7,7 +7,7 @@ use imagesize::ImageSize;
 #[derive(Clone)]
 pub struct Image {
     pub image_size: ImageSize,
-    pub image_path: PathBuf,
+    pub image_path: Arc<PathBuf>,
     pub image_bytes: Option<Arc<[u8]>>
 }
 
@@ -26,27 +26,36 @@ impl Image {
 
         Self {
             image_size,
-            image_path: path.to_owned(),
+            image_path: Arc::new(path.to_owned()),
             image_bytes: None
         }
     }
 
     pub fn load_image(&mut self, optimizations: &[ImageOptimization]) {
         if optimizations.is_empty() {
-            debug!("No optimizations were set so loading with fs:read instead...");
+            debug!("No optimizations were set so loading with fs::read instead...");
 
             self.image_bytes = Some(
-                Arc::from(fs::read(self.image_path.clone()).expect("Failed to read image with fs::read!"))
+                Arc::from(fs::read(self.image_path.as_ref()).expect("Failed to read image with fs::read!"))
             );
             return; // I avoid image crate here as loading the bytes with fs::read is 
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
 
+        debug!("Opening file into buf reader...");
+
+        let image_file = File::open(self.image_path.as_ref()).expect(
+            &format!("Failed to open file for the image '{}'", self.image_path.to_string_lossy())
+        );
+        let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
+        // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly notice a speed difference)
+
         debug!("Loading image into image crate DynamicImage so optimizations can be applied...");
 
-        let mut image = ImageReader::open(self.image_path.clone()).expect(
-            "Failed to open image with image crate to apply optimizations!"
-        ).decode().expect("Failed to decode and load image with image crate to apply optimizations!");
+        let mut image = ImageReader::new(image_buf_reader)
+            .with_guessed_format().unwrap().decode().expect(
+            "Failed to decode and load image with image crate to apply optimizations!"
+        );
 
         for optimization in optimizations {
             debug!("Applying '{:?}' optimization to image...", optimization);
@@ -56,7 +65,7 @@ impl Image {
                     image = image.resize(
                         *width,
                         *height,
-                        image::imageops::FilterType::Gaussian
+                        image::imageops::FilterType::Lanczos3
                     );
                 },
             }
