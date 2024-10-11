@@ -18,6 +18,8 @@ pub enum ImageOptimization {
 
 impl Image {
     pub fn from_path(path: &Path) -> Self {
+        // I use imagesize crate to get the image size 
+        // because it's A LOT faster as it only partially loads the image bytes.
         let image_size = imagesize::size(path).expect(
             "Failed to retrieve the dimensions of the image!"
         );
@@ -36,7 +38,8 @@ impl Image {
             self.image_bytes = Some(
                 Arc::from(fs::read(self.image_path.clone()).expect("Failed to read image with fs::read!"))
             );
-            return;
+            return; // I avoid image crate here as loading the bytes with fs::read is 
+            // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
 
         debug!("Loading image into image crate DynamicImage so optimizations can be applied...");
@@ -59,6 +62,9 @@ impl Image {
             }
         }
 
+        // TODO: I think writing the modified image into this buffer will make the memory usage 
+        // spike quite a lot as it will basically be duplicating it as we already the unmodified image 
+        // in self.image_bytes. Maybe we should clear self.image_bytes before we write the modified image to the buffer.
         let mut buffer: Vec<u8> = Vec::new();
 
         image.write_to(&mut Cursor::new(&mut buffer), ImageFormat::WebP).expect(
