@@ -3,12 +3,16 @@
 
 use std::{env, path::Path, time::{Duration, Instant}};
 
-use image::Image;
+use image::{Image, ImageOptimization};
 use eframe::egui::{self, ImageSource, Rect};
+use log::debug;
+use rdev::display_size;
 
 mod image;
 
 fn main() -> eframe::Result {
+    env_logger::init();
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
         ..Default::default()
@@ -16,6 +20,10 @@ fn main() -> eframe::Result {
 
     let cli_args: Vec<String> = env::args().collect();
     let image_path = cli_args.get(1);
+
+    if image_path.is_some() {
+        debug!("Image '{}' loading from path...", image_path.unwrap());
+    }
 
     let image = match image_path {
         Some(path) => {
@@ -30,6 +38,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+            debug!("image loaded from path!");
             Ok(Box::new(Roseate::new(image)))
         }),
     )
@@ -39,7 +48,8 @@ struct Roseate {
     image: Option<Image>,
     image_scale_factor: f32,
     resize_timer: Option<Instant>,
-    last_window_rect: Rect
+    last_window_rect: Rect,
+    image_loaded: bool
 }
 
 impl Roseate {
@@ -48,7 +58,8 @@ impl Roseate {
             image,
             image_scale_factor: 1.0,
             resize_timer: Some(Instant::now()),
-            last_window_rect: Rect::NOTHING
+            last_window_rect: Rect::NOTHING,
+            image_loaded: false
         }
     }
 
@@ -93,9 +104,25 @@ impl eframe::App for Roseate {
                 return;
             }
 
-            self.scale_image_on_window_resize(&window_rect);
+            if !self.image_loaded {
+                let mutable_image = self.image.as_mut().unwrap();
 
-            let image = self.image.as_ref().unwrap(); // We can assume the image exists if the scale image function returns true.
+                let (width, height) = display_size().expect("Failed to get monitor size!");
+
+                let mut optimizations = Vec::new();
+
+                if mutable_image.image_size.width > width as usize && mutable_image.image_size.height > height as usize {
+                    optimizations.push(ImageOptimization::Downsample(width as u32, height as u32));
+                }
+
+                mutable_image.load_image(&optimizations);
+
+                self.image_loaded = true;
+            }
+
+            let image = self.image.clone().unwrap();
+
+            self.scale_image_on_window_resize(&window_rect);
 
             ui.centered_and_justified(|ui| {
                 egui::ScrollArea::both().show(ui, |ui| {
@@ -109,9 +136,11 @@ impl eframe::App for Roseate {
                         ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                     ) as u32;
 
+                    let image_bytes = image.image_bytes.unwrap().clone();
+
                     ui.add(
                         egui::Image::from_bytes(
-                            format!("bytes://{}", image.image_path), image.image_bytes.clone()
+                            format!("bytes://{}", image.image_path.to_string_lossy()), image_bytes
                         ).max_width(scaled_image_width_animated as f32).max_height(scaled_image_height_animated as f32).rounding(10.0)
                     );
                 });
