@@ -3,10 +3,14 @@
   # 🌹 roseate
   <sub>A small and simple but fancy image viewer built with Rust that's cross-platform. **VERY WIP!**</sub>
 
+  <img src="./assets/dev_preview_1.png">
+
+  <sub>(image from a WIP development build, this is **NOT** the final product)</sub>
+
 </div>
 
 > [!CAUTION]
-> This project is HEAVILY a work in progress, hence it may crash or harm your system. Give it time to mature. Github issues are very welcome. 🤝
+> This project is HEAVILY a work in progress, hence it may crash or harm your system. Github issues are very welcome. 🤝
 
 # 🛠️ Installation
 As Roseate is in heavy development I won't offer packages and binaries yet so you'll need to compile the application from source.
