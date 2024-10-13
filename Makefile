@@ -9,9 +9,16 @@ build:
 
 install:
 ifeq ($(detected_os), Windows)
-	copy ".\src-tauri\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
+	copy ".\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
 else
-	sudo cp ./src-tauri/target/release/roseate /usr/bin/
+	sudo cp ./target/release/roseate /usr/bin/
+endif
+
+uninstall:
+ifeq ($(detected_os), Windows)
+	del "$(USERPROFILE)\.cargo\bin\roseate.exe"
+else
+	sudo rm -r /usr/bin/roseate
 endif
 
 clean:
