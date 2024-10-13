@@ -3,10 +3,15 @@
 
 use std::{env, path::Path, time::{Duration, Instant}};
 
-use image::{Image, ImageOptimization};
-use eframe::egui::{self, ImageSource, Rect};
+use cap::Cap;
+use std::alloc;
 use log::debug;
 use rdev::display_size;
+use image::{Image, ImageOptimization};
+use eframe::egui::{self, pos2, ImageSource, Key, Margin, Rect, RichText, Style};
+
+#[global_allocator]
+static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
 
 mod image;
 
@@ -49,7 +54,8 @@ struct Roseate {
     image_scale_factor: f32,
     resize_timer: Option<Instant>,
     last_window_rect: Rect,
-    image_loaded: bool
+    image_loaded: bool,
+    show_info: bool,
 }
 
 impl Roseate {
@@ -59,8 +65,54 @@ impl Roseate {
             image_scale_factor: 1.0,
             resize_timer: Some(Instant::now()),
             last_window_rect: Rect::NOTHING,
-            image_loaded: false
+            image_loaded: false,
+            show_info: false,
         }
+    }
+
+    fn show_info_box(&mut self, ctx: &egui::Context) {
+        egui::Window::new(
+            egui::WidgetText::RichText(
+                egui::RichText::new("ℹ Info").size(15.0)
+            )
+        )
+            .default_pos(pos2(200.0, 200.0))
+            .title_bar(true)
+            .show(ctx, |ui| {
+                let mem_allocated = ALLOCATOR.allocated();
+
+                ui.vertical_centered(|ui| {
+
+                    if self.image.is_some() {
+                        let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
+
+                        egui::Frame::group(&Style::default()).inner_margin(Margin::same(1.0)).show(
+                            ui, |ui| {
+                                ui.heading(RichText::new("Image").underline().size(15.0));
+                                ui.add_space(1.0);
+                                ui.label(
+                                    format!(
+                                        "Dimensions: {}x{}", image.image_size.width, image.image_size.height
+                                    )
+                                );
+                                ui.label(
+                                    format!(
+                                        "Name: {}",
+                                        image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
+                                    )
+                                );
+                            }
+                        );
+
+                        ui.add_space(3.0);
+                    }
+
+                    ui.label(format!(
+                        "Memory Allocated: {}",
+                        re_format::format_bytes(mem_allocated as f64)
+                    ));
+                });
+            });
     }
 
     fn scale_image_on_window_resize(&mut self, window_rect: &Rect) {
@@ -91,9 +143,17 @@ impl eframe::App for Roseate {
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
-            if window_rect.width() != self.last_window_rect.width() && window_rect.height() != self.last_window_rect.height() {
+            if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
                 self.resize_timer = Some(Instant::now());
                 self.last_window_rect = window_rect;
+            }
+
+            if ctx.input(|i| i.key_pressed(Key::I)) {
+                if self.show_info == true {
+                    self.show_info = false;
+                } else {
+                    self.show_info = true;
+                }
             }
 
             if self.image.is_none() {
@@ -102,6 +162,10 @@ impl eframe::App for Roseate {
                 });
 
                 return;
+            }
+
+            if self.show_info {
+                self.show_info_box(ctx);
             }
 
             if !self.image_loaded {
