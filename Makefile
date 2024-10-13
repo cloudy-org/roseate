@@ -11,15 +11,23 @@ build:
 
 install:
 ifeq ($(detected_os), Windows)
-	copy ".\src-tauri\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
+	copy ".\src-tauri\target\release\roseate-old.exe" "$(USERPROFILE)\.cargo\bin\"
 else
-	sudo cp ./src-tauri/target/release/roseate /usr/bin/
-	sudo mkdir /usr/lib/roseate -p
-	sudo cp ./src-tauri/target/release/_up_ /usr/lib/roseate/ -r
+	sudo cp ./src-tauri/target/release/roseate-old /usr/bin/
+	sudo mkdir /usr/lib/roseate-old -p
+	sudo cp ./src-tauri/target/release/_up_ /usr/lib/roseate-old/ -r
 endif
 
 install-deps:
 	npm i
+
+uninstall:
+ifeq ($(detected_os), Windows)
+	del "$(USERPROFILE)\.cargo\bin\roseate-old.exe"
+else
+	sudo rm /usr/bin/roseate-old
+	sudo rm -r /usr/lib/roseate-old/
+endif
 
 pull-submodules:
 	git submodule update --init --recursive

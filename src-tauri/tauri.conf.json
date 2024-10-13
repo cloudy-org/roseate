@@ -6,7 +6,7 @@
         "distDir": "../dist"
     },
     "package": {
-        "productName": "roseate"
+        "productName": "roseate-old"
     },
     "tauri": {
         "allowlist": {
@@ -63,7 +63,7 @@
                 "icons/icon.icns",
                 "icons/icon.ico"
             ],
-            "identifier": "xyz.devgoldy.cloudy.roseate",
+            "identifier": "xyz.devgoldy.cloudy.roseate-old",
             "longDescription": "A small and simple but fancy image viewer built with Rust & Typescript that's cross platform.",
             "macOS": {
                 "entitlements": null,

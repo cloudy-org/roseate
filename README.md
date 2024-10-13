@@ -6,7 +6,7 @@
 </div>
 
 > [!CAUTION]
-> This project is HEAVILY a work in progress, hence it may crash or harm your system. Github issues are welcome. 🤝
+> This is the old web version of Roseate and it's been dropped in turn for the new [native version](https://github.com/cloudy-org/roseate).
 
 # 🛠️ Installation
 As Roseate is in heavy development I won't offer packages and binaries yet so you'll need to compile the application from source.
@@ -15,7 +15,7 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 ### Prerequisites:
 - [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 - [WebkitGTK](https://webkitgtk.org/)
-- [Tauri CLI](https://crates.io/crates/tauri-cli) ( `cargo install tauri-cli` )
+- [Tauri CLI](https://crates.io/crates/tauri-cli) ( `cargo install tauri-cli --version 1.6.2` )
 - [Rust](https://www.rust-lang.org/tools/install) (must be **1.60+**)
 - [Make](https://www.gnu.org/software/make) (recommended, otherwise you'll need to run commands from the [Makefile](./Makefile) manually)
 
