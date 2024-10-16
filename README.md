@@ -24,11 +24,10 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 git clone https://github.com/cloudy-org/roseate
 cd roseate
 ```
-~~2. Pull some submodules.~~
+2. Pull the cirrus tool kit submodule.
 ```sh
 git submodule update --init --recursive
 ```
-**(you can skip that step as the cirrus toolkit is not needed right now)**
 
 #### ⚙️ For Development
 At this stage, for development, you would just run ``cargo run``. If you would like to install it to your system continue ahead to the [next section](#-install-to-your-system).
