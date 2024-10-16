@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
-use std::{time::{Duration, Instant}};
+use std::time::{Duration, Instant};
 
 use cap::Cap;
 use cirrus_theming::Theme;
 use std::alloc;
 use rdev::display_size;
-use eframe::egui::{self, pos2, Color32, ImageSource, Key, Margin, Rect, RichText, Style};
+use eframe::egui::{self, pos2, Color32, ImageSource, Key, Margin, Rect, Shadow, Style};
 
 use crate::image::{Image, ImageOptimization};
 
@@ -38,6 +38,11 @@ impl Roseate {
     }
 
     fn show_info_box(&mut self, ctx: &egui::Context) {
+
+        let mut custom_frame = egui::Frame::window(&ctx.style());
+        custom_frame.fill = Color32::from_hex(&self.theme.hex_code).unwrap().gamma_multiply(3.0);
+        custom_frame.shadow = Shadow::NONE;
+
         egui::Window::new(
             egui::WidgetText::RichText(
                 egui::RichText::new("ℹ Info").size(15.0)
@@ -45,40 +50,45 @@ impl Roseate {
         )
             .default_pos(pos2(200.0, 200.0))
             .title_bar(true)
+            .resizable(false)
+            .frame(custom_frame)
             .show(ctx, |ui| {
                 let mem_allocated = ALLOCATOR.allocated();
 
-                ui.vertical_centered(|ui| {
+                egui::Frame::group(&Style::default()).inner_margin(Margin::same(1.0)).show(
+                    ui, |ui| {
+                        egui::Grid::new("info_box_grid")
+                        .num_columns(2)
+                        .spacing([20.0, 4.0])
+                        .striped(true)
+                        .max_col_width(130.0)
+                        .show(ui, |ui| {
+                            if self.image.is_some() {
+                                let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
 
-                    if self.image.is_some() {
-                        let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
+                                ui.label("Name:");
+                                ui.label(
+                                    image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
+                                );
+                                ui.end_row();
 
-                        egui::Frame::group(&Style::default()).inner_margin(Margin::same(1.0)).show(
-                            ui, |ui| {
-                                ui.heading(RichText::new("Image").underline().size(15.0));
-                                ui.add_space(1.0);
+                                ui.label("Dimensions: ");
                                 ui.label(
                                     format!(
-                                        "Dimensions: {}x{}", image.image_size.width, image.image_size.height
+                                        "{}x{}", image.image_size.width, image.image_size.height
                                     )
                                 );
-                                ui.label(
-                                    format!(
-                                        "Name: {}",
-                                        image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
-                                    )
-                                );
+                                ui.end_row();
                             }
-                        );
-
-                        ui.add_space(3.0);
+                        });
                     }
+                );
 
-                    ui.label(format!(
+                ui.add_space(3.0);
+                ui.label(format!(
                         "Memory Allocated: {}",
                         re_format::format_bytes(mem_allocated as f64)
-                    ));
-                });
+                ));
             });
     }
 
@@ -107,7 +117,7 @@ impl eframe::App for Roseate {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 
-        let central_panel_frame = egui::containers::Frame {
+        let central_panel_frame = egui::Frame {
             inner_margin: Margin::same(5.0),
             fill: Color32::from_hex(&self.theme.hex_code).unwrap(), // I mean... it should not fail... we know it's a valid hex colour...
             ..Default::default()
