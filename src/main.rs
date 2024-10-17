@@ -12,6 +12,7 @@ use image::Image;
 
 mod app;
 mod image;
+mod zooming_panning;
 
 /// 🌹 A small and simple but fancy image viewer built with Rust that's cross-platform.
 #[derive(Parser, Debug)]

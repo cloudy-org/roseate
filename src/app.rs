@@ -6,7 +6,7 @@ use std::alloc;
 use rdev::display_size;
 use eframe::egui::{self, pos2, Color32, ImageSource, Key, Margin, Rect, Shadow, Style};
 
-use crate::image::{Image, ImageOptimization};
+use crate::{image::{Image, ImageOptimization}, zooming_panning::ZoomingPanning};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -15,6 +15,7 @@ pub struct Roseate {
     theme: Theme,
     image: Option<Image>,
     image_scale_factor: f32,
+    zooming_panning: ZoomingPanning,
     resize_timer: Option<Instant>,
     last_window_rect: Rect,
     image_loaded: bool,
@@ -27,6 +28,7 @@ impl Roseate {
             image,
             theme,
             image_scale_factor: 1.0,
+            zooming_panning: ZoomingPanning::new(),
             resize_timer: Some(Instant::now()),
             last_window_rect: Rect::NOTHING,
             image_loaded: false,
@@ -35,7 +37,6 @@ impl Roseate {
     }
 
     fn show_info_box(&mut self, ctx: &egui::Context) {
-
         let mut custom_frame = egui::Frame::window(&ctx.style());
         custom_frame.fill = Color32::from_hex(&self.theme.hex_code).unwrap().gamma_multiply(3.0);
         custom_frame.shadow = Shadow::NONE;
@@ -113,12 +114,14 @@ impl Roseate {
 impl eframe::App for Roseate {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         let central_panel_frame = egui::Frame {
             inner_margin: Margin::same(5.0),
             fill: Color32::from_hex(&self.theme.hex_code).unwrap(), // I mean... it should not fail... we know it's a valid hex colour...
             ..Default::default()
         };
+
+        self.zooming_panning.handle_pan(ctx);
+        self.zooming_panning.handle_zoom(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -182,11 +185,19 @@ impl eframe::App for Roseate {
                         ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                     ) as u32;
 
-                    ui.add(
-                        egui::Image::from_bytes(
-                            format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
-                        ).max_width(scaled_image_width_animated as f32).max_height(scaled_image_height_animated as f32).rounding(10.0)
+                    let (zoom_scaled_size, pan_image_position) = self.zooming_panning.get_transformation(
+                        (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
+                        ui.max_rect().center()
                     );
+
+                    let zooming_panning_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
+
+                    egui::Image::from_bytes(
+                        format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
+                    ).max_width(scaled_image_width_animated as f32)
+                        .max_height(scaled_image_height_animated as f32)
+                        .rounding(10.0)
+                        .paint_at(ui, zooming_panning_rect);
                 });
             });
 
