@@ -112,7 +112,11 @@ impl eframe::App for Roseate {
 
             let image = self.image.clone().unwrap();
 
-            self.scale_image_on_window_resize(&window_rect);
+            // Don't know might change this but basically we don't want the 
+            // image to scale with the window if we have messed with the zoom_pan.
+            if !self.zoom_pan.has_been_messed_with() {
+                self.scale_image_on_window_resize(&window_rect);
+            }
 
             ui.centered_and_justified(|ui| {
                 egui::ScrollArea::both().show(ui, |ui| {

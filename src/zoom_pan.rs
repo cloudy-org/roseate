@@ -50,4 +50,14 @@ impl ZoomPan {
 
         (scaled_size, image_position)
     }
+
+    pub fn has_been_messed_with(&mut self) -> bool {
+        if self.zoom_factor != 1.0 {
+            true
+        } else if self.pan_offset != egui::Vec2::ZERO {
+            true
+        } else {
+            false
+        }
+    }
 }
