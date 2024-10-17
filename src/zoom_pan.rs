@@ -1,13 +1,14 @@
 use eframe::egui::{self, Pos2, Vec2};
 
-pub struct ZoomingPanning {
+/// Struct that controls the zoom and panning of the image.
+pub struct ZoomPan {
     zoom_factor: f32,
     is_panning: bool,
     pan_offset: egui::Vec2,
     drag_start: Option<egui::Pos2>,
 }
 
-impl ZoomingPanning {
+impl ZoomPan {
     pub fn new() -> Self {
         Self {
             zoom_factor: 1.0,

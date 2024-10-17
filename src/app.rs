@@ -4,13 +4,13 @@ use rdev::display_size;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, ImageSource, Key, Margin, Rect};
 
-use crate::{image::{Image, ImageOptimization}, zooming_panning::ZoomingPanning};
+use crate::{image::{Image, ImageOptimization}, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     pub theme: Theme,
     pub image: Option<Image>,
     image_scale_factor: f32,
-    zooming_panning: ZoomingPanning,
+    zoom_pan: ZoomPan,
     resize_timer: Option<Instant>,
     last_window_rect: Rect,
     image_loaded: bool,
@@ -23,7 +23,7 @@ impl Roseate {
             image,
             theme,
             image_scale_factor: 1.0,
-            zooming_panning: ZoomingPanning::new(),
+            zoom_pan: ZoomPan::new(),
             resize_timer: Some(Instant::now()),
             last_window_rect: Rect::NOTHING,
             image_loaded: false,
@@ -61,8 +61,8 @@ impl eframe::App for Roseate {
             ..Default::default()
         };
 
-        self.zooming_panning.handle_pan(ctx);
-        self.zooming_panning.handle_zoom(ctx);
+        self.zoom_pan.handle_pan(ctx);
+        self.zoom_pan.handle_zoom(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -126,19 +126,19 @@ impl eframe::App for Roseate {
                         ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                     ) as u32;
 
-                    let (zoom_scaled_size, pan_image_position) = self.zooming_panning.get_transformation(
+                    let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
                         (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
                         ui.max_rect().center()
                     );
 
-                    let zooming_panning_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
+                    let zoom_pan_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
 
                     egui::Image::from_bytes(
                         format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
                     ).max_width(scaled_image_width_animated as f32)
                         .max_height(scaled_image_height_animated as f32)
                         .rounding(10.0)
-                        .paint_at(ui, zooming_panning_rect);
+                        .paint_at(ui, zoom_pan_rect);
                 });
             });
 
