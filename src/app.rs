@@ -4,30 +4,32 @@ use rdev::display_size;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, ImageSource, Key, Margin, Rect};
 
-use crate::{image::{Image, ImageOptimization}, zoom_pan::ZoomPan};
+use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     pub theme: Theme,
     pub image: Option<Image>,
+    info_box: InfoBox,
     image_scale_factor: f32,
     zoom_pan: ZoomPan,
     resize_timer: Option<Instant>,
     last_window_rect: Rect,
-    image_loaded: bool,
-    show_info: bool,
+    image_loaded: bool
 }
 
 impl Roseate {
     pub fn new(image: Option<Image>, theme: Theme) -> Self {
+        let (ib_image, ib_theme) = (image.clone(), theme.clone());
+
         Self {
             image,
             theme,
             image_scale_factor: 1.0,
             zoom_pan: ZoomPan::new(),
+            info_box: InfoBox::new(ib_image, ib_theme),
             resize_timer: Some(Instant::now()),
             last_window_rect: Rect::NOTHING,
-            image_loaded: false,
-            show_info: false,
+            image_loaded: false
         }
     }
 
@@ -61,8 +63,8 @@ impl eframe::App for Roseate {
             ..Default::default()
         };
 
-        self.zoom_pan.handle_pan(ctx);
         self.zoom_pan.handle_zoom(ctx);
+        self.info_box.handle_info_box_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -70,14 +72,6 @@ impl eframe::App for Roseate {
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
                 self.resize_timer = Some(Instant::now());
                 self.last_window_rect = window_rect;
-            }
-
-            if ctx.input(|i| i.key_pressed(Key::I)) {
-                if self.show_info == true {
-                    self.show_info = false;
-                } else {
-                    self.show_info = true;
-                }
             }
 
             if self.image.is_none() {
@@ -90,9 +84,7 @@ impl eframe::App for Roseate {
                 return;
             }
 
-            if self.show_info {
-                self.show_info_box(ctx);
-            }
+            self.info_box.update(ctx);
 
             if !self.image_loaded {
                 let mutable_image = self.image.as_mut().unwrap();
@@ -119,31 +111,33 @@ impl eframe::App for Roseate {
             }
 
             ui.centered_and_justified(|ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    let scaled_image_width = image.image_size.width as f32 * self.image_scale_factor;
-                    let scaled_image_height = image.image_size.height as f32 * self.image_scale_factor;
+                let scaled_image_width = image.image_size.width as f32 * self.image_scale_factor;
+                let scaled_image_height = image.image_size.height as f32 * self.image_scale_factor;
 
-                    let scaled_image_width_animated = egui_animation::animate_eased(
-                        ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
-                    ) as u32;
-                    let scaled_image_height_animated = egui_animation::animate_eased(
-                        ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
-                    ) as u32;
+                let scaled_image_width_animated = egui_animation::animate_eased(
+                    ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
+                ) as u32;
+                let scaled_image_height_animated = egui_animation::animate_eased(
+                    ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
+                ) as u32;
 
-                    let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
-                        (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
-                        ui.max_rect().center()
-                    );
+                let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
+                    (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
+                    ui.max_rect().center()
+                );
 
-                    let zoom_pan_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
+                let zoom_pan_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
 
-                    egui::Image::from_bytes(
-                        format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
-                    ).max_width(scaled_image_width_animated as f32)
-                        .max_height(scaled_image_height_animated as f32)
-                        .rounding(10.0)
-                        .paint_at(ui, zoom_pan_rect);
-                });
+                let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
+
+                egui::Image::from_bytes(
+                    format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
+                ).max_width(scaled_image_width_animated as f32)
+                    .max_height(scaled_image_height_animated as f32)
+                    .rounding(10.0)
+                    .paint_at(ui, zoom_pan_rect);
+
+                self.zoom_pan.handle_pan(ctx, &response, self.info_box.response.as_ref());
             });
 
             ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 

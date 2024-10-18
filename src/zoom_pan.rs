@@ -1,4 +1,4 @@
-use eframe::egui::{self, Pos2, Vec2};
+use eframe::egui::{self, Pos2, Response, Vec2};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -27,8 +27,27 @@ impl ZoomPan {
     }
 
     // Method to handle panning (dragging)
-    pub fn handle_pan(&mut self, ctx: &egui::Context) {
-        if ctx.input(|i| i.pointer.primary_down()) {
+    pub fn handle_pan(&mut self, ctx: &egui::Context, image_response: &Response, info_box_response: Option<&Response>) {
+        let mut can_pan = false;
+
+        // "&& self.is_panning" allows for the panning to continue even 
+        // when the cursor is on top of another widget (i.e. the info box) 
+        // BUT to start panning the cursor has to be directly inside the image.
+        if ctx.input(|i| i.pointer.primary_down()) && self.is_panning {
+            can_pan = true;
+        } else if ctx.input(|i| i.pointer.primary_down()) && image_response.contains_pointer() {
+            if let Some(info_box_response) = info_box_response {
+                if info_box_response.is_pointer_button_down_on() {
+                    can_pan = false;
+                } else {
+                    can_pan = true;
+                }
+            } else {
+                can_pan = true;
+            }
+        }
+
+        if can_pan {
             if let Some(pos) = ctx.input(|i| i.pointer.hover_pos()) {
                 if self.is_panning {
                     let delta = pos - self.drag_start.unwrap();
