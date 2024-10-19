@@ -6,6 +6,7 @@ description = "A small and simple but fancy image viewer built with Rust that's 
 authors = ["Goldy <goldy@devgoldy.xyz>"]
 license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
+rust-version = "1.80"
 
 [dependencies]
 rfd = "0.15.0"
