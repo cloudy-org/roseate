@@ -26,7 +26,7 @@ impl InfoBox {
         }
     }
 
-    pub fn handle_info_box_input(&mut self, ctx: &egui::Context) {
+    pub fn handle_input(&mut self, ctx: &egui::Context) {
         if ctx.input(|i| i.key_pressed(Key::I)) {
             if self.show == true {
                 self.show = false;
