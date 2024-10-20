@@ -1,7 +1,7 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A small and simple but fancy image viewer built with Rust that's cross-platform. **VERY WIP!**</sub>
+  <sub>A small, fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform. **VERY WIP!**</sub>
 
   <img src="./assets/dev_preview_1.png">
 
@@ -17,7 +17,7 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 
 ## 🏗 Build from source
 ### Prerequisites:
-- [Rust](https://www.rust-lang.org/tools/install) and Cargo (I used **`1.80.0`** for development).
+- [Rust](https://www.rust-lang.org/tools/install) and Cargo (Rust **`1.80.0`**+ is required!).
 
 1. Clone the repo.
 ```sh
@@ -39,6 +39,21 @@ cargo run
 To run Roseate in development with an image, append `--` and pass an image path after like so:
 ```sh
 cargo run -- ./anime_girl.png
+```
+To run with verbose debugging, call cargo run with the `RUST_LOG=DEBUG` environment variable:
+```sh
+RUST_LOG=DEBUG cargo run -- ./anime_girl.png
+```
+```
+[2024-10-20T02:20:36Z DEBUG roseate] Image '/home/goldy/Downloads/anime_girl.png' loading from path...
+[2024-10-20T02:20:36Z DEBUG eframe] Using the glow renderer
+[2024-10-20T02:20:36Z DEBUG sctk] Bound new global [70] wl_output v4
+[2024-10-20T02:20:36Z DEBUG sctk] Bound new global [74] wl_output v4
+[2024-10-20T02:20:36Z DEBUG sctk] Bound new global [30] zxdg_output_manager_v1 v3
+[2024-10-20T02:20:36Z DEBUG sctk] Bound new global [10] wl_seat v7
+[2024-10-20T02:20:36Z DEBUG sctk] Bound new global [16] wp_cursor_shape_manager_v1 v1
+
+... (truncated for the sanity of this readme)
 ```
 
 #### 🎀 Install into your system.
