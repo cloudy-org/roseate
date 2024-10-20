@@ -1,4 +1,4 @@
-use eframe::egui::{self, Pos2, Response, Vec2};
+use eframe::egui::{self, Pos2, Rect, Response, Vec2};
 use log::debug;
 
 /// Struct that controls the zoom and panning of the image.
@@ -6,8 +6,8 @@ pub struct ZoomPan {
     zoom_factor: f32,
     last_zoom_factor: f32,
     is_panning: bool,
-    pan_offset: egui::Vec2,
-    drag_start: Option<egui::Pos2>,
+    pan_offset: Vec2,
+    drag_start: Option<Pos2>,
 }
 
 impl ZoomPan {
@@ -17,7 +17,7 @@ impl ZoomPan {
             last_zoom_factor: 1.0,
             drag_start: None,
             is_panning: false,
-            pan_offset: egui::Vec2::ZERO,
+            pan_offset: Vec2::ZERO,
         }
     }
 
@@ -25,8 +25,10 @@ impl ZoomPan {
     pub fn handle_zoom(&mut self, ctx: &egui::Context) {
         self.last_zoom_factor = self.zoom_factor;
 
-        if ctx.input(|i| i.smooth_scroll_delta.y) != 0.0 {
-            let zoom_delta = ctx.input(|i| i.smooth_scroll_delta.y) * self.zoom_factor * 0.004;
+        let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
+
+        if scroll_delta != 0.0 {
+            let zoom_delta = scroll_delta * self.zoom_factor * 0.004;
             self.zoom_factor = (self.zoom_factor + zoom_delta).clamp(0.5, 100.0);
         }
     }
@@ -68,9 +70,11 @@ impl ZoomPan {
         }
     }
 
-    pub fn get_transformation(&mut self, image_size: Vec2, image_position: Pos2, cursor_pos: Pos2) -> (Vec2, Pos2) {
+    pub fn get_transformation(&mut self, image_size: Vec2, initial_image_position: Pos2, cursor_pos: Pos2) -> (Vec2, Pos2) {
         // Get the cursor position relative to the image also while being zoomed.
-        let cursor_relative_to_image = (cursor_pos - image_position) / self.zoom_factor;
+        let cursor_relative_to_image = (cursor_pos - initial_image_position) / self.zoom_factor;
+
+        debug!("--> {}", cursor_relative_to_image);
 
         // Get the change since the last zoom factor.
         let zoom_factor_change = self.zoom_factor / self.last_zoom_factor;
@@ -81,9 +85,9 @@ impl ZoomPan {
 
         // Now update the image position also relative to that.
         let scaled_size = image_size * self.zoom_factor;
-        let new_image_position = image_position - scaled_size * 0.5 + self.pan_offset;
+        let new_image_position = initial_image_position + self.pan_offset;
 
-        debug!(">> {}", self.pan_offset);
+        debug!(">> {} | {}", initial_image_position, new_image_position);
 
         (scaled_size, new_image_position)
     }

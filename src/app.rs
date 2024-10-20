@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use rdev::display_size;
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, ImageSource, Margin, Rect};
+use eframe::egui::{self, Color32, ImageSource, Margin, Pos2, Rect};
 
 use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, zoom_pan::ZoomPan};
 
@@ -121,11 +121,19 @@ impl eframe::App for Roseate {
                     ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                 ) as u32;
 
+                let window_size = window_rect.size();
+
+                // this needs to fucking go, terrible hack
+                let initial_image_position = Pos2::new(
+                    (window_size.x - scaled_image_width_animated as f32) / 2.0,
+                    (window_size.y - scaled_image_height_animated as f32) / 2.0,
+                );
+
                 let cursor_position = ctx.input(|i| i.pointer.hover_pos()).unwrap_or_default();
 
                 let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
                     (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
-                    ui.max_rect().center(),
+                    initial_image_position,
                     cursor_position
                 );
 
