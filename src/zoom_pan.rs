@@ -1,5 +1,4 @@
-use eframe::egui::{self, Pos2, Rect, Response, Vec2};
-use log::debug;
+use eframe::egui::{self, Pos2, Response, Vec2};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -22,19 +21,20 @@ impl ZoomPan {
     }
 
     // Method to handle zoom input (scrolling)
-    pub fn handle_zoom(&mut self, ctx: &egui::Context) {
+    pub fn handle_zoom_input(&mut self, ctx: &egui::Context) {
         self.last_zoom_factor = self.zoom_factor;
 
         let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
 
         if scroll_delta != 0.0 {
             let zoom_delta = scroll_delta * self.zoom_factor * 0.004;
+
             self.zoom_factor = (self.zoom_factor + zoom_delta).clamp(0.5, 100.0);
         }
     }
 
     // Method to handle panning (dragging)
-    pub fn handle_pan(&mut self, ctx: &egui::Context, image_response: &Response, info_box_response: Option<&Response>) {
+    pub fn handle_pan_input(&mut self, ctx: &egui::Context, image_response: &Response, info_box_response: Option<&Response>) {
         let mut can_pan = false;
 
         // "&& self.is_panning" allows for the panning to continue even 
@@ -70,26 +70,11 @@ impl ZoomPan {
         }
     }
 
-    pub fn get_transformation(&mut self, image_size: Vec2, initial_image_position: Pos2, cursor_pos: Pos2) -> (Vec2, Pos2) {
-        // Get the cursor position relative to the image also while being zoomed.
-        let cursor_relative_to_image = (cursor_pos - initial_image_position) / self.zoom_factor;
-
-        debug!("--> {}", cursor_relative_to_image);
-
-        // Get the change since the last zoom factor.
-        let zoom_factor_change = self.zoom_factor / self.last_zoom_factor;
-
-        // Keep the image centred around the cursor by adjust 
-        // the pan offset relative to the cursor and zoom difference.
-        self.pan_offset += cursor_relative_to_image * (1.0 - zoom_factor_change);
-
-        // Now update the image position also relative to that.
+    pub fn get_transformation(&self, image_size: egui::Vec2, image_position: egui::Pos2) -> (Vec2, Pos2) {
         let scaled_size = image_size * self.zoom_factor;
-        let new_image_position = initial_image_position + self.pan_offset;
+        let image_position = image_position - scaled_size * 0.5 + self.pan_offset;
 
-        debug!(">> {} | {}", initial_image_position, new_image_position);
-
-        (scaled_size, new_image_position)
+        (scaled_size, image_position)
     }
 
     pub fn has_been_messed_with(&mut self) -> bool {

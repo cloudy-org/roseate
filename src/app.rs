@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use rdev::display_size;
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, ImageSource, Margin, Pos2, Rect};
+use eframe::egui::{self, Color32, ImageSource, Margin, Rect};
 
 use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, zoom_pan::ZoomPan};
 
@@ -63,7 +63,7 @@ impl eframe::App for Roseate {
             ..Default::default()
         };
 
-        self.zoom_pan.handle_zoom(ctx);
+        self.zoom_pan.handle_zoom_input(ctx);
         self.info_box.handle_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
@@ -121,20 +121,9 @@ impl eframe::App for Roseate {
                     ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                 ) as u32;
 
-                let window_size = window_rect.size();
-
-                // this needs to fucking go, terrible hack
-                let initial_image_position = Pos2::new(
-                    (window_size.x - scaled_image_width_animated as f32) / 2.0,
-                    (window_size.y - scaled_image_height_animated as f32) / 2.0,
-                );
-
-                let cursor_position = ctx.input(|i| i.pointer.hover_pos()).unwrap_or_default();
-
                 let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
                     (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
-                    initial_image_position,
-                    cursor_position
+                    ui.max_rect().center()
                 );
 
                 let zoom_pan_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
@@ -148,7 +137,7 @@ impl eframe::App for Roseate {
                     .rounding(10.0)
                     .paint_at(ui, zoom_pan_rect);
 
-                self.zoom_pan.handle_pan(ctx, &response, self.info_box.response.as_ref());
+                self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
             });
 
             ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
