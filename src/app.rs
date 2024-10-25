@@ -46,7 +46,9 @@ impl eframe::App for Roseate {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
-                self.window_scaling.schedule_image_scale_to_window_size();
+                if !self.zoom_pan.has_been_messed_with() {
+                    self.window_scaling.schedule_image_scale_to_window_size();
+                }
                 self.last_window_rect = window_rect;
             }
 
@@ -80,15 +82,7 @@ impl eframe::App for Roseate {
 
             let image = self.image.clone().unwrap();
 
-            // Don't know might change this but basically we don't want the 
-            // image to scale with the window if we have messed with the zoom pan.
-            //
-            // TODO: UPDATE! Yeah I will change this; instead of checking if zoom pan 
-            // has been messed with here we should check that further up in the update loop where we 
-            // actually schedule the scale to window size. It should not be scheduled if zoom pan has been messed with.
-            if !self.zoom_pan.has_been_messed_with() {
-                self.window_scaling.update(&window_rect, &image.image_size);
-            }
+            self.window_scaling.update(&window_rect, &image.image_size);
 
             ui.centered_and_justified(|ui| {
                 let (scaled_image_width, scaled_image_height) = self.window_scaling.get_scaled_image_size(
