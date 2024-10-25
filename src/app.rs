@@ -1,18 +1,15 @@
-use std::time::{Duration, Instant};
-
 use rdev::display_size;
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, ImageSource, Margin, Pos2, Rect};
+use eframe::egui::{self, Color32, ImageSource, Margin, Rect};
 
-use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, zoom_pan::ZoomPan};
+use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
-    pub theme: Theme,
-    pub image: Option<Image>,
-    info_box: InfoBox,
-    image_scale_factor: f32,
+    theme: Theme,
+    image: Option<Image>,
     zoom_pan: ZoomPan,
-    resize_timer: Option<Instant>,
+    info_box: InfoBox,
+    window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_loaded: bool
 }
@@ -24,32 +21,11 @@ impl Roseate {
         Self {
             image,
             theme,
-            image_scale_factor: 1.0,
             zoom_pan: ZoomPan::new(),
             info_box: InfoBox::new(ib_image, ib_theme),
-            resize_timer: Some(Instant::now()),
+            window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
             image_loaded: false
-        }
-    }
-
-    fn scale_image_on_window_resize(&mut self, window_rect: &Rect) {
-        if let Some(timer) = self.resize_timer {
-            // If the timer has expired (no new resize events)
-            if timer.elapsed() >= Duration::from_millis(300) {
-                // Reset the timer
-                self.resize_timer = None;
-
-                let image = self.image.as_ref().unwrap(); // we can assume this as we checked in the first line.
-
-                let scale_x = window_rect.width() / image.image_size.width as f32;
-                let scale_y = window_rect.height() / image.image_size.height as f32;
-
-                let scale_factor = scale_x.min(scale_y); // Scale uniformly.
-
-                // Make sure scale_factor doesn't exceed the original size (1).
-                self.image_scale_factor = scale_factor.min(1.0);
-            }
         }
     }
 }
@@ -63,14 +39,14 @@ impl eframe::App for Roseate {
             ..Default::default()
         };
 
-        self.zoom_pan.handle_zoom(ctx);
         self.info_box.handle_input(ctx);
+        self.zoom_pan.handle_zoom_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
-                self.resize_timer = Some(Instant::now());
+                self.window_scaling.schedule_image_scale_to_window_size();
                 self.last_window_rect = window_rect;
             }
 
@@ -105,14 +81,19 @@ impl eframe::App for Roseate {
             let image = self.image.clone().unwrap();
 
             // Don't know might change this but basically we don't want the 
-            // image to scale with the window if we have messed with the zoom_pan.
+            // image to scale with the window if we have messed with the zoom pan.
+            //
+            // TODO: UPDATE! Yeah I will change this; instead of checking if zoom pan 
+            // has been messed with here we should check that further up in the update loop where we 
+            // actually schedule the scale to window size. It should not be scheduled if zoom pan has been messed with.
             if !self.zoom_pan.has_been_messed_with() {
-                self.scale_image_on_window_resize(&window_rect);
+                self.window_scaling.update(&window_rect, &image.image_size);
             }
 
             ui.centered_and_justified(|ui| {
-                let scaled_image_width = image.image_size.width as f32 * self.image_scale_factor;
-                let scaled_image_height = image.image_size.height as f32 * self.image_scale_factor;
+                let (scaled_image_width, scaled_image_height) = self.window_scaling.get_scaled_image_size(
+                    image.image_size
+                );
 
                 let scaled_image_width_animated = egui_animation::animate_eased(
                     ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
@@ -121,34 +102,21 @@ impl eframe::App for Roseate {
                     ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
                 ) as u32;
 
-                let window_size = window_rect.size();
-
-                // this needs to fucking go, terrible hack
-                let initial_image_position = Pos2::new(
-                    (window_size.x - scaled_image_width_animated as f32) / 2.0,
-                    (window_size.y - scaled_image_height_animated as f32) / 2.0,
-                );
-
-                let cursor_position = ctx.input(|i| i.pointer.hover_pos()).unwrap_or_default();
-
-                let (zoom_scaled_size, pan_image_position) = self.zoom_pan.get_transformation(
+                let (zoom_scaled_size, panned_image_position) = self.zoom_pan.get_transformation(
                     (scaled_image_width_animated as f32, scaled_image_height_animated as f32).into(), 
-                    initial_image_position,
-                    cursor_position
+                    ui.max_rect().center()
                 );
 
-                let zoom_pan_rect = Rect::from_min_size(pan_image_position, zoom_scaled_size);
+                let zoom_pan_rect = Rect::from_min_size(panned_image_position, zoom_scaled_size);
 
                 let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
 
                 egui::Image::from_bytes(
                     format!("bytes://{}", image.image_path.to_string_lossy()), image.image_bytes.unwrap()
-                ).max_width(scaled_image_width_animated as f32)
-                    .max_height(scaled_image_height_animated as f32)
-                    .rounding(10.0)
+                ).rounding(10.0)
                     .paint_at(ui, zoom_pan_rect);
 
-                self.zoom_pan.handle_pan(ctx, &response, self.info_box.response.as_ref());
+                self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
             });
 
             ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
