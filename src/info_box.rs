@@ -17,6 +17,8 @@ pub struct InfoBox {
 }
 
 impl InfoBox {
+    // TODO: When this branch is merged into main 
+    // remove "image" from the initialization of this struct.
     pub fn new(image: Option<Image>, theme: Theme) -> Self {
         Self {
             show: false,
