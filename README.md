@@ -19,6 +19,11 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 ### Prerequisites:
 - [Rust](https://www.rust-lang.org/tools/install) and Cargo (Rust **`1.80.0`**+ is required!).
 
+- Linux dependecies for [eframe](https://crates.io/crates/eframe):
+  - [libxcb](https://archlinux.org/packages/extra/x86_64/libxcb/)
+  - [libxkbcommon](https://archlinux.org/packages/extra/x86_64/libxkbcommon/)
+  - [openssl](https://archlinux.org/packages/core/x86_64/openssl/)
+
 1. Clone the repo.
 ```sh
 git clone https://github.com/cloudy-org/roseate
