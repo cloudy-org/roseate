@@ -36,6 +36,7 @@ impl ZoomPan {
         if scroll_delta != 0.0 {
             let zoom_delta = scroll_delta * self.zoom_factor * 0.004;
 
+            // TODO: Make those clamped values customizable when we have configuration.
             self.zoom_factor = (self.zoom_factor + zoom_delta).clamp(0.5, 100.0);
         }
     }
