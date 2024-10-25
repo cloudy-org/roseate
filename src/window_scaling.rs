@@ -30,8 +30,11 @@ impl WindowScaling {
                 // Reset the timer
                 self.resize_to_window_timer = None;
 
-                let scale_x = window_rect.width() / actual_image_size.width as f32;
-                let scale_y = window_rect.height() / actual_image_size.height as f32;
+                // "0.98" is so we get a little bit of 
+                // padding between the image and the edge of the window.
+                // TODO: Make this value customizable when we add configuration.
+                let scale_x = window_rect.width() / actual_image_size.width as f32 * 0.98;
+                let scale_y = window_rect.height() / actual_image_size.height as f32 * 0.98;
 
                 let scale_factor = scale_x.min(scale_y); // Scale uniformly.
 
