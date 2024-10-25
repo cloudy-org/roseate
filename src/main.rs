@@ -14,6 +14,7 @@ mod app;
 mod image;
 mod info_box;
 mod zoom_pan;
+mod window_scaling;
 
 /// 🌹 A small and simple but fancy image viewer built with Rust that's cross-platform.
 #[derive(Parser, Debug)]
