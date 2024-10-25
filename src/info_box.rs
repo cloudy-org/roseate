@@ -2,7 +2,7 @@ use std::alloc;
 
 use cap::Cap;
 use cirrus_theming::Theme;
-use eframe::egui::{self, pos2, Color32, Key, Margin, Response, Shadow, Style};
+use eframe::egui::{self, pos2, Color32, Key, Margin, Response, Shadow};
 
 use crate::image::Image;
 
@@ -55,8 +55,8 @@ impl InfoBox {
                 .frame(custom_frame)
                 .show(ctx, |ui| {
                     let mem_allocated = ALLOCATOR.allocated();
-    
-                    egui::Frame::group(&Style::default()).inner_margin(Margin::same(1.0)).show(
+
+                    egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1.0)).show(
                         ui, |ui| {
                             egui::Grid::new("info_box_grid")
                             .num_columns(2)

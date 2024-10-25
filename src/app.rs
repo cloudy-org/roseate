@@ -62,6 +62,7 @@ impl eframe::App for Roseate {
                 return;
             }
 
+            self.zoom_pan.update(ctx);
             self.info_box.update(ctx);
 
             if !self.image_loaded {
@@ -88,6 +89,10 @@ impl eframe::App for Roseate {
                 let (scaled_image_width, scaled_image_height) = self.window_scaling.get_scaled_image_size(
                     image.image_size
                 );
+
+                if self.zoom_pan.is_pan_out_of_bounds([scaled_image_width, scaled_image_height].into()) {
+                    self.zoom_pan.schedule_pan_reset();
+                };
 
                 let scaled_image_width_animated = egui_animation::animate_eased(
                     ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
