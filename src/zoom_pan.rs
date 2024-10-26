@@ -104,29 +104,32 @@ impl ZoomPan {
         // Reset pan offset when scheduled.
         if let Some(timer) = self.reset_pan_offset_timer {
             if timer.elapsed() >= Duration::from_millis(300) {
+                let mut pan_offset_x = 0.0 as f32;
+                let mut pan_offset_y = 0.0 as f32;
+
                 if self.pan_offset_before_reset.is_none() {
                     self.pan_offset_before_reset = Some(self.pan_offset);
+
+                    pan_offset_x = self.pan_offset.x;
+                    pan_offset_y = self.pan_offset.y;
                 }
 
                 let pan_offset_animated = Vec2::new(
-                    (
-                        egui_animation::animate_eased(
-                            ctx, "pan_offset_x", 0.0, 10.0, simple_easing::cubic_in_out
-                        ) as u32
-                    ) as f32,
-                    (
-                        egui_animation::animate_eased(
-                            ctx, "pan_offset_y", 0.0, 10.0, simple_easing::cubic_in_out
-                        ) as u32
-                    ) as f32
+                    egui_animation::animate_eased(
+                        ctx, "pan_offset_x", pan_offset_x, 0.5, simple_easing::cubic_in_out
+                    ),
+                    egui_animation::animate_eased(
+                        ctx, "pan_offset_y", pan_offset_y, 0.5, simple_easing::cubic_in_out
+                    )
                 );
-
-                debug!("--> {}", pan_offset_animated);
 
                 self.pan_offset = pan_offset_animated;
 
+                debug!("--> {}", pan_offset_x);
+
                 if self.pan_offset == Vec2::ZERO {
                     self.reset_pan_offset_timer = None;
+                    self.pan_offset_before_reset = None
                 }
             }
         }
