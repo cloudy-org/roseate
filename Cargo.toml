@@ -1,13 +1,15 @@
 [package]
 name = "roseate"
 edition = "2021"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 description = "A small and simple but fancy image viewer built with Rust that's cross platform."
 authors = ["Goldy <goldy@devgoldy.xyz>"]
 license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
 
 [dependencies]
+cirrus_theming = { path = "./cirrus/theming" }
+
 rfd = "0.15.0"
 imagesize = "0.13.0"
 eframe = { version = "0.29.1", features = ["default"] }
@@ -21,8 +23,6 @@ env_logger = "0.11.5"
 re_format = "0.18.2"
 cap = "0.1.2"
 clap = {version = "4.5.20", features = ["derive"]}
-
-cirrus_theming = { path = "./cirrus/theming" }
 rand = "0.8.5"
 
 [profile.dev.package."*"]
