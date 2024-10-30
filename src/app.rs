@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use rdev::display_size;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, ImageSource, Margin, Rect};
@@ -41,6 +43,7 @@ impl eframe::App for Roseate {
 
         self.info_box.handle_input(ctx);
         self.zoom_pan.handle_zoom_input(ctx);
+        self.zoom_pan.handle_reset_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -62,8 +65,8 @@ impl eframe::App for Roseate {
                 return;
             }
 
-            self.zoom_pan.update(ctx);
             self.info_box.update(ctx);
+            self.zoom_pan.update(ctx);
 
             if !self.image_loaded {
                 let mutable_image = self.image.as_mut().unwrap();
@@ -91,9 +94,11 @@ impl eframe::App for Roseate {
                 );
 
                 if self.zoom_pan.is_pan_out_of_bounds([scaled_image_width, scaled_image_height].into()) {
-                    self.zoom_pan.schedule_pan_reset();
+                    self.zoom_pan.schedule_pan_reset(Duration::from_millis(300));
                 };
 
+                // NOTE: umm do we move this to window scaling... *probably* if we 
+                // want to stay consistent with zoom_pan but this isn't important right now.
                 let scaled_image_width_animated = egui_animation::animate_eased(
                     ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
                 ) as u32;

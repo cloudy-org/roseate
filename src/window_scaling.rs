@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use eframe::egui::Rect;
 use imagesize::ImageSize;
+use log::debug;
 
 /// Struct that handles the image auto resizing with window size.
 pub struct WindowScaling {
@@ -20,6 +21,7 @@ impl WindowScaling {
     /// Resizes the image to the window size after a short delay 
     /// or later in the update loop (hence being named 'schedule_').
     pub fn schedule_image_scale_to_window_size(&mut self) {
+        debug!("The image has been scheduled to resize to the window size.");
         self.resize_to_window_timer = Some(Instant::now());
     }
 
