@@ -23,6 +23,7 @@ cap = "0.1.2"
 clap = {version = "4.5.20", features = ["derive"]}
 
 cirrus_theming = { path = "./cirrus/theming" }
+rand = "0.8.5"
 
 [profile.dev.package."*"]
 opt-level = 3
