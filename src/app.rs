@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rdev::display_size;
+use display_info::DisplayInfo;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, ImageSource, Margin, Rect, Vec2};
 
@@ -71,7 +71,15 @@ impl eframe::App for Roseate {
             if !self.image_loaded {
                 let mutable_image = self.image.as_mut().unwrap();
 
-                let (width, height) = display_size().expect("Failed to get monitor size!");
+                let all_display_infos = DisplayInfo::all().expect(
+                    "Failed to get information about monitor!"
+                );
+
+                let primary_display_apparently = all_display_infos.first().expect(
+                    "Uhhhhh, you don't have a monitor. WHAT!"
+                );
+
+                let (width, height) = (primary_display_apparently.width, primary_display_apparently.height);
 
                 let mut optimizations = Vec::new();
 
