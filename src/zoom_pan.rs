@@ -6,10 +6,10 @@ use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
-    zoom_factor: f32,
+    pub zoom_factor: f32,
     last_zoom_factor: f32,
     is_panning: bool,
-    pan_offset: Vec2,
+    pub pan_offset: Vec2,
     drag_start: Option<Pos2>,
     reset_pan_offset: Option<ResetManager>,
     reset_scale_factor: Option<ResetManager>
@@ -62,6 +62,7 @@ impl ZoomPan {
 
         let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
 
+        // if we are scrolling the mouse wheel manipulate the zoom factor.
         if scroll_delta != 0.0 {
             let zoom_delta = scroll_delta * self.zoom_factor * 0.004;
 
@@ -105,13 +106,6 @@ impl ZoomPan {
         } else {
             self.is_panning = false;
         }
-    }
-
-    pub fn get_transformation(&self, image_size: Vec2, image_position: Pos2) -> (Vec2, Pos2) {
-        let scaled_size = image_size * self.zoom_factor;
-        let image_position = image_position - scaled_size * 0.5 + self.pan_offset;
-
-        (scaled_size, image_position)
     }
 
     pub fn is_pan_out_of_bounds(&mut self, image_size: Vec2) -> bool {
