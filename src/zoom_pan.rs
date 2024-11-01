@@ -132,6 +132,10 @@ impl ZoomPan {
             false
         }
     }
+
+    pub fn relative_image_size(&self, image_size: Vec2) -> Vec2 {   
+        image_size * self.zoom_factor
+    }
 }
 
 impl ZoomPan {
@@ -148,6 +152,10 @@ impl ZoomPan {
             );
 
             debug!("Pan offset reset has been scheduled.");
+
+            // As resetting the pan will just snap us back to the center 
+            // of the image we might as well schedule a reset for image scale too.
+            self.schedule_scale_reset(delay);
         }
     }
 

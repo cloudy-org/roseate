@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use eframe::egui::Rect;
+use eframe::egui::{Rect, Vec2};
 use imagesize::ImageSize;
 use log::debug;
 
@@ -20,7 +20,7 @@ impl WindowScaling {
 
     /// Resizes the image to the window size after a short delay 
     /// or later in the update loop (hence being named 'schedule_').
-    pub fn schedule_image_scale_to_window_size(&mut self) {
+    pub fn schedule_scale_image_to_window_size(&mut self) {
         debug!("The image has been scheduled to resize to the window size.");
         self.resize_to_window_timer = Some(Instant::now());
     }
@@ -46,10 +46,10 @@ impl WindowScaling {
         }
     }
 
-    pub fn get_scaled_image_size(&self, actual_image_size: ImageSize) -> (f32, f32) {
-        (
-            actual_image_size.width as f32 * self.scale_factor,
-            actual_image_size.height as f32 * self.scale_factor
+    pub fn relative_image_size(&self, image_size: Vec2) -> Vec2 {
+        Vec2::new(
+            image_size.x as f32 * self.scale_factor,
+            image_size.y as f32 * self.scale_factor
         )
     }
 }

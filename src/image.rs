@@ -109,7 +109,7 @@ pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, imag
         "Uhhhhh, you don't have a monitor. WHAT!"
     );
 
-    let marginal_allowance: f32 = 1.2;
+    let marginal_allowance: f32 = 1.3; // TODO: Make this adjustable in the config too as down sample strength.
 
     let (width, height) = (
         primary_display_maybe.width as f32 * marginal_allowance, 

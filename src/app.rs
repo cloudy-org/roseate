@@ -49,9 +49,9 @@ impl eframe::App for Roseate {
 
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
                 if !self.zoom_pan.has_been_messed_with() {
-                    self.window_scaling.schedule_image_scale_to_window_size();
+                    self.window_scaling.schedule_scale_image_to_window_size();
+                    self.last_window_rect = window_rect;
                 }
-                self.last_window_rect = window_rect;
             }
 
             if self.image.is_none() {
@@ -83,32 +83,29 @@ impl eframe::App for Roseate {
             self.window_scaling.update(&window_rect, &image.image_size);
 
             ui.centered_and_justified(|ui| {
-                let (scaled_image_width, scaled_image_height) = self.window_scaling.get_scaled_image_size(
-                    image.image_size
+                let scaled_image_size = self.window_scaling.relative_image_size(
+                    Vec2::new(image.image_size.width as f32, image.image_size.height as f32)
                 );
 
-                if self.zoom_pan.is_pan_out_of_bounds([scaled_image_width, scaled_image_height].into()) {
+                if self.zoom_pan.is_pan_out_of_bounds(scaled_image_size) {
                     self.zoom_pan.schedule_pan_reset(Duration::from_millis(300));
                 };
 
                 // NOTE: umm do we move this to window scaling... *probably* if we 
                 // want to stay consistent with zoom_pan but this isn't important right now.
                 let scaled_image_width_animated = egui_animation::animate_eased(
-                    ctx, "image_scale_width", scaled_image_width, 1.5, simple_easing::cubic_in_out
-                ) as u32;
+                    ctx, "image_scale_width", scaled_image_size.x, 1.5, simple_easing::cubic_in_out
+                ) as u32 as f32;
                 let scaled_image_height_animated = egui_animation::animate_eased(
-                    ctx, "image_scale_height", scaled_image_height, 1.5, simple_easing::cubic_in_out
-                ) as u32;
+                    ctx, "image_scale_height", scaled_image_size.y, 1.5, simple_easing::cubic_in_out
+                ) as u32 as f32;
 
-                let image_size = Vec2::new(
-                    scaled_image_width_animated as f32, 
-                    scaled_image_height_animated as f32
-                );
+                let scaled_image_size = Vec2::new(scaled_image_width_animated, scaled_image_height_animated);
 
-                let zoom_scaled_size = image_size * self.zoom_pan.zoom_factor;
-                let image_position = ui.max_rect().center() - zoom_scaled_size * 0.5 + self.zoom_pan.pan_offset;
+                let zoom_scaled_image_size = self.zoom_pan.relative_image_size(scaled_image_size);
+                let image_position = ui.max_rect().center() - zoom_scaled_image_size * 0.5 + self.zoom_pan.pan_offset;
 
-                let zoom_pan_rect = Rect::from_min_size(image_position, zoom_scaled_size);
+                let zoom_pan_rect = Rect::from_min_size(image_position, zoom_scaled_image_size);
 
                 let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
 
