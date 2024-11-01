@@ -1,10 +1,9 @@
 use std::time::Duration;
 
-use display_info::DisplayInfo;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, ImageSource, Margin, Rect, Vec2};
 
-use crate::{image::{Image, ImageOptimization}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -71,21 +70,8 @@ impl eframe::App for Roseate {
             if !self.image_loaded {
                 let mutable_image = self.image.as_mut().unwrap();
 
-                let all_display_infos = DisplayInfo::all().expect(
-                    "Failed to get information about monitor!"
-                );
-
-                let primary_display_apparently = all_display_infos.first().expect(
-                    "Uhhhhh, you don't have a monitor. WHAT!"
-                );
-
-                let (width, height) = (primary_display_apparently.width, primary_display_apparently.height);
-
                 let mut optimizations = Vec::new();
-
-                if mutable_image.image_size.width > width as usize && mutable_image.image_size.height > height as usize {
-                    optimizations.push(ImageOptimization::Downsample(width as u32, height as u32));
-                }
+                optimizations = apply_image_optimizations(optimizations, &mutable_image.image_size);
 
                 mutable_image.load_image(&optimizations);
 
