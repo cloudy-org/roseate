@@ -73,7 +73,9 @@ impl eframe::App for Roseate {
 
                         match image_result {
                             Ok(image) => {
-                                self.image = Some(image)
+                                // TODO: Need to improve this. Possibly by introducing an init function for info box .
+                                self.image = Some(image.clone());
+                                self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
                             },
                             Err(error) => {
                                 error!("{}", error);
