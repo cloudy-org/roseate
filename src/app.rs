@@ -1,9 +1,11 @@
 use std::time::Duration;
 
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, ImageSource, Margin, Rect, Vec2};
+use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Vec2};
+// use egui_notify::{Anchor, Toasts};
+use log::error;
 
-use crate::{image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -47,6 +49,8 @@ impl eframe::App for Roseate {
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
+            // let mut toasts = Toasts::default();
+
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
                 if !self.zoom_pan.has_been_messed_with() {
                     self.window_scaling.schedule_scale_image_to_window_size();
@@ -56,11 +60,33 @@ impl eframe::App for Roseate {
 
             if self.image.is_none() {
                 ui.centered_and_justified(|ui| {
-                    ui.add(
-                        egui::Image::new(get_platform_rose_image()).max_width(130.0)
+                    let response = ui.add(
+                        egui::Image::new(get_platform_rose_image())
+                            .max_width(130.0)
+                            .sense(egui::Sense::click())
                     );
+
+                    response.clone().on_hover_cursor(CursorIcon::PointingHand);
+
+                    if response.clicked() {
+                        let image_result = files::select_image();
+
+                        match image_result {
+                            Ok(image) => {
+                                self.image = Some(image)
+                            },
+                            Err(error) => {
+                                error!("{}", error);
+
+                                // TODO: Fix the toast messages. They show outside the window.
+
+                                // toasts.info("Hello world!").duration(Some(Duration::from_secs(5)));
+                            },
+                        }
+                    }
                 });
 
+                // toasts.show(ctx);
                 return;
             }
 

@@ -11,7 +11,9 @@ use cirrus_theming::Theme;
 use image::Image;
 
 mod app;
+mod files;
 mod image;
+mod error;
 mod info_box;
 mod zoom_pan;
 mod window_scaling;
