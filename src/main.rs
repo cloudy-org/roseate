@@ -1,22 +1,26 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{path::Path, process::exit};
+use std::{env, path::Path, time::Duration};
 
-use app::Roseate;
 use log::debug;
 use eframe::egui;
-use clap::{arg, command, Parser};
+use egui_notify::Toasts;
 use cirrus_theming::Theme;
+use clap::{arg, command, Parser};
 
+use app::Roseate;
 use image::Image;
+use error::{log_and_toast, Error};
 
 mod app;
+mod files;
 mod image;
+mod error;
 mod info_box;
 mod zoom_pan;
 mod window_scaling;
 
-/// 🌹 A small and simple but fancy image viewer built with Rust that's cross-platform.
+/// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
 #[clap(author = "Goldy")]
 #[command(version, about, long_about = None)]
@@ -30,7 +34,17 @@ struct Args {
 }
 
 fn main() -> eframe::Result {
+    if !env::var("RUST_LOG").is_ok() {
+        env::set_var("RUST_LOG", "WARN");
+    }
+
     env_logger::init();
+
+    // Modern GUI image viewers should never silently 
+    // error and exit without visually notifying the user 
+    // hence I have brought toasts outside the scope of app::Roseate
+    // so we can queue up notifications when things go wrong here.
+    let mut toasts = Toasts::default();
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
@@ -51,12 +65,15 @@ fn main() -> eframe::Result {
             let path = Path::new(&path);
 
             if !path.exists() {
-                error_then_exit(
-                    &format!("The file path given '{}' does not exist!", path.to_string_lossy()), 1
-                );
-            }
+                let error = Error::FileNotFound(path.to_path_buf());
 
-            Some(Image::from_path(path))
+                log_and_toast(error, &mut toasts)
+                    .duration(Some(Duration::from_secs(10)));
+
+                None
+            } else {
+                Some(Image::from_path(path))
+            }
         },
         None => None
     };
@@ -68,9 +85,11 @@ fn main() -> eframe::Result {
             } else if string == "dark" {
                 Theme::default(true)
             } else {
-                error_then_exit(
-                    &format!("'{}' is not a valid theme. Pass either 'dark' or 'light'.", string), 1
+                log::warn!(
+                    "'{}' is not a valid theme. Pass either 'dark' or 'light'.", string
                 );
+
+                Theme::default(true)
             }
         },
         _ => Theme::default(true)
@@ -81,12 +100,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(Roseate::new(image, theme)))
+            Ok(Box::new(Roseate::new(image, theme, toasts)))
         }),
     )
-}
-
-fn error_then_exit(message: &str, exit_code: i32) -> ! {
-    println!("\u{001b}[31;1mERROR:\u{001b}[0m {}", message);
-    exit(exit_code)
 }
