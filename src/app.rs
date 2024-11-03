@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Vec2};
+use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Stroke, Vec2};
 use egui_notify::Toasts;
 
 use crate::{error, files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
@@ -61,29 +61,44 @@ impl eframe::App for Roseate {
 
             if self.image.is_none() {
                 ui.centered_and_justified(|ui| {
-                    let response = ui.add(
-                        egui::Image::new(get_platform_rose_image())
-                            .max_width(130.0)
-                            .sense(egui::Sense::click())
-                    );
+                    let rose_width: f32 = 130.0;
 
-                    response.clone().on_hover_cursor(CursorIcon::PointingHand);
+                    egui::Frame::default()
+                        .stroke(Stroke::default())
+                        .outer_margin(
+                            // I adjust the margin as it's the only way I know to 
+                            // narrow down the interactive part (clickable part) of the rose image.
+                            Margin::symmetric(
+                                (window_rect.width() / 2.0) - rose_width / 2.0, 
+                                (window_rect.height() / 2.0) - rose_width / 2.0
+                            )
+                        )
+                        .show(ui, |ui| {
+                            let response = ui.add(
+                                egui::Image::new(get_platform_rose_image())
+                                    .max_width(rose_width)
+                                    .sense(egui::Sense::click())
+                            );
 
-                    if response.clicked() {
-                        let image_result = files::select_image();
+                            response.clone().on_hover_cursor(CursorIcon::PointingHand);
 
-                        match image_result {
-                            Ok(image) => {
-                                // TODO: Need to improve this. Possibly by introducing an init function for info box .
-                                self.image = Some(image.clone());
-                                self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
-                            },
-                            Err(error) => {
-                                error::log_and_toast(error, &mut self.toasts)
-                                    .duration(Some(Duration::from_secs(5)));
-                            },
+                            if response.clicked() {
+                                let image_result = files::select_image();
+
+                                match image_result {
+                                    Ok(image) => {
+                                        // TODO: Need to improve this. Possibly by introducing an init function for info box .
+                                        self.image = Some(image.clone());
+                                        self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
+                                    },
+                                    Err(error) => {
+                                        error::log_and_toast(error, &mut self.toasts)
+                                            .duration(Some(Duration::from_secs(5)));
+                                    },
+                                }
+                            }
                         }
-                    }
+                    );
                 });
 
                 return;
