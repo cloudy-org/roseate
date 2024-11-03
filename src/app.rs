@@ -3,9 +3,8 @@ use std::time::Duration;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Vec2};
 use egui_notify::Toasts;
-use log::error;
 
-use crate::{files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{error, files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -80,9 +79,7 @@ impl eframe::App for Roseate {
                                 self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
                             },
                             Err(error) => {
-                                error!("{}", error);
-
-                                self.toasts.error(error.message())
+                                error::log_and_toast(error, &mut self.toasts)
                                     .duration(Some(Duration::from_secs(5)));
                             },
                         }
