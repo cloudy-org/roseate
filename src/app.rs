@@ -19,13 +19,13 @@ pub struct Roseate {
 }
 
 impl Roseate {
-    pub fn new(image: Option<Image>, theme: Theme) -> Self {
+    pub fn new(image: Option<Image>, theme: Theme, toasts: Toasts) -> Self {
         let (ib_image, ib_theme) = (image.clone(), theme.clone());
 
         Self {
             image,
             theme,
-            toasts: Toasts::default(),
+            toasts: toasts,
             zoom_pan: ZoomPan::new(),
             info_box: InfoBox::new(ib_image, ib_theme),
             window_scaling: WindowScaling::new(),

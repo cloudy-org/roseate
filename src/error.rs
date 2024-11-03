@@ -1,4 +1,6 @@
-use std::{fmt::{self, Display, Formatter}, path::PathBuf};
+use std::{fmt::{self, Display, Formatter}, path::PathBuf, time::Duration};
+
+use egui_notify::{Toast, Toasts};
 
 #[derive(Debug)]
 pub enum Error {
@@ -22,7 +24,14 @@ impl Display for Error {
             ),
             Error::NoFileSelected => write!(
                 f, "No file was selected in the file dialogue!"
-            )
+            ),
         }
     }
+}
+
+pub fn log_and_toast(error: Error, toasts: &mut Toasts) -> &mut Toast {
+    log::error!("{}", error);
+
+    toasts.error(error.message())
+        .duration(Some(Duration::from_secs(5)))
 }
