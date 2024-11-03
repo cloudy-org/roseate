@@ -6,6 +6,14 @@ pub enum Error {
     NoFileSelected
 }
 
+impl Error {
+    /// Returns the a human readable message about the error.
+    /// It's exactly what fmt::Display returns.
+    pub fn message(&self) -> String {
+        format!("{}", self)
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
