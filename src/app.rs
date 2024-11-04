@@ -61,9 +61,7 @@ impl eframe::App for Roseate {
 
             self.toasts.show(ctx);
 
-            if self.image.is_none() {
-                hover_notice(ctx);
-                
+            if self.image.is_none() {            
                 // Collect dropped files
                 ctx.input(|i| {
                     if !i.raw.dropped_files.is_empty() {
@@ -78,6 +76,30 @@ impl eframe::App for Roseate {
                     self.image = Some(image.clone());
                     self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
                 }
+
+                if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
+                    ui.centered_and_justified(|ui| {
+                        let osaka_width: f32 = 130.0;
+                        let osaka = egui::include_image!("../assets/osaka.png");
+    
+                        egui::Frame::default()
+                            .outer_margin(
+                                Margin::symmetric(
+                                    (window_rect.width() / 2.0) - osaka_width / 2.0, 
+                                    (window_rect.height() / 2.0) - osaka_width / 2.0
+                                )
+                            )
+                            .show(ui, |ui| {
+                                ui.add(
+                                    egui::Image::new(osaka)
+                                    .max_width(osaka_width)
+                                );
+
+                                ui.label("Drop your file.");
+                            }
+                        );
+                    });
+                }
                 
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
@@ -85,8 +107,6 @@ impl eframe::App for Roseate {
                     egui::Frame::default()
                         .stroke(Stroke::default())
                         .outer_margin(
-                            // I adjust the margin as it's the only way I know to 
-                            // narrow down the interactive part (clickable part) of the rose image.
                             Margin::symmetric(
                                 (window_rect.width() / 2.0) - rose_width / 2.0, 
                                 (window_rect.height() / 2.0) - rose_width / 2.0
@@ -183,23 +203,6 @@ impl eframe::App for Roseate {
 
     }
 
-}
-
-fn hover_notice(ctx: &egui::Context) {
-    if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
-        let painter =
-            ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("file_drop_target")));
-
-        let screen_rect = ctx.screen_rect();
-        painter.rect_filled(screen_rect, 0.0, Color32::from_black_alpha(192));
-        painter.text(
-            screen_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            "Drop your file.",
-            egui::TextStyle::Heading.resolve(&ctx.style()),
-            Color32::WHITE,
-        );
-    }
 }
 
 
