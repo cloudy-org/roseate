@@ -107,6 +107,8 @@ impl eframe::App for Roseate {
                     egui::Frame::default()
                         .stroke(Stroke::default())
                         .outer_margin(
+                            // I adjust the margin as it's the only way I know to 
+                            // narrow down the interactive part (clickable part) of the rose image.
                             Margin::symmetric(
                                 (window_rect.width() / 2.0) - rose_width / 2.0, 
                                 (window_rect.height() / 2.0) - rose_width / 2.0
