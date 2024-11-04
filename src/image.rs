@@ -4,6 +4,7 @@ use display_info::DisplayInfo;
 use log::debug;
 use image::{ImageFormat, ImageReader};
 use imagesize::ImageSize;
+use svg_metadata::Metadata;
 
 #[derive(Clone)]
 pub struct Image {
@@ -30,11 +31,25 @@ pub enum ImageOptimization {
 
 impl Image {
     pub fn from_path(path: &Path) -> Self {
-        // I use imagesize crate to get the image size 
-        // because it's A LOT faster as it only partially loads the image bytes.
-        let image_size = imagesize::size(path).expect(
-            "Failed to retrieve the dimensions of the image!"
-        );
+        let extension = path.extension().expect("The given file has no extension.");
+        
+        let image_size: ImageSize = if extension == "svg" {
+            let metadata = Metadata::parse_file(path).expect(
+                "Failed to parse metadata of the svg file!"
+            );
+
+            let width = metadata.width().expect("Failed to get SVG width");
+            let height = metadata.height().expect("Failed to get SVG height");
+
+            ImageSize {
+                width: width as usize,
+                height: height as usize
+            }
+        } else {
+            imagesize::size(path).expect(
+                "Failed to retrieve the dimensions of the image!"
+            )
+        };
 
         Self {
             image_size,
