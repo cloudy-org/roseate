@@ -47,7 +47,9 @@ fn main() -> eframe::Result {
     let mut toasts = Toasts::default();
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
+        viewport: egui::ViewportBuilder::default()
+        .with_inner_size([800.0, 600.0])
+        .with_drag_and_drop(true),
         ..Default::default()
     };
 

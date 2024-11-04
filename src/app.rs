@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, vec};
 
 use cirrus_theming::Theme;
 use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Stroke, Vec2};
@@ -14,7 +14,8 @@ pub struct Roseate {
     info_box: InfoBox,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
-    image_loaded: bool
+    image_loaded: bool,
+    dropped_files: Vec<egui::DroppedFile>,
 }
 
 impl Roseate {
@@ -29,7 +30,8 @@ impl Roseate {
             info_box: InfoBox::new(ib_image, ib_theme),
             window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
-            image_loaded: false
+            image_loaded: false,
+            dropped_files: vec![]
         }
     }
 }
@@ -60,6 +62,23 @@ impl eframe::App for Roseate {
             self.toasts.show(ctx);
 
             if self.image.is_none() {
+                hover_notice(ctx);
+                
+                // Collect dropped files
+                ctx.input(|i| {
+                    if !i.raw.dropped_files.is_empty() {
+                        self.dropped_files.clone_from(&i.raw.dropped_files);
+                    }
+                });
+
+                if !self.dropped_files.is_empty() {
+                    let path = self.dropped_files.first().unwrap().clone().path.unwrap(); // gotta love rust
+                    let image = Image::from_path(&path);
+
+                    self.image = Some(image.clone());
+                    self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
+                }
+                
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
 
@@ -165,6 +184,24 @@ impl eframe::App for Roseate {
     }
 
 }
+
+fn hover_notice(ctx: &egui::Context) {
+    if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
+        let painter =
+            ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new("file_drop_target")));
+
+        let screen_rect = ctx.screen_rect();
+        painter.rect_filled(screen_rect, 0.0, Color32::from_black_alpha(192));
+        painter.text(
+            screen_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "Drop your file.",
+            egui::TextStyle::Heading.resolve(&ctx.style()),
+            Color32::WHITE,
+        );
+    }
+}
+
 
 fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     if cfg!(target_os = "windows") {
