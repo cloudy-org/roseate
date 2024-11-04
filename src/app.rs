@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Stroke, Vec2};
+use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Vec2};
 use egui_notify::Toasts;
 
 use crate::{error, files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};

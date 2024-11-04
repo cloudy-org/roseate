@@ -1,10 +1,10 @@
 use std::{fs::{self, File}, io::{BufReader, Cursor}, path::{Path, PathBuf}, sync::Arc};
 
-use display_info::DisplayInfo;
 use log::debug;
-use image::{ImageFormat, ImageReader};
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
+use display_info::DisplayInfo;
+use image::{ImageFormat, ImageReader};
 
 #[derive(Clone)]
 pub struct Image {
@@ -31,21 +31,15 @@ pub enum ImageOptimization {
 
 impl Image {
     pub fn from_path(path: &Path) -> Self {
-        let extension = path.extension().expect("The given file has no extension.");
-        
+        // Changed this to unwrap_or_default so it returns an empty 
+        // string ("") and doesn't panic if a file has no extension. I need to begin adding tests.
+        let extension = path.extension().unwrap_or_default();
+
         let image_size: ImageSize = if extension == "svg" {
-            let metadata = Metadata::parse_file(path).expect(
-                "Failed to parse metadata of the svg file!"
-            );
-
-            let width = metadata.width().expect("Failed to get SVG width");
-            let height = metadata.height().expect("Failed to get SVG height");
-
-            ImageSize {
-                width: width as usize,
-                height: height as usize
-            }
+            get_svg_image_size(&path)
         } else {
+            // I use 'imagesize' crate to get the image size 
+            // because it's A LOT faster as it only partially loads the image bytes.
             imagesize::size(path).expect(
                 "Failed to retrieve the dimensions of the image!"
             )
@@ -109,7 +103,6 @@ impl Image {
 
         self.image_bytes = Some(Arc::from(buffer));
     }
-
 }
 
 // NOTE: should this be here? Don't know.
@@ -152,4 +145,18 @@ pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, imag
     }
 
     optimizations
+}
+
+fn get_svg_image_size(path: &Path) -> ImageSize {
+    let metadata = Metadata::parse_file(path).expect(
+        "Failed to parse metadata of the svg file!"
+    );
+
+    let width = metadata.width().expect("Failed to get SVG width");
+    let height = metadata.height().expect("Failed to get SVG height");
+
+    ImageSize {
+        width: width as usize,
+        height: height as usize
+    }
 }
