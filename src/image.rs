@@ -1,10 +1,13 @@
 use std::{fs::{self, File}, io::{BufReader, Cursor}, path::{Path, PathBuf}, sync::Arc};
 
 use log::debug;
+use eframe::egui::Vec2;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
 use display_info::DisplayInfo;
 use image::{ImageFormat, ImageReader};
+
+use crate::error::Error;
 
 #[derive(Clone)]
 pub struct Image {
@@ -52,14 +55,14 @@ impl Image {
         }
     }
 
-    pub fn load_image(&mut self, optimizations: &[ImageOptimization]) {
+    pub fn load_image(&mut self, optimizations: &[ImageOptimization]) -> Result<(), Error> {
         if optimizations.is_empty() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
             self.image_bytes = Some(
                 Arc::from(fs::read(self.image_path.as_ref()).expect("Failed to read image with fs::read!"))
             );
-            return; // I avoid image crate here as loading the bytes with fs::read is 
+            return Ok(()); // I avoid image crate here as loading the bytes with fs::read is 
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
 
@@ -69,14 +72,29 @@ impl Image {
             &format!("Failed to open file for the image '{}'", self.image_path.to_string_lossy())
         );
         let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
-        // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly notice a speed difference)
+        // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
 
         debug!("Loading image into image crate DynamicImage so optimizations can be applied...");
 
-        let mut image = ImageReader::new(image_buf_reader)
-            .with_guessed_format().unwrap().decode().expect(
-            "Failed to decode and load image with image crate to apply optimizations!"
-        );
+        let image_result = ImageReader::new(image_buf_reader)
+            .with_guessed_format()
+            .unwrap()
+            .decode();
+
+        if let Err(image_error) = image_result {
+            let _ = self.load_image(&[]); // load image without optimizations
+            return Err(
+                Error::FailedToApplyOptimizations(
+                    format!(
+                        "Failed to decode and load image with \
+                            image crate to apply optimizations! \nError: {}.",
+                        image_error
+                    )
+                )
+            )
+        }
+
+        let mut image = image_result.unwrap();
 
         for optimization in optimizations {
             debug!("Applying '{:?}' optimization to image...", optimization);
@@ -102,6 +120,7 @@ impl Image {
         );
 
         self.image_bytes = Some(Arc::from(buffer));
+        Ok(())
     }
 }
 
@@ -147,6 +166,20 @@ pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, imag
     optimizations
 }
 
+fn get_primary_display_info() -> DisplayInfo {
+    let all_display_infos = DisplayInfo::all().expect(
+        "Failed to get information about your display monitor!"
+    );
+
+    // NOTE: I don't think the first monitor is always the primary and 
+    // if that is the case then we're gonna have a problem. (i.e images overly downsampled or not at all)
+    let primary_display_maybe = all_display_infos.first().expect(
+        "Uhhhhh, you don't have a monitor. WHAT!"
+    );
+
+    primary_display_maybe.clone()
+}
+
 fn get_svg_image_size(path: &Path) -> ImageSize {
     let metadata = Metadata::parse_file(path).expect(
         "Failed to parse metadata of the svg file!"
@@ -155,8 +188,14 @@ fn get_svg_image_size(path: &Path) -> ImageSize {
     let width = metadata.width().expect("Failed to get SVG width");
     let height = metadata.height().expect("Failed to get SVG height");
 
+    let display_info = get_primary_display_info();
+
+    let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
+        Vec2::new(display_info.width as f32, display_info.height as f32);
+
+    // Temporary solution to give svg images a little bit higher quality.
     ImageSize {
-        width: width as usize,
-        height: height as usize
+        width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
+        height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
     }
 }

@@ -91,7 +91,7 @@ impl eframe::App for Roseate {
                                         self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
                                     },
                                     Err(error) => {
-                                        error::log_and_toast(error, &mut self.toasts)
+                                        error::log_and_toast(error.into(), &mut self.toasts)
                                             .duration(Some(Duration::from_secs(5)));
                                     },
                                 }
@@ -112,7 +112,12 @@ impl eframe::App for Roseate {
                 let mut optimizations = Vec::new();
                 optimizations = apply_image_optimizations(optimizations, &mutable_image.image_size);
 
-                mutable_image.load_image(&optimizations);
+                let result = mutable_image.load_image(&optimizations);
+
+                if let Err(error) = result {
+                    error::log_and_toast(error.into(), &mut self.toasts)
+                        .duration(Some(Duration::from_secs(10)));
+                }
 
                 self.image_loaded = true;
             }

@@ -4,7 +4,7 @@ use std::{env, path::Path, time::Duration};
 
 use log::debug;
 use eframe::egui;
-use egui_notify::Toasts;
+use egui_notify::{ToastLevel, Toasts};
 use cirrus_theming::Theme;
 use clap::{arg, command, Parser};
 
@@ -67,11 +67,20 @@ fn main() -> eframe::Result {
             if !path.exists() {
                 let error = Error::FileNotFound(path.to_path_buf());
 
-                log_and_toast(error, &mut toasts)
+                log_and_toast(error.into(), &mut toasts)
                     .duration(Some(Duration::from_secs(10)));
 
                 None
             } else {
+                // Our svg implementation is very experimental. Let's warn the user.
+                if path.extension().unwrap_or_default() == "svg" {
+                    log_and_toast(
+                        "SVG files are experimental! \
+                            Expect many bugs, inconstancies and performance issues.".into(),
+                        &mut toasts
+                    ).level(ToastLevel::Warning).duration(Some(Duration::from_secs(8)));
+                }
+
                 Some(Image::from_path(path))
             }
         },
