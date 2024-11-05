@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cirrus_theming::Theme;
-use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Stroke, Vec2};
+use eframe::egui::{self, Color32, CursorIcon, ImageSource, Margin, Rect, Vec2};
 use egui_notify::Toasts;
 
 use crate::{error, files, image::{apply_image_optimizations, Image}, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
@@ -64,7 +64,6 @@ impl eframe::App for Roseate {
                     let rose_width: f32 = 130.0;
 
                     egui::Frame::default()
-                        .stroke(Stroke::default())
                         .outer_margin(
                             // I adjust the margin as it's the only way I know to 
                             // narrow down the interactive part (clickable part) of the rose image.
@@ -92,7 +91,7 @@ impl eframe::App for Roseate {
                                         self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
                                     },
                                     Err(error) => {
-                                        error::log_and_toast(error, &mut self.toasts)
+                                        error::log_and_toast(error.into(), &mut self.toasts)
                                             .duration(Some(Duration::from_secs(5)));
                                     },
                                 }
@@ -113,7 +112,12 @@ impl eframe::App for Roseate {
                 let mut optimizations = Vec::new();
                 optimizations = apply_image_optimizations(optimizations, &mutable_image.image_size);
 
-                mutable_image.load_image(&optimizations);
+                let result = mutable_image.load_image(&optimizations);
+
+                if let Err(error) = result {
+                    error::log_and_toast(error.into(), &mut self.toasts)
+                        .duration(Some(Duration::from_secs(10)));
+                }
 
                 self.image_loaded = true;
             }
