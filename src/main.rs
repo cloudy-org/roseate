@@ -4,7 +4,7 @@ use std::{env, path::Path, time::Duration};
 
 use log::debug;
 use eframe::egui;
-use egui_notify::{ToastLevel, Toasts};
+use egui_notify::Toasts;
 use cirrus_theming::Theme;
 use clap::{arg, command, Parser};
 
@@ -18,6 +18,7 @@ mod image;
 mod error;
 mod info_box;
 mod zoom_pan;
+mod image_loader;
 mod window_scaling;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
@@ -72,15 +73,6 @@ fn main() -> eframe::Result {
 
                 None
             } else {
-                // Our svg implementation is very experimental. Let's warn the user.
-                if path.extension().unwrap_or_default() == "svg" {
-                    log_and_toast(
-                        "SVG files are experimental! \
-                            Expect many bugs, inconstancies and performance issues.".into(),
-                        &mut toasts
-                    ).level(ToastLevel::Warning).duration(Some(Duration::from_secs(8)));
-                }
-
                 Some(Image::from_path(path))
             }
         },

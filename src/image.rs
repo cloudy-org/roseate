@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, io::{BufReader, Cursor}, path::{Path, PathBuf}, sync::Arc};
+use std::{fs::{self, File}, io::{BufReader, Cursor}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use eframe::egui::Vec2;
@@ -13,7 +13,23 @@ use crate::error::Error;
 pub struct Image {
     pub image_size: ImageSize,
     pub image_path: Arc<PathBuf>,
-    pub image_bytes: Option<Arc<[u8]>>
+    pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
+    // Look! I know you see that type above me but just  
+    // so you know, I'm NOT crazy... well not yet at least...
+    // 
+    // Anyways, as you can see, `image_bytes` is an `Arc<Mutex<Option<Arc<[u8]>>>>` 
+    // this is because we need to be able to manipulate this under a thread so we can load
+    // images in a background thread (see https://github.com/cloudy-org/roseate/issues/24).
+    // 
+    // The first Arc allows us to share the SAME image_bytes safely across threads even when we 
+    // image.clone() that bitch, while Mutex ensures that only one thread accesses or modifies the image 
+    // bytes and also SO THE RUST COMPILER CAN SHUT THE FUCK UP.. YES I KNOW THAT IT'S UNSAFE BECAUSE ANOTHER 
+    // THREAD CAN FUCK IT UP BUT YOU DO REALISE MY PROGRAM IS SMART ENOUGH TO NOT DO THAT... uhmmm uhmmm... anyways... 
+    // I use an Option because an image that is not yet loaded will have no bytes in memory and the second Arc is there
+    // so we can image.clone() and not be doubling the image bytes in memory and turn into the next Google Chrome web browser. 💀
+    // 
+    // Kind regards,
+    // Goldy
 }
 
 #[derive(Debug)]
@@ -51,7 +67,7 @@ impl Image {
         Self {
             image_size,
             image_path: Arc::new(path.to_owned()),
-            image_bytes: None
+            image_bytes: Arc::new(Mutex::new(None))
         }
     }
 
@@ -59,9 +75,12 @@ impl Image {
         if optimizations.is_empty() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
-            self.image_bytes = Some(
+            let mut image_bytes_lock = self.image_bytes.lock().unwrap();
+
+            *image_bytes_lock = Some(
                 Arc::from(fs::read(self.image_path.as_ref()).expect("Failed to read image with fs::read!"))
             );
+
             return Ok(()); // I avoid image crate here as loading the bytes with fs::read is 
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
@@ -82,7 +101,12 @@ impl Image {
             .decode();
 
         if let Err(image_error) = image_result {
-            let _ = self.load_image(&[]); // load image without optimizations
+            let result_of_second_load = self.load_image(&[]); // load image without optimizations
+
+            if result_of_second_load.is_err() {
+                return result_of_second_load;
+            }
+
             return Err(
                 Error::FailedToApplyOptimizations(
                     format!(
@@ -119,7 +143,9 @@ impl Image {
             "Failed to write optimized image to buffer!"
         );
 
-        self.image_bytes = Some(Arc::from(buffer));
+        let mut image_bytes_lock = self.image_bytes.lock().unwrap();
+        *image_bytes_lock = Some(Arc::from(buffer));
+
         Ok(())
     }
 }
