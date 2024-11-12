@@ -20,6 +20,7 @@ mod info_box;
 mod zoom_pan;
 mod image_loader;
 mod window_scaling;
+mod magnification_panel;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
