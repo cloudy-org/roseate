@@ -4,7 +4,7 @@ use egui_notify::Toasts;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Align, Color32, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Style, TextStyle, Vec2};
 
-use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -12,6 +12,7 @@ pub struct Roseate {
     toasts: Toasts,
     zoom_pan: ZoomPan,
     info_box: InfoBox,
+    magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     image_loader: ImageLoader,
     last_window_rect: Rect
@@ -31,6 +32,7 @@ impl Roseate {
             toasts: toasts,
             zoom_pan: ZoomPan::new(),
             info_box: InfoBox::new(),
+            magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
             image_loader: image_loader,
             last_window_rect: Rect::NOTHING
@@ -53,6 +55,7 @@ impl eframe::App for Roseate {
         self.info_box.handle_input(ctx);
         self.zoom_pan.handle_zoom_input(ctx);
         self.zoom_pan.handle_reset_input(ctx);
+        self.magnification_panel.handle_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -113,6 +116,7 @@ impl eframe::App for Roseate {
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
             self.image_loader.update(&mut self.toasts);
+            self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image.clone().unwrap();
 
@@ -153,8 +157,11 @@ impl eframe::App for Roseate {
                     ).rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
     
+
                     self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
                 });
+
+                // TODO:
 
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation.
