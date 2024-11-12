@@ -156,6 +156,44 @@ impl eframe::App for Roseate {
                     self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
                 });
 
+                egui::Window::new("controls_window")
+                    .anchor(egui::Align2::RIGHT_BOTTOM, Vec2::new(10.0, 10.0))
+                    .title_bar(false)
+                    .show(ctx, |ui| {
+                        egui::Grid::new("controls_grid")
+                            .spacing([10.0, 10.0])
+                            .show(ui, |ui| {
+                                let button_size = Vec2::new(50.0, 50.0);
+                                ui.centered_and_justified(|ui| {
+                                    let zoom_in =
+                                        ui.add(
+                                            egui::Button::new("+")
+                                            .min_size(button_size)
+                                            .sense(egui::Sense::click())
+                                        );
+
+                                    if zoom_in.clicked() {
+                                        self.zoom_pan.zoom_factor =
+                                            (self.zoom_pan.zoom_factor + 0.2).clamp(0.1, 100.0);
+                                    }
+                                });
+
+                                ui.centered_and_justified(|ui| {
+                                    let zoom_out =
+                                        ui.add(
+                                            egui::Button::new("-")
+                                            .min_size(button_size)
+                                            .sense(egui::Sense::click())
+                                        );
+
+                                    if zoom_out.clicked() {
+                                        self.zoom_pan.zoom_factor =
+                                            (self.zoom_pan.zoom_factor - 0.2).clamp(0.1, 100.0);
+                                    }
+                                });
+                            })
+                    });
+
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation.
                 self.window_scaling.update(&window_rect, &image.image_size);
