@@ -163,7 +163,8 @@ impl eframe::App for Roseate {
                         egui::Grid::new("controls_grid")
                             .spacing([10.0, 10.0])
                             .show(ui, |ui| {
-                                let button_size = Vec2::new(50.0, 50.0);
+                                let button_size = Vec2::new(20.0, 30.0);
+
                                 ui.centered_and_justified(|ui| {
                                     let zoom_in =
                                         ui.add(
