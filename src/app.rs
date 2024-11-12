@@ -52,6 +52,7 @@ impl eframe::App for Roseate {
 
         self.info_box.handle_input(ctx);
         self.zoom_pan.handle_zoom_input(ctx);
+        self.zoom_pan.handle_zoom_keybind(ctx);
         self.zoom_pan.handle_reset_input(ctx);
 
         egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
@@ -157,11 +158,12 @@ impl eframe::App for Roseate {
                 });
 
                 egui::Window::new("controls_window")
-                    .anchor(egui::Align2::RIGHT_BOTTOM, Vec2::new(10.0, 10.0))
+                    .anchor(egui::Align2::RIGHT_CENTER, Vec2::new(-10.0, 0.0))
                     .title_bar(false)
                     .show(ctx, |ui| {
                         egui::Grid::new("controls_grid")
                             .spacing([10.0, 10.0])
+                            .num_columns(2)
                             .show(ui, |ui| {
                                 let button_size = Vec2::new(20.0, 30.0);
 
@@ -178,6 +180,7 @@ impl eframe::App for Roseate {
                                             (self.zoom_pan.zoom_factor + 0.2).clamp(0.1, 100.0);
                                     }
                                 });
+                                ui.end_row();
 
                                 ui.centered_and_justified(|ui| {
                                     let zoom_out =

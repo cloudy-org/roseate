@@ -71,6 +71,16 @@ impl ZoomPan {
         }
     }
 
+    pub fn handle_zoom_keybind(&mut self, ctx: &Context) {
+        if ctx.input(|i| i.key_pressed(Key::Plus)) {
+            self.zoom_factor = (self.zoom_factor + 0.2).clamp(0.1, 100.0);
+        }
+
+        if ctx.input(|i| i.key_pressed(Key::Minus)) {
+            self.zoom_factor = (self.zoom_factor - 0.2).clamp(0.1, 100.0);
+        }
+    }
+
     // Method to handle panning (dragging)
     pub fn handle_pan_input(&mut self, ctx: &Context, image_response: &Response, info_box_response: Option<&Response>) {
         let mut can_pan = false;
