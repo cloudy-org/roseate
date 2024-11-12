@@ -84,6 +84,19 @@ impl ImageLoader {
 
         let mut image = image.clone();
 
+        // Our svg implementation is very experimental. Let's warn the user.
+        if image.image_path.extension().unwrap_or_default() == "svg" {
+            let msg = "SVG files are experimental! \
+                Expect many bugs, inconstancies and performance issues.";
+
+            let mut toast = Toast::warning(msg);
+            toast.duration(Some(Duration::from_secs(8)));
+
+            self.toasts_queue_arc.lock().unwrap().push(toast);
+
+            warn!("{}", msg);
+        }
+
         let toasts_queue_arc = self.toasts_queue_arc.clone();
         let image_loaded_arc = self.image_loaded_arc.clone();
         let image_loading_arc = self.image_loading_arc.clone();
@@ -98,12 +111,12 @@ impl ImageLoader {
             let result = image.load_image(&optimizations);
 
             if let Err(error) = result {
-                let mut toasts = toasts_queue_arc.lock().unwrap();
-
-                let mut toast = Toast::error(error.message());
+                let mut toast = Toast::error(
+                    textwrap::wrap(&error.message(), 100).join("\n")
+                );
                 toast.duration(Some(Duration::from_secs(10)));
 
-                toasts.push(toast);
+                toasts_queue_arc.lock().unwrap().push(toast);
 
                 log::error!("{}", error.message());
             }

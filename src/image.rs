@@ -103,8 +103,8 @@ impl Image {
         if let Err(image_error) = image_result {
             let result_of_second_load = self.load_image(&[]); // load image without optimizations
 
-            if let Err(error) = result_of_second_load {
-                return Err(error);
+            if result_of_second_load.is_err() {
+                return result_of_second_load;
             }
 
             return Err(
