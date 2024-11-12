@@ -11,7 +11,7 @@ static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value(
 
 pub struct InfoBox {
     pub show: bool,
-    theme: Theme,
+    theme: Option<Theme>,
     image: Option<Image>,
     pub response: Option<Response>
 }
@@ -19,13 +19,18 @@ pub struct InfoBox {
 impl InfoBox {
     // TODO: When this branch is merged into main 
     // remove "image" from the initialization of this struct.
-    pub fn new(image: Option<Image>, theme: Theme) -> Self {
+    pub fn new() -> Self {
         Self {
             show: false,
-            image: image,
-            theme: theme,
+            image: None,
+            theme: None,
             response: None
         }
+    }
+
+    pub fn init(&mut self, image: &Option<Image>, theme: &Theme) {
+        self.image = image.clone();
+        self.theme = Some(theme.clone());
     }
 
     pub fn handle_input(&mut self, ctx: &egui::Context) {
@@ -41,7 +46,13 @@ impl InfoBox {
     pub fn update(&mut self, ctx: &egui::Context) {
         if self.show {
             let mut custom_frame = egui::Frame::window(&ctx.style());
-            custom_frame.fill = Color32::from_hex(&self.theme.hex_code).unwrap().gamma_multiply(3.0);
+
+            custom_frame.fill = Color32::from_hex(
+                &self.theme.as_ref().expect(
+                    "InfoBox MUST be initialized before update can be called!"
+                ).hex_code
+            ).unwrap().gamma_multiply(3.0);
+
             custom_frame.shadow = Shadow::NONE;
 
             let response = egui::Window::new(

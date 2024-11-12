@@ -18,6 +18,7 @@ mod image;
 mod error;
 mod info_box;
 mod zoom_pan;
+mod image_loader;
 mod window_scaling;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
@@ -69,7 +70,7 @@ fn main() -> eframe::Result {
             if !path.exists() {
                 let error = Error::FileNotFound(path.to_path_buf());
 
-                log_and_toast(error, &mut toasts)
+                log_and_toast(error.into(), &mut toasts)
                     .duration(Some(Duration::from_secs(10)));
 
                 None
