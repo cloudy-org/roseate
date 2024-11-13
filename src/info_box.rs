@@ -29,8 +29,8 @@ impl InfoBox {
         self.image = image.clone();
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context) {
-        if ctx.input(|i| i.key_pressed(Key::I)) {
+    pub fn handle_input(&mut self, ctx: &egui::Context, key: Key) {
+        if ctx.input(|i| i.key_pressed(key)) {
             if self.show == true {
                 self.show = false;
             } else {

@@ -15,11 +15,11 @@ impl MagnificationPanel {
         }
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context) {
+    pub fn handle_input(&mut self, ctx: &egui::Context, key: Key) {
         // NOTE: For now let's hide the magnification panel behind a keybind.
         // TODO: When the toml config is ready (https://github.com/cloudy-org/roseate/issues/20) 
         // we can add a settings to have it shown by default or not.
-        if ctx.input(|i| i.key_pressed(Key::C)) {
+        if ctx.input(|i| i.key_pressed(key)) {
             if self.show == true {
                 self.show = false;
             } else {

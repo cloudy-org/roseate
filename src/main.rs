@@ -2,6 +2,7 @@
 
 use std::{env, path::Path, time::Duration};
 
+use config::Config;
 use log::debug;
 use eframe::egui;
 use egui_notify::Toasts;
@@ -21,6 +22,7 @@ mod zoom_pan;
 mod image_loader;
 mod window_scaling;
 mod magnification_panel;
+mod config;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
@@ -97,12 +99,14 @@ fn main() -> eframe::Result {
         _ => Theme::default(true)
     };
 
+    let config = Config::new();
+
     eframe::run_native(
         "Roseate",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(Roseate::new(image, theme, toasts)))
+            Ok(Box::new(Roseate::new(image, theme, toasts, config)))
         }),
     )
 }

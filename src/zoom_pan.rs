@@ -48,9 +48,9 @@ impl ZoomPan {
         }
     }
 
-    pub fn handle_reset_input(&mut self, ctx: &Context) {
+    pub fn handle_reset_input(&mut self, ctx: &Context, key: Key) {
         // TODO: make the key customizable when we get a config.
-        if ctx.input(|i| i.key_pressed(Key::R)) {
+        if ctx.input(|i| i.key_pressed(key)) {
             self.schedule_pan_reset(Duration::ZERO);
             self.schedule_scale_reset(Duration::ZERO);
         }

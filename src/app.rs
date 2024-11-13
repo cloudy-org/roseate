@@ -4,7 +4,7 @@ use egui_notify::Toasts;
 use cirrus_theming::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 
-use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{config::Config, error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -15,15 +15,16 @@ pub struct Roseate {
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     image_loader: ImageLoader,
-    last_window_rect: Rect
+    last_window_rect: Rect,
+    config: Config
 }
 
 impl Roseate {
-    pub fn new(image: Option<Image>, theme: Theme, toasts: Toasts) -> Self {
+    pub fn new(image: Option<Image>, theme: Theme, toasts: Toasts, config: Config) -> Self {
         let mut image_loader = ImageLoader::new();
 
         if image.is_some() {
-            image_loader.load_image(&mut image.clone().unwrap(), false);
+            image_loader.load_image(&mut image.clone().unwrap(), config.image.initial.lazy_loading);
         }
 
         Self {
@@ -35,7 +36,8 @@ impl Roseate {
             magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
             image_loader: image_loader,
-            last_window_rect: Rect::NOTHING
+            last_window_rect: Rect::NOTHING,
+            config
         }
     }
 
@@ -87,10 +89,22 @@ impl eframe::App for Roseate {
 
         self.info_box.init(&self.image);
 
-        self.info_box.handle_input(ctx);
+        let info_box_key = egui::Key::from_name(
+            &self.config.keybinds.info_box_toggle
+        ).expect("The keybind for info_box_toggle is not valid.");
+
+        let reset_key = egui::Key::from_name(
+            &self.config.keybinds.image_reset_pos
+        ).expect("The keybind for image_reset_pos is not valid.");
+
+        let magnification_panel_key = egui::Key::from_name(
+            &self.config.keybinds.magnification_panel_toggle
+        ).expect("The keybind for magnification_panel_toggle is not valid.");
+
+        self.info_box.handle_input(ctx, info_box_key);
         self.zoom_pan.handle_zoom_input(ctx);
-        self.zoom_pan.handle_reset_input(ctx);
-        self.magnification_panel.handle_input(ctx);
+        self.zoom_pan.handle_reset_input(ctx, reset_key);
+        self.magnification_panel.handle_input(ctx, magnification_panel_key);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -132,8 +146,8 @@ impl eframe::App for Roseate {
                                 match image_result {
                                     Ok(mut image) => {
                                         self.image = Some(image.clone());
-                                        // TODO: Use config's value for lazy load instead.
-                                        self.image_loader.load_image(&mut image, true);
+
+                                        self.image_loader.load_image(&mut image, self.config.image.dynamic.lazy_loading);
                                     },
                                     Err(error) => {
                                         error::log_and_toast(error.into(), &mut self.toasts)
