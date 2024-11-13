@@ -89,22 +89,10 @@ impl eframe::App for Roseate {
 
         self.info_box.init(&self.image);
 
-        let info_box_key = egui::Key::from_name(
-            &self.config.keybinds.info_box.toggle
-        ).expect("The keybind for info_box_toggle is not valid.");
-
-        let reset_key = egui::Key::from_name(
-            &self.config.keybinds.image.reset_pos
-        ).expect("The keybind for image_reset_pos is not valid.");
-
-        let magnification_panel_key = egui::Key::from_name(
-            &self.config.keybinds.ui_controls.toggle
-        ).expect("The keybind for magnification_panel_toggle is not valid.");
-
-        self.info_box.handle_input(ctx, info_box_key);
+        self.info_box.handle_input(ctx, &self.config);
         self.zoom_pan.handle_zoom_input(ctx);
-        self.zoom_pan.handle_reset_input(ctx, reset_key);
-        self.magnification_panel.handle_input(ctx, magnification_panel_key);
+        self.zoom_pan.handle_reset_input(ctx, &self.config);
+        self.magnification_panel.handle_input(ctx, &self.config);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());

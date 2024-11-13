@@ -1,9 +1,9 @@
 use std::alloc;
 
 use cap::Cap;
-use eframe::egui::{self, pos2, Key, Margin, Response};
+use eframe::egui::{self, pos2, Margin, Response};
 
-use crate::image::Image;
+use crate::{config::Config, image::Image};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -29,8 +29,12 @@ impl InfoBox {
         self.image = image.clone();
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context, key: Key) {
-        if ctx.input(|i| i.key_pressed(key)) {
+    pub fn handle_input(&mut self, ctx: &egui::Context, config: &Config) {
+        let config_key = egui::Key::from_name(
+            &config.keybinds.info_box.toggle
+        ).expect("The keybind for info_box_toggle is not valid.");
+
+        if ctx.input(|i| i.key_pressed(config_key)) {
             if self.show == true {
                 self.show = false;
             } else {

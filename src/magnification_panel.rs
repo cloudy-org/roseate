@@ -1,6 +1,6 @@
 use eframe::egui::{self, Key, Vec2};
 
-use crate::zoom_pan::ZoomPan;
+use crate::{config::Config, zoom_pan::ZoomPan};
 
 pub struct MagnificationPanel {
     pub show: bool,
@@ -15,11 +15,16 @@ impl MagnificationPanel {
         }
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context, key: Key) {
+    pub fn handle_input(&mut self, ctx: &egui::Context, config: &Config) {
         // NOTE: For now let's hide the magnification panel behind a keybind.
         // TODO: When the toml config is ready (https://github.com/cloudy-org/roseate/issues/20) 
         // we can add a settings to have it shown by default or not.
-        if ctx.input(|i| i.key_pressed(key)) {
+
+        let config_key = Key::from_name(
+            &config.keybinds.ui_controls.toggle
+        ).expect("The keybind for magnification_panel_toggle is not valid.");
+
+        if ctx.input(|i| i.key_pressed(config_key)) {
             if self.show == true {
                 self.show = false;
             } else {

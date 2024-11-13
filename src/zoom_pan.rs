@@ -4,6 +4,8 @@ use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
+use crate::config::Config;
+
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
     pub zoom_factor: f32,
@@ -48,9 +50,12 @@ impl ZoomPan {
         }
     }
 
-    pub fn handle_reset_input(&mut self, ctx: &Context, key: Key) {
-        // TODO: make the key customizable when we get a config.
-        if ctx.input(|i| i.key_pressed(key)) {
+    pub fn handle_reset_input(&mut self, ctx: &Context, config: &Config) {
+        let config_key = Key::from_name(
+            &config.keybinds.image.reset_pos
+        ).expect("The keybind for image_reset_pos is not valid.");
+
+        if ctx.input(|i| i.key_pressed(config_key)) {
             self.schedule_pan_reset(Duration::ZERO);
             self.schedule_scale_reset(Duration::ZERO);
         }
