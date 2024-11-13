@@ -56,7 +56,7 @@ impl ZoomPan {
         }
     }
 
-    // Method to handle zoom input (scrolling)
+    // Method to handle zoom input (scrolling and PLUS/MINUS binds)
     pub fn handle_zoom_input(&mut self, ctx: &Context) {
         self.last_zoom_factor = self.zoom_factor;
 
@@ -68,6 +68,15 @@ impl ZoomPan {
 
             // TODO: Make those clamped values customizable when we have configuration.
             self.zoom_factor = (self.zoom_factor + zoom_delta).clamp(0.1, 100.0);
+        }
+
+        // +/- keybindings
+        if ctx.input(|i| i.key_pressed(Key::Plus)) {
+            self.zoom_factor = (self.zoom_factor + 0.2).clamp(1.0, 100.0);
+        }
+
+        if ctx.input(|i| i.key_pressed(Key::Minus)) {
+            self.zoom_factor = (self.zoom_factor - 0.2).clamp(1.0, 100.0);
         }
     }
 

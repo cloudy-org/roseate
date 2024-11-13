@@ -2,9 +2,9 @@ use std::{time::Duration, vec};
 
 use egui_notify::Toasts;
 use cirrus_theming::Theme;
-use eframe::egui::{self, Align, Color32, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Style, TextStyle, Vec2};
+use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 
-use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -12,6 +12,7 @@ pub struct Roseate {
     toasts: Toasts,
     zoom_pan: ZoomPan,
     info_box: InfoBox,
+    magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_loaded: bool,
@@ -34,6 +35,7 @@ impl Roseate {
             toasts: toasts,
             zoom_pan: ZoomPan::new(),
             info_box: InfoBox::new(),
+            magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
             image_loaded: false,
@@ -43,25 +45,61 @@ impl Roseate {
             dropped_files: Vec<egui::DroppedFile>,
         }
     }
+
+    fn set_app_style(&self, ctx: &Context) {
+        // #1d0a0a # dark mode secondary colour for roseate
+        let mut custom_style = Style {
+            override_text_style: Some(TextStyle::Monospace),
+            ..Default::default()
+        };
+
+        // TODO: override more default   
+        // colours here with colours from our theme.
+
+        // Background colour styling.
+        custom_style.visuals.panel_fill = Color32::from_hex(
+            &self.theme.primary_colour.hex_code
+        ).unwrap();
+
+        // Window styling.
+        custom_style.visuals.window_highlight_topmost = false;
+
+        custom_style.visuals.window_fill = Color32::from_hex(
+            &self.theme.secondary_colour.hex_code
+        ).unwrap();
+        custom_style.visuals.window_stroke = Stroke::new(
+            1.0,
+            Color32::from_hex(&self.theme.third_colour.hex_code).unwrap()
+        );
+        custom_style.visuals.window_shadow = Shadow::NONE;
+
+        // Text styling.
+        custom_style.visuals.override_text_color = Some(
+            Color32::from_hex(
+                match self.theme.is_dark {
+                    true => "#b5b5b5",
+                    false => "#3b3b3b"
+                }
+            ).unwrap()
+        );
+
+        ctx.set_style(custom_style);
+    }
 }
 
 impl eframe::App for Roseate {
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let central_panel_frame = egui::Frame {
-            fill: Color32::from_hex(&self.theme.hex_code).unwrap(), // I mean... it should not fail... we know it's a valid hex colour...
-            ..Default::default()
-        };
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        self.set_app_style(ctx);
 
-        ctx.set_style(Style {override_text_style: Some(TextStyle::Monospace), ..Default::default()});
-
-        self.info_box.init(&self.image, &self.theme);
+        self.info_box.init(&self.image);
 
         self.info_box.handle_input(ctx);
         self.zoom_pan.handle_zoom_input(ctx);
         self.zoom_pan.handle_reset_input(ctx);
+        self.magnification_panel.handle_input(ctx);
 
-        egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
+        egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {
@@ -159,6 +197,7 @@ impl eframe::App for Roseate {
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
             self.image_loader.update(&mut self.toasts);
+            self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image.clone().unwrap();
 
@@ -199,8 +238,11 @@ impl eframe::App for Roseate {
                     ).rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
     
+
                     self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
                 });
+
+                // TODO:
 
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation.
