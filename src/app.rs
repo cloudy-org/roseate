@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use egui_notify::Toasts;
 use cirrus_theming::Theme;
-use eframe::egui::{self, Align, Color32, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Style, TextStyle, Vec2};
+use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 
 use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
@@ -38,26 +38,61 @@ impl Roseate {
             last_window_rect: Rect::NOTHING
         }
     }
+
+    fn set_app_style(&self, ctx: &Context) {
+        // #1d0a0a # dark mode secondary colour for roseate
+        let mut custom_style = Style {
+            override_text_style: Some(TextStyle::Monospace),
+            ..Default::default()
+        };
+
+        // TODO: maybe we should override more default 
+        // colours here instead of instead of override it elsewhere.
+
+        // Background colour styling.
+        custom_style.visuals.panel_fill = Color32::from_hex(
+            &self.theme.primary_colour.hex_code
+        ).unwrap();
+
+        // Window styling.
+        custom_style.visuals.window_highlight_topmost = false;
+
+        custom_style.visuals.window_fill = Color32::from_hex(
+            &self.theme.secondary_colour.hex_code
+        ).unwrap();
+        custom_style.visuals.window_stroke = Stroke::new(
+            1.0,
+            Color32::from_hex(&self.theme.third_colour.hex_code).unwrap()
+        );
+        custom_style.visuals.window_shadow = Shadow::NONE;
+
+        // Text styling.
+        custom_style.visuals.override_text_color = Some(
+            Color32::from_hex(
+                match self.theme.is_dark {
+                    true => "#b5b5b5",
+                    false => "#3b3b3b"
+                }
+            ).unwrap()
+        );
+
+        ctx.set_style(custom_style);
+    }
 }
 
 impl eframe::App for Roseate {
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let central_panel_frame = egui::Frame {
-            fill: Color32::from_hex(&self.theme.hex_code).unwrap(), // I mean... it should not fail... we know it's a valid hex colour...
-            ..Default::default()
-        };
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        self.set_app_style(ctx);
 
-        ctx.set_style(Style {override_text_style: Some(TextStyle::Monospace), ..Default::default()});
-
-        self.info_box.init(&self.image, &self.theme);
+        self.info_box.init(&self.image);
 
         self.info_box.handle_input(ctx);
         self.zoom_pan.handle_zoom_input(ctx);
         self.zoom_pan.handle_reset_input(ctx);
         self.magnification_panel.handle_input(ctx);
 
-        egui::CentralPanel::default().frame(central_panel_frame).show(ctx, |ui| {
+        egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
 
             if window_rect.width() != self.last_window_rect.width() || window_rect.height() != self.last_window_rect.height() {

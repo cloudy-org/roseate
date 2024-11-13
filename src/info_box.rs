@@ -1,8 +1,7 @@
 use std::alloc;
 
 use cap::Cap;
-use cirrus_theming::Theme;
-use eframe::egui::{self, pos2, Color32, Key, Margin, Response, Shadow};
+use eframe::egui::{self, pos2, Key, Margin, Response};
 
 use crate::image::Image;
 
@@ -11,7 +10,6 @@ static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value(
 
 pub struct InfoBox {
     pub show: bool,
-    theme: Option<Theme>,
     image: Option<Image>,
     pub response: Option<Response>
 }
@@ -23,14 +21,12 @@ impl InfoBox {
         Self {
             show: false,
             image: None,
-            theme: None,
             response: None
         }
     }
 
-    pub fn init(&mut self, image: &Option<Image>, theme: &Theme) {
+    pub fn init(&mut self, image: &Option<Image>) {
         self.image = image.clone();
-        self.theme = Some(theme.clone());
     }
 
     pub fn handle_input(&mut self, ctx: &egui::Context) {
@@ -45,25 +41,15 @@ impl InfoBox {
 
     pub fn update(&mut self, ctx: &egui::Context) {
         if self.show {
-            let mut custom_frame = egui::Frame::window(&ctx.style());
-
-            custom_frame.fill = Color32::from_hex(
-                &self.theme.as_ref().expect(
-                    "InfoBox MUST be initialized before update can be called!"
-                ).hex_code
-            ).unwrap().gamma_multiply(3.0);
-
-            custom_frame.shadow = Shadow::NONE;
-
             let response = egui::Window::new(
                 egui::WidgetText::RichText(
                     egui::RichText::new("ℹ Info").size(15.0)
                 )
             )
                 .default_pos(pos2(200.0, 200.0))
-                .title_bar(true)
                 .resizable(false)
-                .frame(custom_frame)
+                .fade_in(false)
+                .fade_out(false)
                 .show(ctx, |ui| {
                     let mem_allocated = ALLOCATOR.allocated();
 
