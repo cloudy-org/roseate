@@ -102,12 +102,14 @@ fn main() -> eframe::Result {
     let config = match Config::new() {
         Ok(config) => config,
         Err(error) => {
-            toasts.error(
+
+            log_and_toast(
                 format!(
                     "Error occurred getting roseate's config file! \
                     Defaulting to default config. Error: {}", error.to_string().as_str()
-                )
-            );
+                ).into(),
+                &mut toasts
+            ).duration(Some(Duration::from_secs(10)));
 
             Config::default()
         }

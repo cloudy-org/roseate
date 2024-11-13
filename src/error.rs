@@ -73,6 +73,6 @@ pub fn log_and_toast(error_or_string: LogAndToastError, toasts: &mut Toasts) -> 
     log::error!("{}", error_message);
 
     toasts.error(
-        textwrap::wrap(error_message.as_str(), 100).join("\n")
+        textwrap::wrap(error_message.as_str(), 75).join("\n")
     ).duration(Some(Duration::from_secs(5)))
 }
