@@ -1,0 +1,24 @@
+version = 1
+
+[image]
+
+[image.loading]
+# Setting this to "true" will make the image load on a separate thread to the GUI initially. This
+# means the GUI may load up before the image is ready to display itself. Will this improve load times? idk 🤷
+initial.lazy_loading = false
+
+# Lazy loading but this is now for when you open and load an image from the GUI.
+# For example: Picking an image from the file picker or dropping an image into the window.
+gui.lazy_loading = true
+
+# Setting this to "false" will make dynamic scaling reload images on the main thread. It's not 
+# recommended to set this to "false" as it will lead to the GUI freezing each time you try to zoom in/out.
+dynamic.lazy_loading = true
+
+[keybinds]
+info_box.toggle = "I"
+# Keybind to reset the image pan 
+# position and zoom scale back to default.
+image.reset_pos = "R"
+# Keybind to toggle all your UI controlls like the magnification panel.
+ui_controls.toggle = "C"

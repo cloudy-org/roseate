@@ -99,7 +99,19 @@ fn main() -> eframe::Result {
         _ => Theme::default(true)
     };
 
-    let config = Config::new();
+    let config = match Config::new() {
+        Ok(config) => config,
+        Err(error) => {
+            toasts.error(
+                format!(
+                    "Error occurred getting roseate's config file! \
+                    Defaulting to default config. Error: {}", error.to_string().as_str()
+                )
+            );
+
+            Config::default()
+        }
+    };
 
     eframe::run_native(
         "Roseate",

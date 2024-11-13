@@ -24,7 +24,7 @@ impl Roseate {
         let mut image_loader = ImageLoader::new();
 
         if image.is_some() {
-            image_loader.load_image(&mut image.clone().unwrap(), config.image.initial.lazy_loading);
+            image_loader.load_image(&mut image.clone().unwrap(), config.image.loading.initial.lazy_loading);
         }
 
         Self {
@@ -90,15 +90,15 @@ impl eframe::App for Roseate {
         self.info_box.init(&self.image);
 
         let info_box_key = egui::Key::from_name(
-            &self.config.keybinds.info_box_toggle
+            &self.config.keybinds.info_box.toggle
         ).expect("The keybind for info_box_toggle is not valid.");
 
         let reset_key = egui::Key::from_name(
-            &self.config.keybinds.image_reset_pos
+            &self.config.keybinds.image.reset_pos
         ).expect("The keybind for image_reset_pos is not valid.");
 
         let magnification_panel_key = egui::Key::from_name(
-            &self.config.keybinds.magnification_panel_toggle
+            &self.config.keybinds.ui_controls.toggle
         ).expect("The keybind for magnification_panel_toggle is not valid.");
 
         self.info_box.handle_input(ctx, info_box_key);
@@ -147,7 +147,7 @@ impl eframe::App for Roseate {
                                     Ok(mut image) => {
                                         self.image = Some(image.clone());
 
-                                        self.image_loader.load_image(&mut image, self.config.image.dynamic.lazy_loading);
+                                        self.image_loader.load_image(&mut image, self.config.image.loading.gui.lazy_loading);
                                     },
                                     Err(error) => {
                                         error::log_and_toast(error.into(), &mut self.toasts)
