@@ -39,7 +39,9 @@ impl Config {
         let roseate = local_dir.join("cloudy").join("roseate");
 
         if !roseate.exists() {
-            let _ = fs::create_dir_all(roseate.clone());
+            if let Err(err) = fs::create_dir_all(roseate.clone()) {
+                eprintln!("Unable to create config path: {}", err);
+            };
         }
 
         let toml_file = roseate.join("config.toml");
