@@ -1,5 +1,6 @@
 use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
+use log::debug;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
@@ -60,31 +61,43 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Self, Box<dyn Error>> {
-        let local_dir = dirs::config_local_dir()
-            .expect("No config path found for your os!?");
+        debug!("Finding operating system's configuration local directory...");
+        let local_config_dir = match dirs::config_local_dir() {
+            Some(dir) => dir,
+            None => {
+                return Err("No config path was found for your OS!?".into());
+            }
+        };
 
-        let config_dir_path = local_dir.join("cloudy").join("roseate");
+        let roseate_config_dir_path = local_config_dir.join("cloudy").join("roseate");
 
-        if !config_dir_path.exists() {
-            fs::create_dir_all(&config_dir_path)?;
-            if let Err(err) = fs::create_dir_all(&config_dir_path) {
+        if !roseate_config_dir_path.exists() {
+            debug!("Creating config directory for roseate...");
+            if let Err(err) = fs::create_dir_all(&roseate_config_dir_path) {
                 return Err(
                     format!("Unable to create config path: {}", err).into()
                 );
             };
+
+            debug!("Config directory created!");
         }
 
-        let toml_config_path = config_dir_path.join("config.toml");
+        let toml_config_path = roseate_config_dir_path.join("config.toml");
 
         if toml_config_path.exists() {
+            debug!("Reading and applying config file...");
             let value = fs::read_to_string(&toml_config_path)?;
 
             let config = toml::from_str::<Config>(&value)?;
             return Ok(config);
         }
 
+        debug!(
+            "Reading template config and creating config file at '{}'...", 
+            &toml_config_path.to_string_lossy().as_str()
+        );
         let result = fs::write(
-            &toml_config_path, include_str!("../assets/config.template.toml")
+            &toml_config_path, include_bytes!("../assets/config.template.toml")
         );
 
         match result {
