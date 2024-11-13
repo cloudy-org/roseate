@@ -66,8 +66,8 @@ impl Config {
         let config_dir_path = local_dir.join("cloudy").join("roseate");
 
         if !config_dir_path.exists() {
-            fs::create_dir_all(config_dir_path.clone())?;
-            if let Err(err) = fs::create_dir_all(config_dir_path.clone()) {
+            fs::create_dir_all(&config_dir_path)?;
+            if let Err(err) = fs::create_dir_all(&config_dir_path) {
                 return Err(
                     format!("Unable to create config path: {}", err).into()
                 );
