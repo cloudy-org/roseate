@@ -46,8 +46,8 @@ impl Roseate {
             ..Default::default()
         };
 
-        // TODO: maybe we should override more default 
-        // colours here instead of instead of override it elsewhere.
+        // TODO: override more default   
+        // colours here with colours from our theme.
 
         // Background colour styling.
         custom_style.visuals.panel_fill = Color32::from_hex(
