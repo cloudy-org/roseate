@@ -15,9 +15,7 @@ pub struct Roseate {
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
-    image_loaded: bool,
     image_loader: ImageLoader,
-    last_window_rect: Rect
     dropped_files: Vec<egui::DroppedFile>,
 }
 
@@ -38,11 +36,8 @@ impl Roseate {
             magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
-            image_loaded: false,
-            dropped_files: vec![]
+            dropped_files: vec![],
             image_loader: image_loader,
-            last_window_rect: Rect::NOTHING,
-            dropped_files: Vec<egui::DroppedFile>,
         }
     }
 
@@ -111,7 +106,7 @@ impl eframe::App for Roseate {
 
             self.toasts.show(ctx);
 
-            if self.image.is_none() {            
+            if self.image.is_none() {
                 // Collect dropped files
                 ctx.input(|i| {
                     if !i.raw.dropped_files.is_empty() {
@@ -120,18 +115,22 @@ impl eframe::App for Roseate {
                 });
 
                 if !self.dropped_files.is_empty() {
-                    let path = self.dropped_files.first().unwrap().clone().path.unwrap(); // gotta love rust
-                    let image = Image::from_path(&path);
+                    let path = self.dropped_files.first().unwrap()
+                        .path
+                        .as_ref()
+                        .unwrap(); // gotta love rust ~ ananas
+
+                    let mut image = Image::from_path(path);
 
                     self.image = Some(image.clone());
-                    self.info_box = InfoBox::new(Some(image.clone()), self.theme.clone());
+                    self.image_loader.load_image(&mut image, true);
                 }
 
                 if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
                     ui.centered_and_justified(|ui| {
                         let osaka_width: f32 = 130.0;
                         let osaka = egui::include_image!("../assets/osaka.png");
-    
+
                         egui::Frame::default()
                             .outer_margin(
                                 Margin::symmetric(
@@ -150,7 +149,7 @@ impl eframe::App for Roseate {
                         );
                     });
                 }
-                
+
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
 
