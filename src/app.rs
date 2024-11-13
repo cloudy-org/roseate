@@ -128,23 +128,36 @@ impl eframe::App for Roseate {
 
                 if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
                     ui.centered_and_justified(|ui| {
-                        let osaka_width: f32 = 130.0;
-                        let osaka = egui::include_image!("../assets/osaka.png");
+                        let rose_width: f32 = 130.0;
 
                         egui::Frame::default()
                             .outer_margin(
                                 Margin::symmetric(
-                                    (window_rect.width() / 2.0) - osaka_width / 2.0, 
-                                    (window_rect.height() / 2.0) - osaka_width / 2.0
+                                    (window_rect.width() / 2.0) - rose_width * 1.5, 
+                                    (window_rect.height() / 2.0) - rose_width
                                 )
                             )
                             .show(ui, |ui| {
                                 ui.add(
-                                    egui::Image::new(osaka)
-                                    .max_width(osaka_width)
+                                    egui::Image::new(get_platform_rose_image())
+                                    .max_width(rose_width)
                                 );
 
-                                ui.label("Drop your file.");
+                                ui.label("You're about to drop a file.");
+   
+
+                                let rect: Rect = ui.max_rect();
+                                let painter = ui.painter();
+
+                                let top_right = rect.right_top();
+                                let top_left = rect.left_top();
+                                let bottom_right = rect.right_bottom();
+                                let bottom_left = rect.left_bottom();
+
+                                draw_dotted_line(painter, &[top_left, top_right]);
+                                draw_dotted_line(painter, &[top_right, bottom_right]);
+                                draw_dotted_line(painter, &[bottom_right, bottom_left]);
+                                draw_dotted_line(painter, &[bottom_left, top_left]);
                             }
                         );
                     });
@@ -291,4 +304,13 @@ fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     }
 
     return egui::include_image!("../assets/rose_emojis/google_noto.png");
+}
+
+fn draw_dotted_line(ui: &egui::Painter, pos: &[egui::Pos2]) {
+    ui.add(
+        egui::Shape::dashed_line(pos, Stroke {
+            width: 1.0,
+            color: Color32::GOLD
+        }, 5.0, 3.0)
+    );
 }
