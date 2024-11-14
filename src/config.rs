@@ -1,6 +1,6 @@
+use log::debug;
 use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
-use log::debug;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
@@ -67,6 +67,7 @@ pub struct Keybinds {
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default)]
     pub version: i8,
     #[serde(default)]
     pub image: Image,
@@ -133,14 +134,6 @@ impl Config {
                     ).into()
                 )
             }
-        }
-    }
-
-    pub fn default() -> Self {
-        Self {
-            version: 1,
-            image: Image::default(),
-            keybinds: Keybinds::default()
         }
     }
 }
@@ -210,12 +203,23 @@ impl Default for UIControlsBinds {
         }
     }
 }
+
 impl Default for Keybinds {
     fn default() -> Self {
         Self {
             info_box: InfoBoxBinds::default(),
             image: ImageBinds::default(),
             ui_controls: UIControlsBinds::default(),
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            image: Image::default(),
+            keybinds: Keybinds::default()
         }
     }
 }
