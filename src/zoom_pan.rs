@@ -1,13 +1,15 @@
 use std::time::{Duration, Instant};
 
+use egui_notify::ToastLevel;
 use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::config::Config;
+use crate::{config::Config, toasts::ToastsManager};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
+    reset_key: Key,
     pub zoom_factor: f32,
     last_zoom_factor: f32,
     is_panning: bool,
@@ -25,8 +27,21 @@ struct ResetManager {
 }
 
 impl ZoomPan {
-    pub fn new() -> Self {
+    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+        let reset_key = match Key::from_name(&config.keybinds.image.reset_pos) {
+            Some(key) => key,
+            None => {
+                toasts.toast_and_log(
+                    "The key bind set for 'image.reset_pos' is invalid! Defaulting to `R`.".into(), 
+                    ToastLevel::Error
+                );
+
+                Key::R
+            },
+        };
+
         Self {
+            reset_key,
             zoom_factor: 1.0,
             last_zoom_factor: 1.0,
             drag_start: None,
@@ -50,12 +65,8 @@ impl ZoomPan {
         }
     }
 
-    pub fn handle_reset_input(&mut self, ctx: &Context, config: &Config) {
-        let config_key = Key::from_name(
-            &config.keybinds.image.reset_pos
-        ).expect("The keybind for image_reset_pos is not valid.");
-
-        if ctx.input(|i| i.key_pressed(config_key)) {
+    pub fn handle_reset_input(&mut self, ctx: &Context) {
+        if ctx.input(|i| i.key_pressed(self.reset_key)) {
             self.schedule_pan_reset(Duration::ZERO);
             self.schedule_scale_reset(Duration::ZERO);
         }

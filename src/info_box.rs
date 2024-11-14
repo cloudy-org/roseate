@@ -1,9 +1,10 @@
 use std::alloc;
 
 use cap::Cap;
-use eframe::egui::{self, pos2, Margin, Response};
+use egui_notify::ToastLevel;
+use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::{config::Config, image::Image};
+use crate::{config::Config, image::Image, toasts::ToastsManager};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -11,14 +12,28 @@ static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value(
 pub struct InfoBox {
     pub show: bool,
     image: Option<Image>,
+    toggle_key: Key,
     pub response: Option<Response>
 }
 
 impl InfoBox {
-    pub fn new() -> Self {
+    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+        let config_key = match Key::from_name(&config.keybinds.info_box.toggle) {
+            Some(key) => key,
+            None => {
+                toasts.toast_and_log(
+                    "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.".into(), 
+                    ToastLevel::Error
+                );
+
+                Key::I
+            },
+        };
+
         Self {
             show: false,
             image: None,
+            toggle_key: config_key,
             response: None
         }
     }
@@ -27,12 +42,8 @@ impl InfoBox {
         self.image = image.clone();
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context, config: &Config) {
-        let config_key = egui::Key::from_name(
-            &config.keybinds.info_box.toggle
-        ).expect("The keybind for info_box_toggle is not valid.");
-
-        if ctx.input(|i| i.key_pressed(config_key)) {
+    pub fn handle_input(&mut self, ctx: &egui::Context) {
+        if ctx.input(|i| i.key_pressed(self.toggle_key)) {
             if self.show == true {
                 self.show = false;
             } else {

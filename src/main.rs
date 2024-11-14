@@ -5,24 +5,26 @@ use std::{env, path::Path, time::Duration};
 use config::Config;
 use log::debug;
 use eframe::egui;
-use egui_notify::Toasts;
+use egui_notify::ToastLevel;
 use cirrus_theming::Theme;
 use clap::{arg, command, Parser};
 
 use app::Roseate;
 use image::Image;
-use error::{log_and_toast, Error};
+use error::Error;
+use toasts::ToastsManager;
 
 mod app;
 mod files;
 mod image;
 mod error;
+mod config;
+mod toasts;
 mod info_box;
 mod zoom_pan;
 mod image_loader;
 mod window_scaling;
 mod magnification_panel;
-mod config;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
@@ -48,7 +50,7 @@ fn main() -> eframe::Result {
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
-    let mut toasts = Toasts::default();
+    let mut toasts = ToastsManager::new();
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([800.0, 600.0]),
@@ -71,8 +73,9 @@ fn main() -> eframe::Result {
             if !path.exists() {
                 let error = Error::FileNotFound(path.to_path_buf());
 
-                log_and_toast(error.into(), &mut toasts)
-                    .duration(Some(Duration::from_secs(10)));
+                toasts.toast_and_log(
+                    error.into(), ToastLevel::Error
+                ).duration(Some(Duration::from_secs(10)));
 
                 None
             } else {
@@ -103,12 +106,12 @@ fn main() -> eframe::Result {
         Ok(config) => config,
         Err(error) => {
 
-            log_and_toast(
+            toasts.toast_and_log(
                 format!(
                     "Error occurred getting roseate's config file! \
                     Defaulting to default config. Error: {}", error.to_string().as_str()
-                ).into(),
-                &mut toasts
+                ).into(), 
+                ToastLevel::Error
             ).duration(Some(Duration::from_secs(10)));
 
             Config::default()

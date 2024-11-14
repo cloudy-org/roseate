@@ -1,30 +1,41 @@
 use eframe::egui::{self, Key, Vec2};
+use egui_notify::ToastLevel;
 
-use crate::{config::Config, zoom_pan::ZoomPan};
+use crate::{config::Config, toasts::ToastsManager, zoom_pan::ZoomPan};
 
 pub struct MagnificationPanel {
     pub show: bool,
+    toggle_key: Key,
 }
 
 impl MagnificationPanel {
     // TODO: When this branch is merged into main 
     // remove "image" from the initialization of this struct.
-    pub fn new() -> Self {
+    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+        let toggle_key = match Key::from_name(&config.keybinds.ui_controls.toggle) {
+            Some(key) => key,
+            None => {
+                toasts.toast_and_log(
+                    "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.".into(), 
+                    ToastLevel::Error
+                );
+
+                Key::C
+            },
+        };
+
         Self {
             show: false,
+            toggle_key,
         }
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context, config: &Config) {
+    pub fn handle_input(&mut self, ctx: &egui::Context) {
         // NOTE: For now let's hide the magnification panel behind a keybind.
         // TODO: When the toml config is ready (https://github.com/cloudy-org/roseate/issues/20) 
         // we can add a settings to have it shown by default or not.
 
-        let config_key = Key::from_name(
-            &config.keybinds.ui_controls.toggle
-        ).expect("The keybind for magnification_panel_toggle is not valid.");
-
-        if ctx.input(|i| i.key_pressed(config_key)) {
+        if ctx.input(|i| i.key_pressed(self.toggle_key)) {
             if self.show == true {
                 self.show = false;
             } else {

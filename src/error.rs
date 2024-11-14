@@ -1,8 +1,6 @@
-use std::{fmt::{self, Display, Formatter}, path::PathBuf, time::Duration};
+use std::{fmt::{self, Display, Formatter}, path::PathBuf};
 
-use egui_notify::{Toast, Toasts};
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     FileNotFound(PathBuf),
     NoFileSelected,
@@ -39,40 +37,4 @@ impl Display for Error {
             ),
         }
     }
-}
-
-pub enum LogAndToastError {
-    Error(Error),
-    String(String)
-}
-
-impl Into<LogAndToastError> for Error {
-    fn into(self) -> LogAndToastError {
-        LogAndToastError::String(self.message())
-    }
-}
-
-impl Into<LogAndToastError> for String {
-    fn into(self) -> LogAndToastError {
-        LogAndToastError::String(self)
-    }
-}
-
-impl Into<LogAndToastError> for &str {
-    fn into(self) -> LogAndToastError {
-        LogAndToastError::String(self.to_string())
-    }
-}
-
-pub fn log_and_toast(error_or_string: LogAndToastError, toasts: &mut Toasts) -> &mut Toast {
-    let error_message = match error_or_string {
-        LogAndToastError::Error(error) => error.message(),
-        LogAndToastError::String(string) => string,
-    };
-
-    log::error!("{}", error_message);
-
-    toasts.error(
-        textwrap::wrap(error_message.as_str(), 75).join("\n")
-    ).duration(Some(Duration::from_secs(5)))
 }
