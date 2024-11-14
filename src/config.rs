@@ -5,57 +5,72 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct GUISettings {
+    #[serde(default)]
     pub lazy_loading: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct InitialSettings {
+    #[serde(default)]
     pub lazy_loading: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct DynamicSettings {
+    #[serde(default)]
     pub lazy_loading: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageLoading {
+    #[serde(default)]
     pub gui: GUISettings,
+    #[serde(default)]
     pub initial: InitialSettings,
+    #[serde(default)]
     pub dynamic: DynamicSettings,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Image {
+    #[serde(default)]
     pub loading: ImageLoading,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct InfoBoxBinds {
+    #[serde(default)]
     pub toggle: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageBinds {
+    #[serde(default)]
     pub reset_pos: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct UIControlsBinds {
+    #[serde(default)]
     pub toggle: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Keybinds {
+    #[serde(default)]
     pub info_box: InfoBoxBinds,
+    #[serde(default)]
     pub image: ImageBinds,
+    #[serde(default)]
     pub ui_controls: UIControlsBinds
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub version: i8,
+    #[serde(default)]
     pub image: Image,
+    #[serde(default)]
     pub keybinds: Keybinds,
 }
 
@@ -124,24 +139,83 @@ impl Config {
     pub fn default() -> Self {
         Self {
             version: 1,
-            image: Image {
-                loading: ImageLoading {
-                    gui: GUISettings {
-                        lazy_loading: true
-                    },
-                    initial: InitialSettings {
-                        lazy_loading: false,
-                    },
-                    dynamic: DynamicSettings {
-                        lazy_loading: true,
-                    },
-                }
-            },
-            keybinds: Keybinds {
-                info_box: InfoBoxBinds { toggle: "I".to_string() },
-                image: ImageBinds { reset_pos: "R".to_string() },
-                ui_controls: UIControlsBinds { toggle: "C".to_string() },
-            },
+            image: Image::default(),
+            keybinds: Keybinds::default()
+        }
+    }
+}
+
+impl Default for GUISettings {
+    fn default() -> Self {
+        Self {
+            lazy_loading: true
+        }
+    }
+}
+
+impl Default for InitialSettings {
+    fn default() -> Self {
+        Self {
+            lazy_loading: false
+        }
+    }
+}
+
+impl Default for DynamicSettings {
+    fn default() -> Self {
+        Self {
+            lazy_loading: true
+        }
+    }
+}
+
+impl Default for ImageLoading {
+    fn default() -> Self {
+        Self {
+            gui: GUISettings::default(),
+            initial: InitialSettings::default(),
+            dynamic: DynamicSettings::default()
+        }
+    }
+}
+
+impl Default for Image {
+    fn default() -> Self {
+        Self {
+            loading: ImageLoading::default()
+        }
+    }
+}
+
+impl Default for InfoBoxBinds {
+    fn default() -> Self {
+        Self {
+            toggle: "I".to_string()
+        }
+    }
+}
+
+impl Default for ImageBinds {
+    fn default() -> Self {
+        Self {
+            reset_pos: "R".to_string()
+        }
+    }
+}
+
+impl Default for UIControlsBinds {
+    fn default() -> Self {
+        Self {
+            toggle: "C".to_string()
+        }
+    }
+}
+impl Default for Keybinds {
+    fn default() -> Self {
+        Self {
+            info_box: InfoBoxBinds::default(),
+            image: ImageBinds::default(),
+            ui_controls: UIControlsBinds::default(),
         }
     }
 }
