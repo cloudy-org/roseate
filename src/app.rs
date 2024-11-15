@@ -80,6 +80,15 @@ impl Roseate {
 
         ctx.set_style(custom_style);
     }
+
+    fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
+        ui.add(
+            egui::Shape::dashed_line(pos, Stroke {
+                width: 2.0,
+                color: Color32::from_hex(&self.theme.accent_colour.hex_code).unwrap()
+            }, 10.0, 10.0)
+        );
+    }
 }
 
 impl eframe::App for Roseate {
@@ -126,65 +135,38 @@ impl eframe::App for Roseate {
                     self.image_loader.load_image(&mut image, true);
                 }
 
-                if !ctx.input(|i| i.raw.hovered_files.is_empty()) {
-                    ui.centered_and_justified(|ui| {
-                        let rose_width: f32 = 130.0;
-
-                        egui::Frame::default()
-                            .outer_margin(
-                                Margin::symmetric(
-                                    (window_rect.width() / 2.0) - rose_width * 1.5, 
-                                    (window_rect.height() / 2.0) - rose_width
-                                )
-                            )
-                            .show(ui, |ui| {
-                                ui.add(
-                                    egui::Image::new(get_platform_rose_image())
-                                    .max_width(rose_width)
-                                );
-
-                                ui.label("You're about to drop a file.");
-   
-
-                                let rect: Rect = ui.max_rect();
-                                let painter = ui.painter();
-
-                                let top_right = rect.right_top();
-                                let top_left = rect.left_top();
-                                let bottom_right = rect.right_bottom();
-                                let bottom_left = rect.left_bottom();
-
-                                draw_dotted_line(painter, &[top_left, top_right]);
-                                draw_dotted_line(painter, &[top_right, bottom_right]);
-                                draw_dotted_line(painter, &[bottom_right, bottom_left]);
-                                draw_dotted_line(painter, &[bottom_left, top_left]);
-                            }
-                        );
-                    });
-                }
-
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
+                    let file_is_hovering = !ctx.input(|i| i.raw.hovered_files.is_empty());
+
+                    let mut rose_rect = Rect::NOTHING;
 
                     egui::Frame::default()
                         .outer_margin(
                             // I adjust the margin as it's the only way I know to 
                             // narrow down the interactive part (clickable part) of the rose image.
                             Margin::symmetric(
+                                // NOTE: width and height of rose are the same.
                                 (window_rect.width() / 2.0) - rose_width / 2.0, 
                                 (window_rect.height() / 2.0) - rose_width / 2.0
                             )
                         )
                         .show(ui, |ui| {
-                            let response = ui.add(
+                            let rose_response = ui.add(
                                 egui::Image::new(get_platform_rose_image())
                                     .max_width(rose_width)
                                     .sense(egui::Sense::click())
                             );
 
-                            response.clone().on_hover_cursor(CursorIcon::PointingHand);
+                            rose_rect = rose_response.rect;
 
-                            if response.clicked() {
+                            if file_is_hovering {
+                                ui.label("You're about to drop a file.");
+                            }
+
+                            rose_response.clone().on_hover_cursor(CursorIcon::PointingHand);
+
+                            if rose_response.clicked() {
                                 let image_result = files::select_image();
 
                                 match image_result {
@@ -201,6 +183,23 @@ impl eframe::App for Roseate {
                             }
                         }
                     );
+
+                    if file_is_hovering {
+                        let rect = rose_rect.expand2(
+                            Vec2::new(150.0, 100.0)
+                        );
+                        let painter = ui.painter();
+
+                        let top_right = rect.right_top();
+                        let top_left = rect.left_top();
+                        let bottom_right = rect.right_bottom();
+                        let bottom_left = rect.left_bottom();
+
+                        self.draw_dotted_line(painter, &[top_left, top_right]);
+                        self.draw_dotted_line(painter, &[top_right, bottom_right]);
+                        self.draw_dotted_line(painter, &[bottom_right, bottom_left]);
+                        self.draw_dotted_line(painter, &[bottom_left, top_left]);
+                    }
                 });
 
                 return; // don't do anything else, you know, like stop right there bitch
@@ -304,13 +303,4 @@ fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     }
 
     return egui::include_image!("../assets/rose_emojis/google_noto.png");
-}
-
-fn draw_dotted_line(ui: &egui::Painter, pos: &[egui::Pos2]) {
-    ui.add(
-        egui::Shape::dashed_line(pos, Stroke {
-            width: 1.0,
-            color: Color32::GOLD
-        }, 5.0, 3.0)
-    );
 }
