@@ -5,7 +5,7 @@ use std::{env, path::Path, time::Duration};
 use log::debug;
 use eframe::egui;
 use egui_notify::Toasts;
-use cirrus_theming::Theme;
+use cirrus_theming::v1::Theme;
 use clap::{arg, command, Parser};
 
 use app::Roseate;
