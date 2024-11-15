@@ -1,4 +1,4 @@
-use std::{time::Duration, vec};
+use std::time::Duration;
 
 use egui_notify::Toasts;
 use cirrus_theming::Theme;
@@ -16,7 +16,6 @@ pub struct Roseate {
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_loader: ImageLoader,
-    dropped_files: Vec<egui::DroppedFile>,
 }
 
 impl Roseate {
@@ -36,7 +35,6 @@ impl Roseate {
             magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
-            dropped_files: vec![],
             image_loader: image_loader,
         }
     }
@@ -116,24 +114,22 @@ impl eframe::App for Roseate {
             self.toasts.show(ctx);
 
             if self.image.is_none() {
-                // Collect dropped files
+                // Collect dropped files.
                 ctx.input(|i| {
-                    if !i.raw.dropped_files.is_empty() {
-                        self.dropped_files.clone_from(&i.raw.dropped_files);
+                    let dropped_files = &i.raw.dropped_files;
+
+                    if !dropped_files.is_empty() {
+                        let path = dropped_files.first().unwrap()
+                            .path
+                            .as_ref()
+                            .unwrap(); // gotta love rust ~ ananas
+
+                        let mut image = Image::from_path(path);
+
+                        self.image = Some(image.clone());
+                        self.image_loader.load_image(&mut image, true);
                     }
                 });
-
-                if !self.dropped_files.is_empty() {
-                    let path = self.dropped_files.first().unwrap()
-                        .path
-                        .as_ref()
-                        .unwrap(); // gotta love rust ~ ananas
-
-                    let mut image = Image::from_path(path);
-
-                    self.image = Some(image.clone());
-                    self.image_loader.load_image(&mut image, true);
-                }
 
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
@@ -252,8 +248,6 @@ impl eframe::App for Roseate {
 
                     self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
                 });
-
-                // TODO:
 
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation.
