@@ -35,7 +35,7 @@ git submodule update --init --recursive
 ```
 
 #### ⚙️ For Development
-At this stage, for development, you would just run ``cargo run``. If you would like to install it to your system continue ahead to the [next section](#-install-to-your-system).
+At this stage, for development, you would just run ``cargo run``. If you would like to install it to your system continue ahead to the [next section](#-install-into-your-system).
 
 4. Run dev binary.
 ```sh
