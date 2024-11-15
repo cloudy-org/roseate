@@ -5,19 +5,19 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct GUISettings {
-    #[serde(default)]
+    #[serde(default = "true_default")]
     pub lazy_loading: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct InitialSettings {
-    #[serde(default)]
+    #[serde(default = "false_default")]
     pub lazy_loading: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct DynamicSettings {
-    #[serde(default)]
+    #[serde(default = "true_default")]
     pub lazy_loading: bool,
 }
 
@@ -39,19 +39,19 @@ pub struct Image {
 
 #[derive(Serialize, Deserialize)]
 pub struct InfoBoxBinds {
-    #[serde(default)]
+    #[serde(default = "info_box_toggle")]
     pub toggle: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageBinds {
-    #[serde(default)]
+    #[serde(default = "image_reset_pos")]
     pub reset_pos: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct UIControlsBinds {
-    #[serde(default)]
+    #[serde(default = "ui_controls_toggle")]
     pub toggle: String,
 }
 
@@ -183,7 +183,7 @@ impl Default for Image {
 impl Default for InfoBoxBinds {
     fn default() -> Self {
         Self {
-            toggle: "I".to_string()
+            toggle: info_box_toggle()
         }
     }
 }
@@ -191,7 +191,7 @@ impl Default for InfoBoxBinds {
 impl Default for ImageBinds {
     fn default() -> Self {
         Self {
-            reset_pos: "R".to_string()
+            reset_pos: image_reset_pos()
         }
     }
 }
@@ -199,7 +199,7 @@ impl Default for ImageBinds {
 impl Default for UIControlsBinds {
     fn default() -> Self {
         Self {
-            toggle: "C".to_string()
+            toggle: ui_controls_toggle()
         }
     }
 }
@@ -222,4 +222,24 @@ impl Default for Config {
             keybinds: Keybinds::default()
         }
     }
+}
+
+fn true_default() -> bool {
+    true
+}
+
+fn false_default() -> bool {
+    true
+}
+
+fn info_box_toggle() -> String {
+    "I".to_string()
+}
+
+fn image_reset_pos() -> String {
+    "R".to_string()
+}
+
+fn ui_controls_toggle() -> String {
+    "C".to_string()
 }
