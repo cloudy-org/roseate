@@ -1,7 +1,7 @@
 use eframe::egui::{self, Key, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::Config, toasts::ToastsManager, zoom_pan::ZoomPan};
+use crate::{config::config::Config, toasts::ToastsManager, zoom_pan::ZoomPan};
 
 pub struct MagnificationPanel {
     pub show: bool,

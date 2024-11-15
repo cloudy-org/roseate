@@ -3,7 +3,7 @@ use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
 use serde::{Serialize, Deserialize};
 
-use crate::models::config::{Keybinds, Image};
+use super::models::{Image, Keybinds};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -53,12 +53,12 @@ impl Config {
             &toml_config_path.to_string_lossy().as_str()
         );
         let result = fs::write(
-            &toml_config_path, include_bytes!("../assets/config.template.toml")
+            &toml_config_path, include_bytes!("../../assets/config.template.toml")
         );
 
         match result {
             Ok(_) => Ok(
-                toml::from_str(include_str!("../assets/config.template.toml"))
+                toml::from_str(include_str!("../../assets/config.template.toml"))
                     .expect("Failed to deserialize template toml file!")
                 // I'm panicking here as if this fails to deserialize it's our fault!
                 // Tests should be put in place to ensure this doesn't happen from our end.

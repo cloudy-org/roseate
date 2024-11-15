@@ -2,7 +2,7 @@
 
 use std::{env, path::Path, time::Duration};
 
-use config::Config;
+use config::config::Config;
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
@@ -19,7 +19,6 @@ mod files;
 mod image;
 mod error;
 mod config;
-mod models;
 mod toasts;
 mod info_box;
 mod zoom_pan;

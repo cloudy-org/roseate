@@ -5,7 +5,7 @@ use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::{config::Config, toasts::ToastsManager};
+use crate::{config::config::Config, toasts::ToastsManager};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {

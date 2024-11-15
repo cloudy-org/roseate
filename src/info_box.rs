@@ -4,7 +4,7 @@ use cap::Cap;
 use egui_notify::ToastLevel;
 use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::{config::Config, image::Image, toasts::ToastsManager};
+use crate::{config::config::Config, image::Image, toasts::ToastsManager};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());

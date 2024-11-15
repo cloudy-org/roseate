@@ -4,7 +4,7 @@ use cirrus_theming::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::Config, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, toasts::ToastsManager, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, toasts::ToastsManager, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
