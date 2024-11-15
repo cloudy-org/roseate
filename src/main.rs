@@ -19,6 +19,7 @@ mod files;
 mod image;
 mod error;
 mod config;
+mod models;
 mod toasts;
 mod info_box;
 mod zoom_pan;
