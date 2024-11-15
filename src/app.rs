@@ -14,8 +14,8 @@ pub struct Roseate {
     info_box: InfoBox,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
+    last_window_rect: Rect,
     image_loader: ImageLoader,
-    last_window_rect: Rect
 }
 
 impl Roseate {
@@ -34,8 +34,8 @@ impl Roseate {
             info_box: InfoBox::new(),
             magnification_panel: MagnificationPanel::new(),
             window_scaling: WindowScaling::new(),
+            last_window_rect: Rect::NOTHING,
             image_loader: image_loader,
-            last_window_rect: Rect::NOTHING
         }
     }
 
@@ -78,6 +78,15 @@ impl Roseate {
 
         ctx.set_style(custom_style);
     }
+
+    fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
+        ui.add(
+            egui::Shape::dashed_line(pos, Stroke {
+                width: 2.0,
+                color: Color32::from_hex(&self.theme.accent_colour.hex_code).unwrap()
+            }, 10.0, 10.0)
+        );
+    }
 }
 
 impl eframe::App for Roseate {
@@ -105,28 +114,55 @@ impl eframe::App for Roseate {
             self.toasts.show(ctx);
 
             if self.image.is_none() {
+                // Collect dropped files.
+                ctx.input(|i| {
+                    let dropped_files = &i.raw.dropped_files;
+
+                    if !dropped_files.is_empty() {
+                        let path = dropped_files.first().unwrap()
+                            .path
+                            .as_ref()
+                            .unwrap(); // gotta love rust ~ ananas
+
+                        let mut image = Image::from_path(path);
+
+                        self.image = Some(image.clone());
+                        self.image_loader.load_image(&mut image, true);
+                    }
+                });
+
                 ui.centered_and_justified(|ui| {
                     let rose_width: f32 = 130.0;
+                    let file_is_hovering = !ctx.input(|i| i.raw.hovered_files.is_empty());
+
+                    let mut rose_rect = Rect::NOTHING;
 
                     egui::Frame::default()
                         .outer_margin(
                             // I adjust the margin as it's the only way I know to 
                             // narrow down the interactive part (clickable part) of the rose image.
                             Margin::symmetric(
+                                // NOTE: width and height of rose are the same.
                                 (window_rect.width() / 2.0) - rose_width / 2.0, 
                                 (window_rect.height() / 2.0) - rose_width / 2.0
                             )
                         )
                         .show(ui, |ui| {
-                            let response = ui.add(
+                            let rose_response = ui.add(
                                 egui::Image::new(get_platform_rose_image())
                                     .max_width(rose_width)
                                     .sense(egui::Sense::click())
                             );
 
-                            response.clone().on_hover_cursor(CursorIcon::PointingHand);
+                            rose_rect = rose_response.rect;
 
-                            if response.clicked() {
+                            if file_is_hovering {
+                                ui.label("You're about to drop a file.");
+                            }
+
+                            rose_response.clone().on_hover_cursor(CursorIcon::PointingHand);
+
+                            if rose_response.clicked() {
                                 let image_result = files::select_image();
 
                                 match image_result {
@@ -143,6 +179,23 @@ impl eframe::App for Roseate {
                             }
                         }
                     );
+
+                    if file_is_hovering {
+                        let rect = rose_rect.expand2(
+                            Vec2::new(150.0, 100.0)
+                        );
+                        let painter = ui.painter();
+
+                        let top_right = rect.right_top();
+                        let top_left = rect.left_top();
+                        let bottom_right = rect.right_bottom();
+                        let bottom_left = rect.left_bottom();
+
+                        self.draw_dotted_line(painter, &[top_left, top_right]);
+                        self.draw_dotted_line(painter, &[top_right, bottom_right]);
+                        self.draw_dotted_line(painter, &[bottom_right, bottom_left]);
+                        self.draw_dotted_line(painter, &[bottom_left, top_left]);
+                    }
                 });
 
                 return; // don't do anything else, you know, like stop right there bitch
@@ -196,8 +249,6 @@ impl eframe::App for Roseate {
                     self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
                 });
 
-                // TODO:
-
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation.
                 self.window_scaling.update(&window_rect, &image.image_size);
@@ -236,6 +287,7 @@ impl eframe::App for Roseate {
     }
 
 }
+
 
 fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     if cfg!(target_os = "windows") {
