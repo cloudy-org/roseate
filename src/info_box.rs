@@ -56,13 +56,14 @@ impl InfoBox {
                     egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1.0)).show(
                         ui, |ui| {
                             egui::Grid::new("info_box_grid")
-                            .num_columns(2)
+                            .num_columns(3)
                             .spacing([20.0, 4.0])
                             .striped(true)
                             .max_col_width(130.0)
                             .show(ui, |ui| {
                                 if self.image.is_some() {
                                     let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
+                                    let image_metadata = image.image_path.metadata().unwrap();
     
                                     ui.label("Name:");
                                     ui.label(
@@ -74,6 +75,14 @@ impl InfoBox {
                                     ui.label(
                                         format!(
                                             "{}x{}", image.image_size.width, image.image_size.height
+                                        )
+                                    );
+                                    ui.end_row();
+
+                                    ui.label("File size: ");
+                                    ui.label(
+                                        format!(
+                                            "{:.2} MiB", image_metadata.len() as f64 / (1024.0 * 1024.0)
                                         )
                                     );
                                     ui.end_row();
