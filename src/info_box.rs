@@ -56,20 +56,23 @@ impl InfoBox {
                     egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1.0)).show(
                         ui, |ui| {
                             egui::Grid::new("info_box_grid")
-                            .num_columns(2)
+                            .num_columns(3)
                             .spacing([20.0, 4.0])
                             .striped(true)
                             .max_col_width(130.0)
                             .show(ui, |ui| {
                                 if self.image.is_some() {
                                     let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
-    
+                                    let image_metadata = image.image_path.metadata().expect(
+                                        "Failed to retrieve file metadata!"
+                                    );
+
                                     ui.label("Name:");
                                     ui.label(
                                         image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
                                     );
                                     ui.end_row();
-    
+
                                     ui.label("Dimensions: ");
                                     ui.label(
                                         format!(
@@ -77,11 +80,19 @@ impl InfoBox {
                                         )
                                     );
                                     ui.end_row();
+
+                                    ui.label("File size: ");
+                                    ui.label(
+                                        format!(
+                                            "{}", re_format::format_bytes(image_metadata.len() as f64)
+                                        )
+                                    );
+                                    ui.end_row();
                                 }
                             });
                         }
                     );
-    
+
                     ui.add_space(3.0);
                     ui.label(format!(
                             "Memory Allocated: {}",
