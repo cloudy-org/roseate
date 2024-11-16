@@ -63,14 +63,16 @@ impl InfoBox {
                             .show(ui, |ui| {
                                 if self.image.is_some() {
                                     let image = self.image.as_ref().unwrap(); // safe to unwrap as we know this is Some().
-                                    let image_metadata = image.image_path.metadata().unwrap();
-    
+                                    let image_metadata = image.image_path.metadata().expect(
+                                        "Failed to retrieve file metadata!"
+                                    );
+
                                     ui.label("Name:");
                                     ui.label(
                                         image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
                                     );
                                     ui.end_row();
-    
+
                                     ui.label("Dimensions: ");
                                     ui.label(
                                         format!(
@@ -90,7 +92,7 @@ impl InfoBox {
                             });
                         }
                     );
-    
+
                     ui.add_space(3.0);
                     ui.label(format!(
                             "Memory Allocated: {}",
