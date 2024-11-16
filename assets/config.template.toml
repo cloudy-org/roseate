@@ -27,7 +27,7 @@ enabled_default = false
 # Adjust this value to control the spacing between the image and the edge of the window.
 padding = 0.98
 
-[keybinds]
+[key_binds]
 info_box.toggle = "I"
 # Keybind to reset the image pan 
 # position and zoom scale back to default.

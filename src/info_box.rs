@@ -18,7 +18,7 @@ pub struct InfoBox {
 
 impl InfoBox {
     pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
-        let config_key = match Key::from_name(&config.keybinds.info_box.toggle) {
+        let config_key = match Key::from_name(&config.key_binds.info_box.toggle) {
             Some(key) => key,
             None => {
                 toasts.toast_and_log(

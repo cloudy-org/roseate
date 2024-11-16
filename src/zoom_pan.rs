@@ -28,7 +28,7 @@ struct ResetManager {
 
 impl ZoomPan {
     pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
-        let reset_key = match Key::from_name(&config.keybinds.image.reset_pos) {
+        let reset_key = match Key::from_name(&config.key_binds.image.reset_pos) {
             Some(key) => key,
             None => {
                 toasts.toast_and_log(
