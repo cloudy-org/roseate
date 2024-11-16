@@ -82,7 +82,7 @@ impl InfoBox {
                                     ui.label("File size: ");
                                     ui.label(
                                         format!(
-                                            "{:.2} MiB", image_metadata.len() as f64 / (1024.0 * 1024.0)
+                                            "{}", re_format::format_bytes(image_metadata.len() as f64)
                                         )
                                     );
                                     ui.end_row();
