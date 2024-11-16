@@ -39,7 +39,7 @@ impl Roseate {
             zoom_pan,
             info_box,
             magnification_panel,
-            window_scaling: WindowScaling::new(),
+            window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
             image_loader: image_loader,
             config,

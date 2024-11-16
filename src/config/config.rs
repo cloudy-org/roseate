@@ -3,7 +3,7 @@ use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
 use serde::{Serialize, Deserialize};
 
-use super::models::{Image, Keybinds};
+use super::models::{Image, Keybinds, UISettings};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
@@ -11,6 +11,8 @@ pub struct Config {
     pub version: i8,
     #[serde(default)]
     pub image: Image,
+    #[serde(default)]
+    pub ui_settings: UISettings,
     #[serde(default)]
     pub keybinds: Keybinds,
 }
@@ -83,6 +85,7 @@ impl Default for Config {
         Self {
             version: 1,
             image: Image::default(),
+            ui_settings: UISettings::default(),
             keybinds: Keybinds::default()
         }
     }

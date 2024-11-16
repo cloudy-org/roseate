@@ -17,6 +17,16 @@ gui.lazy_loading = true
 # recommended to set this to "false" as it will lead to the GUI freezing each time you try to zoom in/out.
 dynamic.lazy_loading = true
 
+[ui_settings]
+
+[ui_settings.magnification_panel]
+# Setting this to "true" will enable the magnification panel by default.
+enabled_default = false
+
+[ui_settings.window_scaling]
+# Adjust this value to control the spacing between the image and the edge of the window.
+padding = 0.98
+
 [keybinds]
 info_box.toggle = "I"
 # Keybind to reset the image pan 
