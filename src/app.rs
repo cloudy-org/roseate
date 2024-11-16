@@ -22,7 +22,7 @@ pub struct Roseate {
 
 impl Roseate {
     pub fn new(image: Option<Image>, theme: Theme, mut toasts: ToastsManager, config: Config) -> Self {
-        let mut image_loader = ImageLoader::new();
+        let mut image_loader = ImageLoader::new(&config);
 
         if image.is_some() {
             image_loader.load_image(&mut image.clone().unwrap(), config.image.loading.initial.lazy_loading);

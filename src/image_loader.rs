@@ -3,7 +3,7 @@ use std::{sync::{Arc, Mutex}, thread, time::Duration};
 use egui_notify::Toast;
 use log::{debug, warn};
 
-use crate::{image::{apply_image_optimizations, Image}, toasts::ToastsManager};
+use crate::{config::config::Config, image::{apply_image_optimizations, Image}, toasts::ToastsManager};
 
 #[derive(Default, Clone)]
 pub struct Loading {
@@ -32,16 +32,19 @@ pub struct ImageLoader {
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_loading: Option<Loading>,
     image_loading_arc: Arc<Mutex<Option<Loading>>>,
+
+    marginal_allowance: f32
 }
 
 impl ImageLoader {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
             toasts_queue_arc: Arc::new(Mutex::new(Vec::new())),
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: None,
-            image_loading_arc: Arc::new(Mutex::new(None))
+            image_loading_arc: Arc::new(Mutex::new(None)),
+            marginal_allowance: config.image.marginal_allowance
         }
     }
 
@@ -100,12 +103,15 @@ impl ImageLoader {
         let toasts_queue_arc = self.toasts_queue_arc.clone();
         let image_loaded_arc = self.image_loaded_arc.clone();
         let image_loading_arc = self.image_loading_arc.clone();
+        let marginal_allowance = self.marginal_allowance;
+
+        debug!("{}", marginal_allowance);
 
         let mut loading_logic = move || {
             let mut optimizations = Vec::new();
 
             loading_msg!("Applying image optimizations...", image_loading_arc);
-            optimizations = apply_image_optimizations(optimizations, &image.image_size);
+            optimizations = apply_image_optimizations(optimizations, &image.image_size, marginal_allowance);
 
             loading_msg!("Loading image...", image_loading_arc);
             let result = image.load_image(&optimizations);

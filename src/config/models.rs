@@ -32,6 +32,9 @@ pub struct ImageLoading {
 pub struct Image {
     #[serde(default)]
     pub loading: ImageLoading,
+
+    #[serde(default = "image_marginal_allowance")]
+    pub marginal_allowance: f32
 }
 
 #[derive(Serialize, Deserialize)]
@@ -100,7 +103,8 @@ impl Default for ImageLoading {
 impl Default for Image {
     fn default() -> Self {
         Self {
-            loading: ImageLoading::default()
+            loading: ImageLoading::default(),
+            marginal_allowance: image_marginal_allowance()
         }
     }
 }
@@ -157,4 +161,8 @@ fn image_reset_pos() -> String {
 
 fn ui_controls_toggle() -> String {
     "C".to_string()
+}
+
+fn image_marginal_allowance() -> f32 {
+    1.3
 }
