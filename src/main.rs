@@ -5,7 +5,7 @@ use std::{env, path::Path, time::Duration};
 use config::config::Config;
 use log::debug;
 use eframe::egui;
-use egui_notify::Toasts;
+use egui_notify::ToastLevel;
 use cirrus_theming::v1::Theme;
 use clap::{arg, command, Parser};
 
