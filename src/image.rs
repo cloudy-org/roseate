@@ -153,7 +153,7 @@ impl Image {
 }
 
 // NOTE: should this be here? Don't know.
-pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, image_size: &ImageSize, marginal_allowance: f32) -> Vec<ImageOptimization> {
+pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, image_size: &ImageSize) -> Vec<ImageOptimization> {
     let all_display_infos = DisplayInfo::all().expect(
         "Failed to get information about your display monitor!"
     );
@@ -163,6 +163,8 @@ pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, imag
     let primary_display_maybe = all_display_infos.first().expect(
         "Uhhhhh, you don't have a monitor. WHAT!"
     );
+
+    let marginal_allowance: f32 = 1.3;
 
     let (width, height) = (
         primary_display_maybe.width as f32 * marginal_allowance, 

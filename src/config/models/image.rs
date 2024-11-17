@@ -1,25 +1,9 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Image {
     #[serde(default)]
     pub loading: ImageLoading,
-
-    #[serde(default = "image_marginal_allowance")]
-    pub marginal_allowance: f32
-}
-
-impl Default for Image {
-    fn default() -> Self {
-        Self {
-            loading: ImageLoading::default(),
-            marginal_allowance: image_marginal_allowance()
-        }
-    }
-}
-
-fn image_marginal_allowance() -> f32 {
-    1.3
 }
 
 
