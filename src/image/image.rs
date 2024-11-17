@@ -7,7 +7,7 @@ use svg_metadata::Metadata;
 use display_info::DisplayInfo;
 use image::{ImageFormat, ImageReader};
 
-use crate::error::Error;
+use crate::{error::Error, notifier::NotifierAPI};
 
 use super::optimization::ImageOptimization;
 
@@ -57,12 +57,13 @@ impl Image {
         }
     }
 
-    pub fn load_image(&mut self, optimizations: &[ImageOptimization]) -> Result<(), Error> {
+    pub fn load_image(&mut self, optimizations: &[ImageOptimization], notifier: &mut NotifierAPI) -> Result<(), Error> {
         if optimizations.is_empty() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
             let mut image_bytes_lock = self.image_bytes.lock().unwrap();
 
+            // TODO: return Error instead of panic.
             *image_bytes_lock = Some(
                 Arc::from(fs::read(self.image_path.as_ref()).expect("Failed to read image with fs::read!"))
             );
@@ -71,14 +72,24 @@ impl Image {
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
 
+        notifier.set_loading(Some("Opening file...".into()));
         debug!("Opening file into buf reader...");
 
-        let image_file = File::open(self.image_path.as_ref()).expect(
-            &format!("Failed to open file for the image '{}'", self.image_path.to_string_lossy())
-        );
+        let image_file = match File::open(self.image_path.as_ref()) {
+            Ok(file) => file,
+            Err(error) => {
+                return Err(
+                    Error::FileNotFound(
+                        self.image_path.to_path_buf(), Some(error.to_string())
+                    )
+                )
+            },
+        };
+
         let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
         // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
 
+        notifier.set_loading(Some("Loading image...".into()));
         debug!("Loading image into image crate DynamicImage so optimizations can be applied...");
 
         let image_result = ImageReader::new(image_buf_reader)
@@ -87,26 +98,27 @@ impl Image {
             .decode();
 
         if let Err(image_error) = image_result {
-            let result_of_second_load = self.load_image(&[]); // load image without optimizations
-
-            if result_of_second_load.is_err() {
-                return result_of_second_load;
-            }
-
-            return Err(
-                Error::FailedToApplyOptimizations(
-                    format!(
-                        "Failed to decode and load image with \
-                            image crate to apply optimizations! \nError: {}.",
-                        image_error
-                    )
+            let error = Error::FailedToApplyOptimizations(
+                format!(
+                    "Failed to decode and load image with \
+                        image crate to apply optimizations! \nError: {}.",
+                    image_error
                 )
-            )
+            );
+
+            // warn the user that optimizations failed to apply.
+            notifier.toasts.lock().unwrap()
+                .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
+
+            return self.load_image(&[], notifier); // load image without optimizations
         }
 
         let mut image = image_result.unwrap();
 
         for optimization in optimizations {
+            notifier.set_loading(
+                Some(format!("Applying {:#} optimization...", optimization))
+            );
             debug!("Applying '{:?}' optimization to image...", optimization);
 
             image = optimization.apply(image);
@@ -117,12 +129,15 @@ impl Image {
         // in self.image_bytes. Maybe we should clear self.image_bytes before we write the modified image to the buffer.
         let mut buffer: Vec<u8> = Vec::new();
 
+        notifier.set_loading_and_log(
+            Some("Writing optimized image into a buffer.".into())
+        );
+
         image.write_to(&mut Cursor::new(&mut buffer), ImageFormat::WebP).expect(
             "Failed to write optimized image to buffer!"
         );
 
-        let mut image_bytes_lock = self.image_bytes.lock().unwrap();
-        *image_bytes_lock = Some(Arc::from(buffer));
+        *self.image_bytes.lock().unwrap() = Some(Arc::from(buffer));
 
         Ok(())
     }

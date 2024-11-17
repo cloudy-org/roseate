@@ -4,7 +4,7 @@ use cap::Cap;
 use egui_notify::ToastLevel;
 use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::{config::config::Config, image::image::Image, toasts::ToastsManager};
+use crate::{config::config::Config, image::image::Image, notifier::NotifierAPI};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -17,11 +17,11 @@ pub struct InfoBox {
 }
 
 impl InfoBox {
-    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
         let config_key = match Key::from_name(&config.key_binds.info_box.toggle) {
             Some(key) => key,
             None => {
-                toasts.toast_and_log(
+                notifier.toasts.lock().unwrap().toast_and_log(
                     "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.".into(), 
                     ToastLevel::Error
                 );

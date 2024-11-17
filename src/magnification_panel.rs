@@ -1,7 +1,7 @@
 use eframe::egui::{self, Key, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, toasts::ToastsManager, zoom_pan::ZoomPan};
+use crate::{config::config::Config, notifier::NotifierAPI, zoom_pan::ZoomPan};
 
 pub struct MagnificationPanel {
     pub show: bool,
@@ -11,11 +11,11 @@ pub struct MagnificationPanel {
 impl MagnificationPanel {
     // TODO: When this branch is merged into main 
     // remove "image" from the initialization of this struct.
-    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
         let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
             Some(key) => key,
             None => {
-                toasts.toast_and_log(
+                notifier.toasts.lock().unwrap().toast_and_log(
                     "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.".into(), 
                     ToastLevel::Error
                 );

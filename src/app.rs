@@ -4,14 +4,14 @@ use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, toasts::ToastsManager, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
     image: Option<Image>,
     zoom_pan: ZoomPan,
     info_box: InfoBox,
-    toasts: ToastsManager,
+    notifier: NotifierAPI,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
@@ -20,21 +20,25 @@ pub struct Roseate {
 }
 
 impl Roseate {
-    pub fn new(image: Option<Image>, theme: Theme, mut toasts: ToastsManager, config: Config) -> Self {
+    pub fn new(image: Option<Image>, theme: Theme, mut notifier: NotifierAPI, config: Config) -> Self {
         let mut image_loader = ImageLoader::new();
 
         if image.is_some() {
-            image_loader.load_image(&mut image.clone().unwrap(), config.image.loading.initial.lazy_loading);
+            image_loader.load_image(
+                &mut image.clone().unwrap(), 
+                config.image.loading.initial.lazy_loading, 
+                &mut notifier
+            );
         }
 
-        let zoom_pan = ZoomPan::new(&config, &mut toasts);
-        let info_box = InfoBox::new(&config, &mut toasts);
-        let magnification_panel = MagnificationPanel::new(&config, &mut toasts);
+        let zoom_pan = ZoomPan::new(&config, &mut notifier);
+        let info_box = InfoBox::new(&config, &mut notifier);
+        let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
 
         Self {
             image,
             theme,
-            toasts,
+            notifier,
             zoom_pan,
             info_box,
             magnification_panel,
@@ -117,7 +121,7 @@ impl eframe::App for Roseate {
                 }
             }
 
-            self.toasts.update(ctx);
+            self.notifier.update(ctx);
 
             if self.image.is_none() {
                 // Collect dropped files.
@@ -133,7 +137,7 @@ impl eframe::App for Roseate {
                         let mut image = Image::from_path(path);
 
                         self.image = Some(image.clone());
-                        self.image_loader.load_image(&mut image, true);
+                        self.image_loader.load_image(&mut image, true, &mut self.notifier);
                     }
                 });
 
@@ -175,10 +179,10 @@ impl eframe::App for Roseate {
                                     Ok(mut image) => {
                                         self.image = Some(image.clone());
 
-                                        self.image_loader.load_image(&mut image, self.config.image.loading.gui.lazy_loading);
+                                        self.image_loader.load_image(&mut image, self.config.image.loading.gui.lazy_loading, &mut self.notifier);
                                     },
                                     Err(error) => {
-                                        self.toasts.toast_and_log(error.into(), ToastLevel::Error)
+                                        self.notifier.toasts.lock().unwrap().toast_and_log(error.into(), ToastLevel::Error)
                                             .duration(Some(Duration::from_secs(5)));
                                     },
                                 }
@@ -209,7 +213,7 @@ impl eframe::App for Roseate {
 
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
-            self.image_loader.update(&mut self.toasts);
+            self.image_loader.update();
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image.clone().unwrap();
@@ -274,18 +278,20 @@ impl eframe::App for Roseate {
                 Frame::none()
                     .outer_margin(Margin {left: 10.0, bottom: 7.0, ..Default::default()})
             ).show(ctx, |ui| {
-                if let Some(loading) = &self.image_loader.image_loading {
-                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                        ui.add(
-                            egui::Spinner::new()
-                                .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
-                                .size(20.0)
-                        );
-    
-                        if let Some(message) = &loading.message {
-                            ui.label(message);
-                        }
-                    });
+                if let Ok(loading_status) = self.notifier.loading_status.try_read() {
+                    if let Some(loading) = loading_status.as_ref() {
+                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                            ui.add(
+                                egui::Spinner::new()
+                                    .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
+                                    .size(20.0)
+                            );
+        
+                            if let Some(message) = &loading.message {
+                                ui.label(message);
+                            }
+                        });
+                    }
                 }
             }
         );

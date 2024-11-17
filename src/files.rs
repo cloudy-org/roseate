@@ -11,7 +11,7 @@ pub fn select_image() -> Result<Image, Error> {
     let image_or_error = match image_path {
         Some(path) => {
             if !path.exists() {
-                Err(Error::FileNotFound(path))
+                Err(Error::FileNotFound(path, None))
             } else {
                 Ok(Image::from_path(&path))
             }

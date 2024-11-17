@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use display_info::DisplayInfo;
 use image::DynamicImage;
 use imagesize::ImageSize;
@@ -29,6 +31,14 @@ impl ImageOptimization {
                     image::imageops::FilterType::Lanczos3
                 )
             },
+        }
+    }
+}
+
+impl Display for ImageOptimization {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageOptimization::Downsample(_, _) => write!(f, "Downsample"),
         }
     }
 }

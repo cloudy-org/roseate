@@ -5,7 +5,7 @@ use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::{config::config::Config, toasts::ToastsManager};
+use crate::{config::config::Config, notifier::NotifierAPI};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -27,11 +27,11 @@ struct ResetManager {
 }
 
 impl ZoomPan {
-    pub fn new(config: &Config, toasts: &mut ToastsManager) -> Self {
+    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
         let reset_key = match Key::from_name(&config.key_binds.image.reset_pos) {
             Some(key) => key,
             None => {
-                toasts.toast_and_log(
+                notifier.toasts.lock().unwrap().toast_and_log(
                     "The key bind set for 'image.reset_pos' is invalid! Defaulting to `R`.".into(), 
                     ToastLevel::Error
                 );
