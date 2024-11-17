@@ -2,20 +2,24 @@
 
 use std::{env, path::Path, time::Duration};
 
+use config::config::Config;
 use log::debug;
 use eframe::egui;
-use egui_notify::Toasts;
+use egui_notify::ToastLevel;
 use cirrus_theming::v1::Theme;
 use clap::{arg, command, Parser};
 
+use error::Error;
 use app::Roseate;
 use image::image::Image;
-use error::{log_and_toast, Error};
+use toasts::ToastsManager;
 
 mod app;
 mod files;
 mod image;
 mod error;
+mod config;
+mod toasts;
 mod info_box;
 mod zoom_pan;
 mod image_loader;
@@ -46,7 +50,7 @@ fn main() -> eframe::Result {
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
-    let mut toasts = Toasts::default();
+    let mut toasts = ToastsManager::new();
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -71,8 +75,9 @@ fn main() -> eframe::Result {
             if !path.exists() {
                 let error = Error::FileNotFound(path.to_path_buf());
 
-                log_and_toast(error.into(), &mut toasts)
-                    .duration(Some(Duration::from_secs(10)));
+                toasts.toast_and_log(
+                    error.into(), ToastLevel::Error
+                ).duration(Some(Duration::from_secs(10)));
 
                 None
             } else {
@@ -99,12 +104,28 @@ fn main() -> eframe::Result {
         _ => Theme::default(true)
     };
 
+    let config = match Config::new() {
+        Ok(config) => config,
+        Err(error) => {
+
+            toasts.toast_and_log(
+                format!(
+                    "Error occurred getting roseate's config file! \
+                    Defaulting to default config. Error: {}", error.to_string().as_str()
+                ).into(), 
+                ToastLevel::Error
+            ).duration(Some(Duration::from_secs(10)));
+
+            Config::default()
+        }
+    };
+
     eframe::run_native(
         "Roseate",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(Roseate::new(image, theme, toasts)))
+            Ok(Box::new(Roseate::new(image, theme, toasts, config)))
         }),
     )
 }

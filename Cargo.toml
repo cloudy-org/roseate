@@ -28,6 +28,10 @@ display-info = "0.5.2"
 egui-notify = "0.17.0"
 svg_metadata = "0.5.1"
 textwrap = "0.16.1"
+serde = {version = "1.0.215", features = ["derive"]}
+serde_derive = "1.0.215"
+dirs = "5.0.1"
+toml = "0.8.19"
 rayon = "1.10.0"
 
 [profile.dev.package."*"]

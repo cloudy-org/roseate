@@ -1,10 +1,9 @@
 use std::{sync::{Arc, Mutex}, thread, time::Duration};
 
-use egui_notify::{Toast, Toasts};
+use egui_notify::Toast;
 use log::{debug, warn};
 
-use crate::image::image::Image;
-use crate::image::optimization::apply_image_optimizations;
+use crate::{image::image::Image, image::optimization::apply_image_optimizations, toasts::ToastsManager};
 
 #[derive(Default, Clone)]
 pub struct Loading {
@@ -42,11 +41,11 @@ impl ImageLoader {
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: None,
-            image_loading_arc: Arc::new(Mutex::new(None))
+            image_loading_arc: Arc::new(Mutex::new(None)),
         }
     }
 
-    pub fn update(&mut self, toasts: &mut Toasts) {
+    pub fn update(&mut self, toasts: &mut ToastsManager) {
         // I use an update function to keep the public fields update to date with their Arc<Mutex<T>> twins.
         //
         // I also use this to append the queued toast messages 
@@ -62,7 +61,7 @@ impl ImageLoader {
 
         if let Ok(mut queue) = self.toasts_queue_arc.try_lock() {
             for toast in queue.drain(..) {
-                toasts.add(toast);
+                toasts.toasts.add(toast);
             }
         }
     }
