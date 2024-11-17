@@ -101,6 +101,8 @@ impl Image {
             .decode();
 
         if let Err(image_error) = image_result {
+            // TODO: warn the user that optimizations failed to apply via a toast and log.
+            // NOTE: Although we need ToastManager from the feat/toml-config branch first.
             let result_of_second_load = self.load_image(&[]); // load image without optimizations
 
             if result_of_second_load.is_err() {

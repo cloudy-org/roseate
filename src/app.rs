@@ -139,7 +139,7 @@ impl eframe::App for Roseate {
                 });
 
                 ui.centered_and_justified(|ui| {
-                    let rose_width: f32 = 130.0;
+                    let rose_width: f32 = 145.0;
                     let file_is_hovering = !ctx.input(|i| i.raw.hovered_files.is_empty());
 
                     let mut rose_rect = Rect::NOTHING;
