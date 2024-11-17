@@ -28,6 +28,7 @@ display-info = "0.5.2"
 egui-notify = "0.17.0"
 svg_metadata = "0.5.1"
 textwrap = "0.16.1"
+rayon = "1.10.0"
 
 [profile.dev.package."*"]
 opt-level = 3

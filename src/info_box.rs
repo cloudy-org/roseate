@@ -3,7 +3,7 @@ use std::alloc;
 use cap::Cap;
 use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::image::Image;
+use crate::image::image::Image;
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());

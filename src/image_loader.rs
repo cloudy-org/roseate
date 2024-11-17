@@ -3,7 +3,8 @@ use std::{sync::{Arc, Mutex}, thread, time::Duration};
 use egui_notify::{Toast, Toasts};
 use log::{debug, warn};
 
-use crate::image::{apply_image_optimizations, Image};
+use crate::image::image::Image;
+use crate::image::optimization::apply_image_optimizations;
 
 #[derive(Default, Clone)]
 pub struct Loading {

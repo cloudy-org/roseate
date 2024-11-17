@@ -1,7 +1,7 @@
 use rfd::FileDialog;
 
 use crate::error::Error;
-use crate::image::Image;
+use crate::image::image::Image;
 
 pub fn select_image() -> Result<Image, Error> {
     let image_path = FileDialog::new()

@@ -9,7 +9,7 @@ use cirrus_theming::v1::Theme;
 use clap::{arg, command, Parser};
 
 use app::Roseate;
-use image::Image;
+use image::image::Image;
 use error::{log_and_toast, Error};
 
 mod app;
