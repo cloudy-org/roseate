@@ -82,3 +82,11 @@ Open an image by passing its path.
 roseate ./anime_girls.png
 ```
 You might want to also set the binary at ``/usr/bin/roseate`` as your default image viewer so double clicking on images calls it. You can look up how to perform that for your desktop environment or OS.
+
+<br>
+
+<div align="center">
+
+  <img width="650px" src="./assets/gif_showcase_1.gif">
+
+</div>
