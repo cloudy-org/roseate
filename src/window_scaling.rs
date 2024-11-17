@@ -18,7 +18,7 @@ impl WindowScaling {
         Self {
             scale_factor: 1.0,
             resize_to_window_timer: Some(Instant::now()),
-            padding: config.ui_settings.window_scaling.padding
+            padding: config.ui.viewport.padding
         }
     }
 
@@ -36,9 +36,11 @@ impl WindowScaling {
                 // Reset the timer
                 self.resize_to_window_timer = None;
 
+                let actual_padding = 1.00 - (self.padding.clamp(0.0, 50.0) / 100.0);
+
                 // padding between the image and the edge of the window.
-                let scale_x = window_rect.width() / actual_image_size.width as f32 * self.padding;
-                let scale_y = window_rect.height() / actual_image_size.height as f32 * self.padding;
+                let scale_x = window_rect.width() / actual_image_size.width as f32 * actual_padding;
+                let scale_y = window_rect.height() / actual_image_size.height as f32 * actual_padding;
 
                 let scale_factor = scale_x.min(scale_y); // Scale uniformly.
 

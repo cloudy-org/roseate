@@ -3,7 +3,7 @@ use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
 use serde::{Serialize, Deserialize};
 
-use super::models::{image::{Image, UISettings}, key_binds::KeyBinds};
+use super::models::{image::Image, ui::UI, key_binds::KeyBinds};
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Config {
@@ -12,7 +12,7 @@ pub struct Config {
     #[serde(default)]
     pub image: Image,
     #[serde(default)]
-    pub ui_settings: UISettings,
+    pub ui: UI,
     #[serde(default)]
     pub key_binds: KeyBinds,
 }

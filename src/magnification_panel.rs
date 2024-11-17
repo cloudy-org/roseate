@@ -25,7 +25,7 @@ impl MagnificationPanel {
         };
 
         Self {
-            show: config.ui_settings.magnification_panel.enabled_default,
+            show: config.ui.magnification_panel.enabled_default,
             toggle_key,
         }
     }
