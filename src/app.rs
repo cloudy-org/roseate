@@ -1,41 +1,48 @@
 use std::time::Duration;
 
-use egui_notify::Toasts;
 use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
+use egui_notify::ToastLevel;
 
-use crate::{error, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+
+use crate::{config::config::Config, files, image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, toasts::ToastsManager, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
     image: Option<Image>,
-    toasts: Toasts,
     zoom_pan: ZoomPan,
     info_box: InfoBox,
+    toasts: ToastsManager,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_loader: ImageLoader,
+    config: Config,
 }
 
 impl Roseate {
-    pub fn new(image: Option<Image>, theme: Theme, toasts: Toasts) -> Self {
+    pub fn new(image: Option<Image>, theme: Theme, mut toasts: ToastsManager, config: Config) -> Self {
         let mut image_loader = ImageLoader::new();
 
         if image.is_some() {
-            image_loader.load_image(&mut image.clone().unwrap(), false);
+            image_loader.load_image(&mut image.clone().unwrap(), config.image.loading.initial.lazy_loading);
         }
+
+        let zoom_pan = ZoomPan::new(&config, &mut toasts);
+        let info_box = InfoBox::new(&config, &mut toasts);
+        let magnification_panel = MagnificationPanel::new(&config, &mut toasts);
 
         Self {
             image,
             theme,
-            toasts: toasts,
-            zoom_pan: ZoomPan::new(),
-            info_box: InfoBox::new(),
-            magnification_panel: MagnificationPanel::new(),
-            window_scaling: WindowScaling::new(),
+            toasts,
+            zoom_pan,
+            info_box,
+            magnification_panel,
+            window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
             image_loader: image_loader,
+            config,
         }
     }
 
@@ -111,7 +118,7 @@ impl eframe::App for Roseate {
                 }
             }
 
-            self.toasts.show(ctx);
+            self.toasts.update(ctx);
 
             if self.image.is_none() {
                 // Collect dropped files.
@@ -168,11 +175,11 @@ impl eframe::App for Roseate {
                                 match image_result {
                                     Ok(mut image) => {
                                         self.image = Some(image.clone());
-                                        // TODO: Use config's value for lazy load instead.
-                                        self.image_loader.load_image(&mut image, true);
+
+                                        self.image_loader.load_image(&mut image, self.config.image.loading.gui.lazy_loading);
                                     },
                                     Err(error) => {
-                                        error::log_and_toast(error.into(), &mut self.toasts)
+                                        self.toasts.toast_and_log(error.into(), ToastLevel::Error)
                                             .duration(Some(Duration::from_secs(5)));
                                     },
                                 }

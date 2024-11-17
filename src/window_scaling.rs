@@ -4,17 +4,21 @@ use eframe::egui::{Rect, Vec2};
 use imagesize::ImageSize;
 use log::debug;
 
+use crate::config::config::Config;
+
 /// Struct that handles the image auto resizing with window size.
 pub struct WindowScaling {
     scale_factor: f32,
     resize_to_window_timer: Option<Instant>,
+    padding: f32
 }
 
 impl WindowScaling {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
             scale_factor: 1.0,
-            resize_to_window_timer: Some(Instant::now())
+            resize_to_window_timer: Some(Instant::now()),
+            padding: config.ui.viewport.padding
         }
     }
 
@@ -32,11 +36,11 @@ impl WindowScaling {
                 // Reset the timer
                 self.resize_to_window_timer = None;
 
-                // "0.98" is so we get a little bit of 
+                let actual_padding = 1.00 - (self.padding.clamp(0.0, 50.0) / 100.0);
+
                 // padding between the image and the edge of the window.
-                // TODO: Make this value customizable when we add configuration.
-                let scale_x = window_rect.width() / actual_image_size.width as f32 * 0.98;
-                let scale_y = window_rect.height() / actual_image_size.height as f32 * 0.98;
+                let scale_x = window_rect.width() / actual_image_size.width as f32 * actual_padding;
+                let scale_y = window_rect.height() / actual_image_size.height as f32 * actual_padding;
 
                 let scale_factor = scale_x.min(scale_y); // Scale uniformly.
 
