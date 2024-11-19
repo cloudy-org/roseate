@@ -15,7 +15,7 @@ rfd = "0.15.0"
 imagesize = "0.13.0"
 eframe = { version = "0.29.1", features = ["default"] }
 egui_extras = { version = "0.29.1", features = ["all_loaders"]}
-image = {version = "0.25.5", features = ["jpeg", "png"]}
+image = {version = "0.25.5"}
 egui_animation = "0.6.0"
 simple-easing = "1.0.1"
 log = "0.4.22"
