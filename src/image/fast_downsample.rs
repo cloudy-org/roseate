@@ -57,7 +57,7 @@ pub fn fast_downsample(pixels: Vec<u8>, image_size: &ImageSize, target_size: (u3
 
     (
         Arc::try_unwrap(downsampled_pixels)
-            .expect("Arc unwrap failed")
+            .expect("Arc unwrap of downsampled pixels failed!")
             .into_inner()
             .unwrap(),
         (
