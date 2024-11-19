@@ -9,17 +9,17 @@ use egui_notify::ToastLevel;
 use cirrus_theming::v1::Theme;
 use clap::{arg, command, Parser};
 
-use app::Roseate;
-use image::Image;
 use error::Error;
-use toasts::ToastsManager;
+use app::Roseate;
+use image::image::Image;
+use notifier::NotifierAPI;
 
 mod app;
 mod files;
 mod image;
 mod error;
 mod config;
-mod toasts;
+mod notifier;
 mod info_box;
 mod zoom_pan;
 mod image_loader;
@@ -50,7 +50,7 @@ fn main() -> eframe::Result {
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
-    let mut toasts = ToastsManager::new();
+    let notifier = NotifierAPI::new();
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -73,9 +73,9 @@ fn main() -> eframe::Result {
             let path = Path::new(&path);
 
             if !path.exists() {
-                let error = Error::FileNotFound(path.to_path_buf());
+                let error = Error::FileNotFound(path.to_path_buf(), None);
 
-                toasts.toast_and_log(
+                notifier.toasts.lock().unwrap().toast_and_log(
                     error.into(), ToastLevel::Error
                 ).duration(Some(Duration::from_secs(10)));
 
@@ -108,7 +108,7 @@ fn main() -> eframe::Result {
         Ok(config) => config,
         Err(error) => {
 
-            toasts.toast_and_log(
+            notifier.toasts.lock().unwrap().toast_and_log(
                 format!(
                     "Error occurred getting roseate's config file! \
                     Defaulting to default config. Error: {}", error.to_string().as_str()
@@ -125,7 +125,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(Roseate::new(image, theme, toasts, config)))
+            Ok(Box::new(Roseate::new(image, theme, notifier, config)))
         }),
     )
 }

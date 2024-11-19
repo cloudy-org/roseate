@@ -2,7 +2,7 @@ use std::{fmt::{self, Display, Formatter}, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    FileNotFound(PathBuf),
+    FileNotFound(PathBuf, Option<String>),
     NoFileSelected,
     FailedToApplyOptimizations(String),
     ImageFormatNotSupported(String),
@@ -19,9 +19,15 @@ impl Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Error::FileNotFound(path) => write!(
-                f, "The file path given '{}' does not exist!", path.to_string_lossy()
-            ),
+            Error::FileNotFound(path, error) => {
+                let mut msg = format!("The file path given '{}' does not exist!", path.to_string_lossy());
+
+                if let Some(error_msg) = error {
+                    msg += &format!("Error: {}", error_msg);
+                }
+
+                write!(f, "{}", msg)
+            },
             Error::NoFileSelected => write!(
                 f, "No file was selected in the file dialogue!"
             ),
