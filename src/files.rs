@@ -11,12 +11,18 @@ pub fn select_image() -> Result<Image, Error> {
     let image_or_error = match image_path {
         Some(path) => {
             if !path.exists() {
-                Err(Error::FileNotFound(path, None))
+                Err(
+                    Error::FileNotFound(
+                        None,
+                        path,
+                        "The file picked in the file selector does not exist!".to_string()
+                    )
+                )
             } else {
-                Ok(Image::from_path(&path))
+                Image::from_path(&path)
             }
         },
-        None => Err(Error::NoFileSelected)
+        None => Err(Error::NoFileSelected(None))
     };
 
     image_or_error

@@ -38,7 +38,7 @@ pub struct Image {
 impl Image {
     // TODO: Return result instead of panicking (e.g. right now if you 
     // open an unsupported file type roseate will crash because we panic at line 60).
-    pub fn from_path(path: &Path) -> Self {
+    pub fn from_path(path: &Path) -> Result<Self, Error> {
         // Changed this to unwrap_or_default so it returns an empty 
         // string ("") and doesn't panic if a file has no extension. I need to begin adding tests.
         let extension = path.extension().unwrap_or_default();
@@ -53,28 +53,59 @@ impl Image {
             // format because it's A LOT faster as it only partially loads the image bytes.
 
             let mut buffer = [0u8; 16];
-            let bytes_read = File::open(&path)
-                .expect("Failed to open file to get image type!")
-                .read(&mut buffer).unwrap();
+            let number_of_bytes_read = File::open(&path)
+                .expect("Failed to open file to get image type!") // we can expect here as we currently already check if the file exists prior.
+                .read(&mut buffer)
+                .unwrap(); // should we unwrap, I think this has a likelihood of failing.
 
-            let image_size_image_type = imagesize::image_type(&buffer[..bytes_read])
-                .expect("imagesize crate failed to get image size!");
+            let image_format = match imagesize::image_type(&buffer[..number_of_bytes_read]) {
+                Ok(image_size_image_type) => {
+                    match ImageFormat::from_image_size_crate(image_size_image_type) {
+                        Ok(value) => value,
+                        Err(error) => {
+                            return Err(
+                                Error::FailedToInitImage(
+                                    Some(error.message()), path.to_path_buf(), error.message()
+                                )
+                            )
+                        },
+                    }
+                },
+                Err(error) => {
+                    return Err(
+                        Error::FailedToInitImage(
+                            Some(error.to_string()),
+                            path.to_path_buf(),
+                            "Failed to retrieve image type!".to_string()
+                        )
+                    )
+                },
+            };
 
-            (
-                imagesize::size(&path).expect(
-                "Failed to retrieve the dimensions of the image!"
-                ),
-                ImageFormat::from_image_size_crate(image_size_image_type)
-                    .expect("Failed to convert image size image format to roseate's image format!")
-            )
+            let image_size = match imagesize::size(&path) {
+                Ok(value) => value,
+                Err(error) => {
+                    return Err(
+                        Error::FailedToInitImage(
+                            Some(error.to_string()),
+                            path.to_path_buf(),
+                            "Failed to retrieve image dimensions!".to_string()
+                        )
+                    );
+                },
+            };
+
+            (image_size, image_format)
         };
 
-        Self {
-            image_size,
-            image_format,
-            image_path: Arc::new(path.to_owned()),
-            image_bytes: Arc::new(Mutex::new(None))
-        }
+        Ok(
+            Self {
+                image_size,
+                image_format,
+                image_path: Arc::new(path.to_owned()),
+                image_bytes: Arc::new(Mutex::new(None))
+            }
+        )
     }
 
     pub fn load_image(&mut self, optimizations: &[ImageOptimization], notifier: &mut NotifierAPI) -> Result<(), Error> {
@@ -105,7 +136,9 @@ impl Image {
             Err(error) => {
                 return Err(
                     Error::FileNotFound(
-                        self.image_path.to_path_buf(), Some(error.to_string())
+                        Some(error.to_string()),
+                        self.image_path.to_path_buf(),
+                        "The file we're trying to load does not exist any more!".to_string()
                     )
                 )
             },
@@ -194,11 +227,8 @@ impl Image {
 
         if let Err(image_error) = image_result {
             let error = Error::FailedToApplyOptimizations(
-                format!(
-                    "Failed to decode and load image with \
-                        image crate to apply optimizations! \nError: {}.",
-                    image_error
-                )
+                Some(image_error.to_string()),
+                "Failed to decode and load image with to apply optimizations!".to_string()
             );
 
             // warn the user that optimizations failed to apply.

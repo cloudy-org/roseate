@@ -39,7 +39,11 @@ impl ToastsManager {
     }
 
     pub fn toast_and_log(&mut self, message: StringOrError, level: ToastLevel) -> &mut Toast {
-        let log_message = self.string_or_error_to_string(message.clone());
+        let log_message = format!(
+            "{} Additional Detail: {}",
+            self.string_or_error_to_string(message.clone()),
+            self.string_or_error_full_error_msg(message.clone())
+        );
 
         match level {
             ToastLevel::Info => log::info!("{}", log_message),
@@ -56,6 +60,21 @@ impl ToastsManager {
     fn string_or_error_to_string(&self, string_or_error: StringOrError)-> String {
         match string_or_error {
             StringOrError::Error(error) => error.message(),
+            StringOrError::String(string) => string,
+        }
+    }
+
+    fn string_or_error_full_error_msg(&self, string_or_error: StringOrError) -> String {
+        match string_or_error {
+            StringOrError::Error(error) => {
+                match error {
+                    Error::FileNotFound(actual_error, _, _) => actual_error.unwrap_or_default(),
+                    Error::NoFileSelected(actual_error) => actual_error.unwrap_or_default(),
+                    Error::FailedToApplyOptimizations(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToInitImage(actual_error, _, _) => actual_error.unwrap_or_default(),
+                    Error::ImageFormatNotSupported(actual_error, _) => actual_error.unwrap_or_default(),
+                }
+            },
             StringOrError::String(string) => string,
         }
     }
@@ -107,7 +126,7 @@ pub enum StringOrError {
 
 impl Into<StringOrError> for Error {
     fn into(self) -> StringOrError {
-        StringOrError::String(self.message())
+        StringOrError::Error(self)
     }
 }
 

@@ -134,7 +134,15 @@ impl eframe::App for Roseate {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let mut image = Image::from_path(path);
+                        let mut image = match Image::from_path(path) {
+                            Ok(value) => value,
+                            Err(error) => {
+                                self.notifier.toasts.lock().unwrap().toast_and_log(
+                                    error.into(), ToastLevel::Error
+                                );
+                                return;
+                            }
+                        };
 
                         self.image = Some(image.clone());
                         self.image_loader.load_image(&mut image, true, &mut self.notifier);

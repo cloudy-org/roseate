@@ -1,11 +1,14 @@
 use std::{fmt::{self, Display, Formatter}, path::PathBuf};
 
+type ActualError = Option<String>;
+
 #[derive(Debug, Clone)]
 pub enum Error {
-    FileNotFound(PathBuf, Option<String>),
-    NoFileSelected,
-    FailedToApplyOptimizations(String),
-    ImageFormatNotSupported(String),
+    FileNotFound(ActualError, PathBuf, String),
+    NoFileSelected(ActualError),
+    FailedToApplyOptimizations(ActualError, String),
+    FailedToInitImage(ActualError, PathBuf, String),
+    ImageFormatNotSupported(ActualError, String),
 }
 
 impl Error {
@@ -19,26 +22,32 @@ impl Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Error::FileNotFound(path, error) => {
-                let mut msg = format!("The file path given '{}' does not exist!", path.to_string_lossy());
+            Error::FileNotFound(_, path, detail) => {
+                let message = format!(
+                    "The file path given '{}' does not exist! {}",
+                    path.to_string_lossy(),
+                    detail
+                );
 
-                if let Some(error_msg) = error {
-                    msg += &format!("Error: {}", error_msg);
-                }
-
-                write!(f, "{}", msg)
+                write!(f, "{}", message)
             },
-            Error::NoFileSelected => write!(
+            Error::NoFileSelected(_) => write!(
                 f, "No file was selected in the file dialogue!"
             ),
-            Error::FailedToApplyOptimizations(technical_reason) => write!(
+            Error::FailedToApplyOptimizations(_, technical_reason) => write!(
                 f,
                 "Failed to apply optimizations to this image! \
                     Roseate will run slower than usual and use a lot more memory \
                     possibly leading to system crashes. BEWARE! \n\nTechnical Reason: {}",
                 technical_reason
             ),
-            Error::ImageFormatNotSupported(image_format) => write!(
+            Error::FailedToInitImage(_, path, reason) => write!(
+                f,
+                "Failed to initialize the image ({})! Reason: {}",
+                path.file_name().unwrap().to_string_lossy(),
+                reason
+            ),
+            Error::ImageFormatNotSupported(_, image_format) => write!(
                 f, "The image format '{}' is not supported!", image_format
             ),
         }

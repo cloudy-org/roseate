@@ -73,7 +73,11 @@ fn main() -> eframe::Result {
             let path = Path::new(&path);
 
             if !path.exists() {
-                let error = Error::FileNotFound(path.to_path_buf(), None);
+                let error = Error::FileNotFound(
+                    None,
+                    path.to_path_buf(),
+                    "That file doesn't exist!".to_string()
+                );
 
                 notifier.toasts.lock().unwrap().toast_and_log(
                     error.into(), ToastLevel::Error
@@ -81,7 +85,16 @@ fn main() -> eframe::Result {
 
                 None
             } else {
-                Some(Image::from_path(path))
+                match Image::from_path(path) {
+                    Ok(image) => Some(image),
+                    Err(error) => {
+                        notifier.toasts.lock().unwrap().toast_and_log(
+                            error.into(), ToastLevel::Error
+                        );
+
+                        None
+                    },
+                }
             }
         },
         None => None

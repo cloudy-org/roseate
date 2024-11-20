@@ -23,6 +23,7 @@ impl ImageFormat {
             unsupported_format => {
                 return Err(
                     Error::ImageFormatNotSupported(
+                        None,
                         format!("{:?}", unsupported_format)
                     )
                 );
