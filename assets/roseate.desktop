@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Roseate
+GenericName=Roseate
+Comment=Image viewer
+Exec=roseate %f
+Icon=roseate
+Terminal=false
+Type=Application
+Categories=Rust;Graphics;Viewer;
+MimeType=image/jpeg;image/gif;image/png;image/bmp;image/webp;
+Keywords=image;view;roseate;picture;gif;jpeg;

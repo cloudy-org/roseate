@@ -12,6 +12,8 @@ ifeq ($(detected_os), Windows)
 	copy ".\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
 else
 	sudo cp ./target/release/roseate /usr/bin/
+	sudo cp ./assets/rose_emojis/google_noto.png /usr/share/icons/roseate.png
+	sudo cp ./assets/roseate.desktop /usr/share/applications/
 endif
 
 uninstall:
