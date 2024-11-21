@@ -54,6 +54,7 @@ impl MagnificationPanel {
                     .spacing([10.0, 10.0])
                     .num_columns(2)
                     .show(ui, |ui| {
+                        let style = ctx.style().visuals.widgets.inactive;
                         let button_size = Vec2::new(20.0, 30.0);
 
                         ui.centered_and_justified(|ui| {
@@ -61,6 +62,7 @@ impl MagnificationPanel {
                                 ui.add(
                                     egui::Button::new("+")
                                     .min_size(button_size)
+                                    .fill(style.bg_fill)
                                 );
 
                             if zoom_in.clicked() {
@@ -74,6 +76,7 @@ impl MagnificationPanel {
                                 ui.add(
                                     egui::Button::new("-")
                                     .min_size(button_size)
+                                    .fill(style.bg_fill)
                                 );
 
                             if zoom_out.clicked() {

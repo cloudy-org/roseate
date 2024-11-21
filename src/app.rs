@@ -76,6 +76,11 @@ impl Roseate {
         );
         custom_style.visuals.window_shadow = Shadow::NONE;
 
+        custom_style.visuals.widgets.inactive.bg_fill =
+            Color32::from_hex(
+                &self.theme.primary_colour.hex_code
+            ).unwrap();
+
         // Text styling.
         custom_style.visuals.override_text_color = Some(
             Color32::from_hex(
