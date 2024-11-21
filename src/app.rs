@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use cirrus_theming::v1::Theme;
+use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
@@ -76,6 +76,11 @@ impl Roseate {
         );
         custom_style.visuals.window_shadow = Shadow::NONE;
 
+        custom_style.visuals.widgets.inactive.bg_fill =
+            Color32::from_hex(
+                &self.theme.primary_colour.hex_code
+            ).unwrap();
+
         // Text styling.
         custom_style.visuals.override_text_color = Some(
             Color32::from_hex(
@@ -91,10 +96,18 @@ impl Roseate {
 
     fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
         ui.add(
-            egui::Shape::dashed_line(pos, Stroke {
-                width: 2.0,
-                color: Color32::from_hex(&self.theme.accent_colour.hex_code).unwrap()
-            }, 10.0, 10.0)
+            egui::Shape::dashed_line(
+                pos, 
+                Stroke {
+                    width: 2.0,
+                    color: Color32::from_hex(
+                        &self.theme.accent_colour.as_ref()
+                            .unwrap_or(&Colour {hex_code: "e05f78".into()}).hex_code
+                    ).unwrap()
+                },
+                10.0, 
+                10.0
+            )
         );
     }
 }
