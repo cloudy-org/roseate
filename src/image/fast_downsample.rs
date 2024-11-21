@@ -25,14 +25,19 @@ pub fn fast_downsample(pixels: Vec<u8>, image_size: &ImageSize, target_size: (u3
             let original_horizontal_pos = x as f32 * scale_factor;
             let mut rgb_sum = [0u16; 3]; // basically --> "R, G, B"
 
+            let square_block_size: usize = 2;
+
             // Here we basically take a 2x2 square block (4 pixels) from the source image so we can
             // average their colour values to downscale that to one pixel in the downsampled image.
-            for vertical_offset in 0..2 {
-                for horizontal_offset in 0..2 {
+            for vertical_offset in 0..square_block_size {
+                for horizontal_offset in 0..square_block_size {
+                    let relative_vertical_pos = (original_vertical_pos as usize + vertical_offset)
+                        .min(image_size.height - 1);
+                    let relative_horizontal_pos = (original_horizontal_pos as usize + horizontal_offset)
+                        .min(image_size.width - 1);
+
                     let index = (
-                        (original_vertical_pos as usize + vertical_offset) 
-                        * image_size.width as usize 
-                        + (original_horizontal_pos as usize + horizontal_offset)
+                        relative_vertical_pos * image_size.width + relative_horizontal_pos
                     ) * 3;
 
                     rgb_sum[0] += pixels[index] as u16; // red owo
@@ -47,10 +52,13 @@ pub fn fast_downsample(pixels: Vec<u8>, image_size: &ImageSize, target_size: (u3
 
             let mut downsampled_pixels = downsampled_pixels.lock().unwrap();
 
+            // compute the average colour values
+            let square_block_pixel_count = u16::pow(square_block_size as u16, 2);
+
             downsampled_pixels[destination_index..destination_index + 3].copy_from_slice(&[
-                (rgb_sum[0] / 4) as u8,
-                (rgb_sum[1] / 4) as u8,
-                (rgb_sum[2] / 4) as u8,
+                (rgb_sum[0] / square_block_pixel_count) as u8,
+                (rgb_sum[1] / square_block_pixel_count) as u8,
+                (rgb_sum[2] / square_block_pixel_count) as u8,
             ]);
         }
     });
