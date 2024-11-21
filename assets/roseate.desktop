@@ -1,11 +1,12 @@
 [Desktop Entry]
+Version=1.0
+Type=Application
 Name=Roseate
-GenericName=Roseate
-Comment=Image viewer
+GenericName=Image Viewer
+Comment=A fast, memory efficient and fancy image viewer.
 Exec=roseate %f
 Icon=roseate
 Terminal=false
-Type=Application
 Categories=Rust;Graphics;Viewer;
 MimeType=image/jpeg;image/gif;image/png;image/bmp;image/webp;
 Keywords=image;view;roseate;picture;gif;jpeg;
