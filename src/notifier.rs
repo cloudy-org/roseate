@@ -73,6 +73,7 @@ impl ToastsManager {
                     Error::FailedToApplyOptimizations(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::FailedToInitImage(actual_error, _, _) => actual_error.unwrap_or_default(),
                     Error::ImageFormatNotSupported(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToLoadImage(actual_error, _) => actual_error.unwrap_or_default(),
                 }
             },
             StringOrError::String(string) => string,

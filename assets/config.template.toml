@@ -32,3 +32,15 @@ info_box.toggle = "I"
 image.reset_pos = "R"
 # Keybind to toggle all your UI controlls like the magnification panel.
 ui_controls.toggle = "C"
+
+[misc]
+# All other configs that don't yet have a specific place or are experimental.
+
+[misc.experimental]
+# Settings to toggle experimental features that aren't yet ready to be
+# used by the wider user audience. This exists for the sole purpose of testing.
+# 
+# Remember these are EXPERIMENTAL, bugs WILL be present.
+
+use_fast_roseate_backend = false
+# Setting this to true will enable the experimental roseate image processing backend.

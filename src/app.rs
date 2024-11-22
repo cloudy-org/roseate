@@ -27,7 +27,8 @@ impl Roseate {
             image_loader.load_image(
                 &mut image.clone().unwrap(), 
                 config.image.loading.initial.lazy_loading, 
-                &mut notifier
+                &mut notifier,
+                config.misc.experimental.use_fast_roseate_backend
             );
         }
 
@@ -158,7 +159,12 @@ impl eframe::App for Roseate {
                         };
 
                         self.image = Some(image.clone());
-                        self.image_loader.load_image(&mut image, true, &mut self.notifier);
+                        self.image_loader.load_image(
+                            &mut image, 
+                            true, 
+                            &mut self.notifier,
+                            self.config.misc.experimental.use_fast_roseate_backend
+                        );
                     }
                 });
 
@@ -200,7 +206,12 @@ impl eframe::App for Roseate {
                                     Ok(mut image) => {
                                         self.image = Some(image.clone());
 
-                                        self.image_loader.load_image(&mut image, self.config.image.loading.gui.lazy_loading, &mut self.notifier);
+                                        self.image_loader.load_image(
+                                            &mut image,
+                                            self.config.image.loading.gui.lazy_loading,
+                                            &mut self.notifier,
+                                            self.config.misc.experimental.use_fast_roseate_backend
+                                        );
                                     },
                                     Err(error) => {
                                         self.notifier.toasts.lock().unwrap().toast_and_log(error.into(), ToastLevel::Error)

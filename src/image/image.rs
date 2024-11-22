@@ -1,15 +1,15 @@
-use std::{fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{fs::{self, File}, io::{BufReader, Cursor, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use eframe::egui::Vec2;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
 use display_info::DisplayInfo;
-use image::{codecs::{gif::{GifDecoder, GifEncoder}, jpeg::{JpegDecoder, JpegEncoder}, png::{PngDecoder, PngEncoder}, webp::{WebPDecoder, WebPEncoder}}, ExtendedColorType, ImageDecoder, ImageEncoder, ImageResult};
+use image::{codecs::{gif::{GifDecoder, GifEncoder}, jpeg::{JpegDecoder, JpegEncoder}, png::{PngDecoder, PngEncoder}, webp::{WebPDecoder, WebPEncoder}}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder, ImageResult};
 
 use crate::{error::Error, notifier::NotifierAPI};
 
-use super::{image_formats::ImageFormat, optimization::ImageOptimization};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimization};
 
 #[derive(Clone)]
 pub struct Image {
@@ -60,7 +60,7 @@ impl Image {
 
             let image_format = match imagesize::image_type(&buffer[..number_of_bytes_read]) {
                 Ok(image_size_image_type) => {
-                    match ImageFormat::from_image_size_crate(image_size_image_type) {
+                    match ImageFormat::try_from(image_size_image_type) {
                         Ok(value) => value,
                         Err(error) => {
                             return Err(
@@ -108,7 +108,7 @@ impl Image {
         )
     }
 
-    pub fn load_image(&mut self, optimizations: &[ImageOptimization], notifier: &mut NotifierAPI) -> Result<(), Error> {
+    pub fn load_image(&mut self, optimizations: &[ImageOptimization], notifier: &mut NotifierAPI, image_processing_backend: &ImageProcessingBackend) -> Result<(), Error> {
         if optimizations.is_empty() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
@@ -124,7 +124,7 @@ impl Image {
         }
 
         let (mut actual_width, mut actual_height) = (
-            self.image_size.width as u32, 
+            self.image_size.width as u32,
             self.image_size.height as u32
         );
 
@@ -147,95 +147,135 @@ impl Image {
         let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
         // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
 
-        notifier.set_loading(Some("Decoding image...".into()));
+        notifier.set_loading(Some("Passing image to image decoder...".into()));
         debug!("Loading image buf reader into image decoder so optimizations can be applied to pixels...");
 
         let image_decoder: Box<dyn ImageDecoder> = match self.image_format {
             ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
             ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
-            ImageFormat::Svg => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
+            ImageFormat::Svg => panic!("SVGs cannot be loaded with optimizations at the moment!"),
             ImageFormat::Gif => Box::new(GifDecoder::new(image_buf_reader).unwrap()),
             ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
         };
 
         let image_colour_type = image_decoder.color_type();
 
-        let mut pixels = vec![0; image_decoder.total_bytes() as usize];
-
-        debug!("Decoding pixels from image...");
-
-        image_decoder.read_image(&mut pixels).unwrap();
-
-        for optimization in optimizations {
-            notifier.set_loading(
-                Some(format!("Applying {:#} optimization...", optimization))
-            );
-            debug!("Applying '{:?}' optimization to image...", optimization);
-
-            (pixels, (actual_width, actual_height)) = optimization.apply(pixels, &self.image_size);
-        }
-
         let mut optimized_image_buffer: Vec<u8> = Vec::new();
 
-        notifier.set_loading(
-            Some("Encoding optimized image...".into())
-        );
-        debug!("Encoding optimized image into image buffer...");
+        notifier.set_loading(Some("Decoding image...".into()));
 
-        let image_result: ImageResult<()> = match self.image_format {
-            ImageFormat::Png => {
-                PngEncoder::new(&mut optimized_image_buffer).write_image(
-                    &pixels,
-                    actual_width,
-                    actual_height,
-                    ExtendedColorType::Rgb8
-                )
+        let image_result: ImageResult<()> = match image_processing_backend {
+            ImageProcessingBackend::Roseate => {
+                let mut pixels = vec![0; image_decoder.total_bytes() as usize];
+
+                debug!("Decoding pixels from image using image decoder...");
+                image_decoder.read_image(&mut pixels).unwrap();
+
+                for optimization in optimizations {
+                    notifier.set_loading(
+                        Some(format!("Applying {:#} optimization...", optimization))
+                    );
+                    debug!("Applying '{:?}' optimization to image...", optimization);
+
+                    (pixels, (actual_width, actual_height)) = optimization.apply_custom(pixels, &self.image_size);
+                }
+
+                notifier.set_loading(
+                    Some("Encoding optimized image...".into())
+                );
+                debug!("Encoding optimized image from pixels to a buffer...");
+
+                match self.image_format {
+                    ImageFormat::Png => {
+                        PngEncoder::new(&mut optimized_image_buffer).write_image(
+                            &pixels,
+                            actual_width,
+                            actual_height,
+                            ExtendedColorType::Rgb8
+                        )
+                    },
+                    ImageFormat::Jpeg => {
+                        JpegEncoder::new(&mut optimized_image_buffer).write_image(
+                            &pixels,
+                            actual_width,
+                            actual_height,
+                            image_colour_type.into()
+                        )
+                    },
+                    ImageFormat::Svg => {
+                        PngEncoder::new(&mut optimized_image_buffer).write_image(
+                            &pixels,
+                            actual_width,
+                            actual_height,
+                            image_colour_type.into()
+                        )
+                    },
+                    ImageFormat::Gif => {
+                        GifEncoder::new(&mut optimized_image_buffer).encode(
+                            &pixels,
+                            actual_width,
+                            actual_height,
+                            image_colour_type.into()
+                        )
+                    },
+                    ImageFormat::Webp => {
+                        WebPEncoder::new_lossless(&mut optimized_image_buffer).write_image(
+                            &pixels,
+                            actual_width,
+                            actual_height,
+                            image_colour_type.into()
+                        )
+                    },
+                }
             },
-            ImageFormat::Jpeg => {
-                JpegEncoder::new(&mut optimized_image_buffer).write_image(
-                    &pixels,
-                    actual_width,
-                    actual_height,
-                    image_colour_type.into()
-                )
-            },
-            ImageFormat::Svg => {
-                PngEncoder::new(&mut optimized_image_buffer).write_image(
-                    &pixels,
-                    actual_width,
-                    actual_height,
-                    image_colour_type.into()
-                )
-            },
-            ImageFormat::Gif => {
-                GifEncoder::new(&mut optimized_image_buffer).encode(
-                    &pixels,
-                    actual_width,
-                    actual_height,
-                    image_colour_type.into()
-                )
-            },
-            ImageFormat::Webp => {
-                WebPEncoder::new_lossless(&mut optimized_image_buffer).write_image(
-                    &pixels,
-                    actual_width,
-                    actual_height,
-                    image_colour_type.into()
-                )
-            },
+            ImageProcessingBackend::ImageRS => {
+                debug!("Decoding image into dynamic image...");
+
+                let result = DynamicImage::from_decoder(image_decoder);
+
+                match result {
+                    Ok(mut dynamic_image) => {
+                        for optimization in optimizations {
+                            notifier.set_loading(
+                                Some(format!("Applying {:#} optimization...", optimization))
+                            );
+                            debug!("Applying '{:?}' optimization to image...", optimization);
+
+                            dynamic_image = optimization.apply_dynamic_image(dynamic_image);
+                        }
+
+                        notifier.set_loading(
+                            Some("Encoding optimized image...".into())
+                        );
+                        debug!("Encoding optimized dynamic image into image buffer...");
+
+                        dynamic_image.write_to(
+                            &mut Cursor::new(&mut optimized_image_buffer),
+                            self.image_format.to_image_rs_format()
+                        )
+                    },
+                    Err(error) => Err(error)
+                }
+            }
         };
 
         if let Err(image_error) = image_result {
             let error = Error::FailedToApplyOptimizations(
                 Some(image_error.to_string()),
-                "Failed to decode and load image with to apply optimizations!".to_string()
+                "Failed to decode and load image to apply optimizations!".to_string()
             );
 
             // warn the user that optimizations failed to apply.
             notifier.toasts.lock().unwrap()
                 .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
 
-            return self.load_image(&[], notifier); // load image without optimizations
+            // load image without optimizations
+            let result = self.load_image(&[], notifier, image_processing_backend);
+
+            match result {
+                Ok(_) => return Ok(()),
+                Err(error) => return Err(error),
+            }
         }
 
         *self.image_bytes.lock().unwrap() = Some(Arc::from(optimized_image_buffer));

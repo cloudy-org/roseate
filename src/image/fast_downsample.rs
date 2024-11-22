@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use imagesize::ImageSize;
 use std::sync::{Arc, Mutex};
 
-pub fn fast_downsample(pixels: Vec<u8>, image_size: &ImageSize, target_size: (u32, u32)) -> (Vec<u8>, (u32, u32)) {
+pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32, u32)) -> (Vec<u8>, (u32, u32)) {
     let (target_width, target_height) = target_size;
 
     let scale_factor = (image_size.width as f32 / target_width as f32)

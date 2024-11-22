@@ -2,7 +2,7 @@ use std::{sync::{Arc, Mutex}, thread, time::Duration};
 
 use log::{debug, warn};
 
-use crate::{image::{image::Image, optimization::apply_image_optimizations}, notifier::NotifierAPI};
+use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::apply_image_optimizations}, notifier::NotifierAPI};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -38,7 +38,7 @@ impl ImageLoader {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, image: &mut Image, lazy_load: bool, notifier: &mut NotifierAPI) {
+    pub fn load_image(&mut self, image: &mut Image, lazy_load: bool, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -51,6 +51,12 @@ impl ImageLoader {
         );
 
         let mut image = image.clone();
+        let mut optimizations = Vec::new();
+
+        notifier.set_loading(
+            Some("Applying image optimizations...".into())
+        );
+        optimizations = apply_image_optimizations(optimizations, &image.image_size);
 
         // Our svg implementation is very experimental. Let's warn the user.
         if image.image_path.extension().unwrap_or_default() == "svg" {
@@ -61,23 +67,27 @@ impl ImageLoader {
                 egui_notify::ToastLevel::Warning
                 )
                 .duration(Some(Duration::from_secs(8)));
+
+            // SVGs cannot be loaded with optimizations at 
+            // the moment or else image.load_image() will panic.
+            optimizations.clear();
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_arc = notifier.clone();
 
         let mut loading_logic = move || {
-            let mut optimizations = Vec::new();
+            let backend = match use_experimental_backend {
+                true => ImageProcessingBackend::Roseate,
+                false => ImageProcessingBackend::ImageRS
+            };
 
-            notifier_arc.set_loading(
-                Some("Applying image optimizations...".into())
+            notifier_arc.set_loading(Some("Loading image...".into()));
+            let result = image.load_image(
+                &optimizations, 
+                &mut notifier_arc, 
+                &backend
             );
-            optimizations = apply_image_optimizations(optimizations, &image.image_size);
-
-            notifier_arc.set_loading(
-                Some("Loading image...".into())
-            );
-            let result = image.load_image(&optimizations, &mut notifier_arc);
 
             if let Err(error) = result {
                 notifier_arc.toasts.lock().unwrap()

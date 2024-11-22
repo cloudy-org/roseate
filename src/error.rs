@@ -8,6 +8,7 @@ pub enum Error {
     NoFileSelected(ActualError),
     FailedToApplyOptimizations(ActualError, String),
     FailedToInitImage(ActualError, PathBuf, String),
+    FailedToLoadImage(ActualError, String),
     ImageFormatNotSupported(ActualError, String),
 }
 
@@ -45,6 +46,11 @@ impl Display for Error {
                 f,
                 "Failed to initialize the image ({})! Reason: {}",
                 path.file_name().unwrap().to_string_lossy(),
+                reason
+            ),
+            Error::FailedToLoadImage(_, reason) => write!(
+                f,
+                "Failed to load that image! The image might be corrupted. Reason: {}",
                 reason
             ),
             Error::ImageFormatNotSupported(_, image_format) => write!(

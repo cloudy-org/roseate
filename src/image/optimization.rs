@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use image::DynamicImage;
 use log::debug;
 use imagesize::ImageSize;
 use display_info::DisplayInfo;
@@ -23,15 +24,21 @@ pub enum ImageOptimization {
 }
 
 impl ImageOptimization {
-    pub fn apply(&self, pixels: Vec<u8>, image_size: &ImageSize) -> (Vec<u8>, (u32, u32)) {
+    pub fn apply_dynamic_image(&self, image: DynamicImage) -> DynamicImage {
         match self {
             ImageOptimization::Downsample(width, height) => {
-                // image.resize(
-                //     *width,
-                //     *height,
-                //     image::imageops::FilterType::Lanczos3
-                // )
+                image.resize(
+                    *width,
+                    *height,
+                    image::imageops::FilterType::Lanczos3
+                )
+            },
+        }
+    }
 
+    pub fn apply_custom(&self, pixels: Vec<u8>, image_size: &ImageSize) -> (Vec<u8>, (u32, u32)) {
+        match self {
+            ImageOptimization::Downsample(width, height) => {
                 fast_downsample(pixels, image_size, (*width, *height))
             },
         }
