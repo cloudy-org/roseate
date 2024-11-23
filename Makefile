@@ -7,18 +7,36 @@ endif
 build:
 	cargo build --release
 
-install:
+install: install-shortcut
 ifeq ($(detected_os), Windows)
 	copy ".\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
 else
 	sudo cp ./target/release/roseate /usr/bin/
 endif
 
-uninstall:
+install-shortcut:
+ifeq ($(detected_os), Windows)
+	echo "Not implemented!"
+else
+	sudo cp ./assets/rose_emojis/google_noto.png /usr/share/icons/roseate.png
+	sudo cp ./assets/roseate.desktop /usr/share/applications/
+	sudo update-desktop-database /usr/share/applications/
+endif
+
+uninstall: uninstall-shortcut
 ifeq ($(detected_os), Windows)
 	del "$(USERPROFILE)\.cargo\bin\roseate.exe"
 else
 	sudo rm -r /usr/bin/roseate
+endif
+
+uninstall-shortcut:
+ifeq ($(detected_os), Windows)
+	echo "Not implemented!"
+else
+	sudo rm -r /usr/share/icons/roseate.png
+	sudo rm -r /usr/share/applications/roseate.desktop
+	sudo update-desktop-database /usr/share/applications/
 endif
 
 clean:
