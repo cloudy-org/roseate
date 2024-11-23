@@ -27,15 +27,15 @@ uninstall: uninstall-shortcut
 ifeq ($(detected_os), Windows)
 	del "$(USERPROFILE)\.cargo\bin\roseate.exe"
 else
-	sudo rm -r /usr/bin/roseate
+	sudo rm /usr/bin/roseate
 endif
 
 uninstall-shortcut:
 ifeq ($(detected_os), Windows)
 	echo "Not implemented!"
 else
-	sudo rm -r /usr/share/icons/roseate.png
-	sudo rm -r /usr/share/applications/roseate.desktop
+	sudo rm /usr/share/icons/roseate.png
+	sudo rm /usr/share/applications/roseate.desktop
 	sudo update-desktop-database /usr/share/applications/
 endif
 
