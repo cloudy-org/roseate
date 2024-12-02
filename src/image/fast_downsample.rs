@@ -3,6 +3,7 @@ use imagesize::ImageSize;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 // math :akko_shrug:
+// SINNNNNNN, SIN CITY WASN'T MADE FOR YOU!!! ANGLES LIKEEEEE YOUUUU!
 fn sinc(x: f32) -> f32 {
     if x == 0.0 {
         return 1.0
@@ -13,7 +14,7 @@ fn sinc(x: f32) -> f32 {
 
 // Get Lanczos kernel for resampling
 // Reference: https://en.wikipedia.org/wiki/Lanczos_resampling#Lanczos_kernel
-fn lanczos(x: f32, a: f32) -> f32 {
+fn lanczos_kernel(x: f32, a: f32) -> f32 {
     if x.abs() < a {
         sinc(x) * sinc(x / a)
     } else {
@@ -26,7 +27,9 @@ pub fn fast_downsample(
     image_size: &ImageSize,
     target_size: (u32, u32)
 ) -> (Vec<u8>, (u32, u32)) {
-    let a: f32 = 3.0; // 
+    let window_size: f32 = 3.0; // the window size that determines the level 
+    // of influence the kernel has on each original pixel. Larger values result in more smoothing 
+    // but may also result in slower computation time so beware.
 
     let (target_width, target_height) = target_size;
 
@@ -42,18 +45,20 @@ pub fn fast_downsample(
         )
     );
 
-
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
     (0..new_height).into_par_iter().for_each(|y| {
         let original_vertical_pos = y as f32 * scale_factor;
 
         for x in 0..new_width {
             let original_horizontal_pos = x as f32 * scale_factor;
-            let mut rgb_sum = [0.0; 3]; // basically --> "R, G, B"
+
             let mut sum = 0.0;
+            let mut rgb_sum = [0.0; 3]; // basically --> "R, G, B"
 
-            let lanczos_window = a.ceil() as isize;
+            let lanczos_window = window_size.ceil() as isize;
 
+            // Here we iterate over the lanczos window which is a 
+            // window that evenly surrounds the original pixel position.
             for vertical_offset in -lanczos_window..=lanczos_window {
                 for horizontal_offset in -lanczos_window..=lanczos_window {
                     let relative_vertical_pos = (original_vertical_pos as isize + vertical_offset)
@@ -61,15 +66,18 @@ pub fn fast_downsample(
                     let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
                         .clamp(0, (image_size.width - 1) as isize);
 
-                    // Weights determine the contribution of each neighbouring pixel to the final intensity of the resized pixel.
-                    let lanczos_x = lanczos(
+                    // Each neighbouring pixel's influence is calculated based on it's 
+                    // distance from the relative and original pixel position using the Lanczos kernel.
+                    let lanczos_x = lanczos_kernel(
                         (relative_horizontal_pos as f32 - original_horizontal_pos) / scale_factor,
-                        a,
+                        window_size,
                     );
-                    let lanczos_y = lanczos(
+                    let lanczos_y = lanczos_kernel(
                         (relative_vertical_pos as f32 - original_vertical_pos) / scale_factor,
-                        a,
+                        window_size,
                     );
+
+                    // Weights determine how much each original pixel contributes to the new resized pixel RGB colour.
                     let weight = lanczos_x * lanczos_y;
 
                     let index = (
@@ -88,8 +96,6 @@ pub fn fast_downsample(
             let destination_index: usize = ((y * new_width + x) * 3) as usize;
 
             let mut downsampled_pixels = downsampled_pixels.lock().unwrap();
-
-            // compute the average colour values
 
             downsampled_pixels[destination_index..destination_index + 3].copy_from_slice(&[
                 (rgb_sum[0] / sum) as u8,
