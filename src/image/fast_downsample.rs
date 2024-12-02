@@ -22,6 +22,8 @@ pub fn fast_downsample(
     image_size: &ImageSize, 
     target_size: (u32, u32)
 ) -> (Vec<u8>, (u32, u32)) {
+    let a: f32 = 3.0; // 
+
     let (target_width, target_height) = target_size;
 
     let scale_factor = (image_size.width as f32 / target_width as f32)
@@ -35,8 +37,6 @@ pub fn fast_downsample(
             vec![0u8; (new_width * new_height * 3) as usize]
         )
     );
-
-    let a: f32 = 2.0;
 
 
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
