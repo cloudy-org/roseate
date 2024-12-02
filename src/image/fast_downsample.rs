@@ -17,6 +17,7 @@ fn lanczos(x: f32, a: f32) -> f32 {
         0.0
     }
 }
+
 pub fn fast_downsample(
     pixels: Vec<u8>, 
     image_size: &ImageSize, 
