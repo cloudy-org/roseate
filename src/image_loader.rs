@@ -1,6 +1,6 @@
-use std::{sync::{Arc, Mutex}, thread, time::Duration};
+use std::{sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use log::{debug, warn};
+use log::{debug, info, warn};
 
 use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::apply_image_optimizations}, notifier::NotifierAPI};
 
@@ -83,11 +83,14 @@ impl ImageLoader {
             };
 
             notifier_arc.set_loading(Some("Loading image...".into()));
+            let now = Instant::now();
             let result = image.load_image(
                 &optimizations, 
                 &mut notifier_arc, 
                 &backend
             );
+
+            info!("Image loaded in '{}' seconds.", now.elapsed().as_secs_f32());
 
             if let Err(error) = result {
                 notifier_arc.toasts.lock().unwrap()
