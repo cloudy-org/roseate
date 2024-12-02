@@ -2,6 +2,7 @@ use rayon::prelude::*;
 use imagesize::ImageSize;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
+// math :akko_shrug:
 fn sinc(x: f32) -> f32 {
     if x == 0.0 {
         return 1.0
@@ -10,6 +11,8 @@ fn sinc(x: f32) -> f32 {
     (PI * x).sin() / (PI * x)
 }
 
+// Get Lanczos kernel for resampling
+// Reference: https://en.wikipedia.org/wiki/Lanczos_resampling#Lanczos_kernel
 fn lanczos(x: f32, a: f32) -> f32 {
     if x.abs() < a {
         sinc(x) * sinc(x / a)
@@ -58,6 +61,7 @@ pub fn fast_downsample(
                     let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
                         .clamp(0, (image_size.width - 1) as isize);
 
+                    // Weights determine the contribution of each neighboring pixel to the final intensity of the resized pixel.
                     let lanczos_x = lanczos(
                         (relative_horizontal_pos as f32 - original_horizontal_pos) / scale_factor,
                         a,
