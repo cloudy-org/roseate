@@ -90,7 +90,10 @@ impl ImageLoader {
                 &backend
             );
 
-            info!("Image loaded in '{}' seconds.", now.elapsed().as_secs_f32());
+            info!(
+                "Image loaded in '{}' seconds using '{}' backend.", 
+                now.elapsed().as_secs_f32(), backend
+            );
 
             if let Err(error) = result {
                 notifier_arc.toasts.lock().unwrap()
