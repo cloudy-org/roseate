@@ -1,8 +1,27 @@
 use rayon::prelude::*;
 use imagesize::ImageSize;
-use std::sync::{Arc, Mutex};
+use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
-pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32, u32)) -> (Vec<u8>, (u32, u32)) {
+fn sinc(x: f32) -> f32 {
+    if x == 0.0 {
+        return 1.0
+    }
+
+    (PI * x).sin() / (PI * x)
+}
+
+fn lanczos(x: f32, a: f32) -> f32 {
+    if x.abs() < a {
+        sinc(x) * sinc(x / a)
+    } else {
+        0.0
+    }
+}
+pub fn fast_downsample(
+    pixels: Vec<u8>, 
+    image_size: &ImageSize, 
+    target_size: (u32, u32)
+) -> (Vec<u8>, (u32, u32)) {
     let (target_width, target_height) = target_size;
 
     let scale_factor = (image_size.width as f32 / target_width as f32)
@@ -17,32 +36,45 @@ pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32
         )
     );
 
+    let a: f32 = 2.0;
+
+
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
     (0..new_height).into_par_iter().for_each(|y| {
         let original_vertical_pos = y as f32 * scale_factor;
 
         for x in 0..new_width {
             let original_horizontal_pos = x as f32 * scale_factor;
-            let mut rgb_sum = [0u16; 3]; // basically --> "R, G, B"
+            let mut rgb_sum = [0.0; 3]; // basically --> "R, G, B"
+            let mut sum = 0.0;
 
-            let square_block_size: usize = 2;
+            let lanczos_window = a.ceil() as isize;
 
-            // Here we basically take a 2x2 square block (4 pixels) from the source image so we can
-            // average their colour values to downscale that to one pixel in the downsampled image.
-            for vertical_offset in 0..square_block_size {
-                for horizontal_offset in 0..square_block_size {
-                    let relative_vertical_pos = (original_vertical_pos as usize + vertical_offset)
-                        .min(image_size.height - 1);
-                    let relative_horizontal_pos = (original_horizontal_pos as usize + horizontal_offset)
-                        .min(image_size.width - 1);
+            for vertical_offset in -lanczos_window..=lanczos_window {
+                for horizontal_offset in -lanczos_window..=lanczos_window {
+                    let relative_vertical_pos = (original_vertical_pos as isize + vertical_offset)
+                        .clamp(0, (image_size.height - 1) as isize);
+                    let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
+                        .clamp(0, (image_size.width - 1) as isize);
+
+                    let lanczos_x = lanczos(
+                        (relative_horizontal_pos as f32 - original_horizontal_pos) / scale_factor,
+                        a,
+                    );
+                    let lanczos_y = lanczos(
+                        (relative_vertical_pos as f32 - original_vertical_pos) / scale_factor,
+                        a,
+                    );
+                    let weight = lanczos_x * lanczos_y;
 
                     let index = (
-                        relative_vertical_pos * image_size.width + relative_horizontal_pos
+                        relative_vertical_pos as usize * image_size.width + relative_horizontal_pos as usize
                     ) * 3;
 
-                    rgb_sum[0] += pixels[index] as u16; // red owo
-                    rgb_sum[1] += pixels[index + 1] as u16; // green owo
-                    rgb_sum[2] += pixels[index + 2] as u16; // blue owo
+                    rgb_sum[0] += pixels[index] as f32 * weight; // red owo
+                    rgb_sum[1] += pixels[index + 1] as f32 * weight; // green owo
+                    rgb_sum[2] += pixels[index + 2] as f32 * weight; // blue owo
+                    sum += weight;
                     // this has made me go insane!
                 }
             }
@@ -53,12 +85,11 @@ pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32
             let mut downsampled_pixels = downsampled_pixels.lock().unwrap();
 
             // compute the average colour values
-            let square_block_pixel_count = u16::pow(square_block_size as u16, 2);
 
             downsampled_pixels[destination_index..destination_index + 3].copy_from_slice(&[
-                (rgb_sum[0] / square_block_pixel_count) as u8,
-                (rgb_sum[1] / square_block_pixel_count) as u8,
-                (rgb_sum[2] / square_block_pixel_count) as u8,
+                (rgb_sum[0] / sum) as u8,
+                (rgb_sum[1] / sum) as u8,
+                (rgb_sum[2] / sum) as u8,
             ]);
         }
     });
