@@ -22,8 +22,8 @@ fn lanczos(x: f32, a: f32) -> f32 {
 }
 
 pub fn fast_downsample(
-    pixels: Vec<u8>, 
-    image_size: &ImageSize, 
+    pixels: Vec<u8>,
+    image_size: &ImageSize,
     target_size: (u32, u32)
 ) -> (Vec<u8>, (u32, u32)) {
     let a: f32 = 3.0; // 
@@ -61,7 +61,7 @@ pub fn fast_downsample(
                     let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
                         .clamp(0, (image_size.width - 1) as isize);
 
-                    // Weights determine the contribution of each neighboring pixel to the final intensity of the resized pixel.
+                    // Weights determine the contribution of each neighbouring pixel to the final intensity of the resized pixel.
                     let lanczos_x = lanczos(
                         (relative_horizontal_pos as f32 - original_horizontal_pos) / scale_factor,
                         a,
