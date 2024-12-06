@@ -318,7 +318,7 @@ impl eframe::App for Roseate {
                                     .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
                                     .size(20.0)
                             );
-        
+
                             if let Some(message) = &loading.message {
                                 ui.label(message);
                             }
