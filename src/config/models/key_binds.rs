@@ -7,7 +7,9 @@ pub struct KeyBinds {
     #[serde(default)]
     pub image: ImageBinds,
     #[serde(default)]
-    pub ui_controls: UIControlsBinds
+    pub ui_controls: UIControlsBinds,
+    #[serde(default)]
+    pub about_box: AboutBoxBinds
 }
 
 
@@ -66,3 +68,22 @@ impl Default for UIControlsBinds {
 fn ui_controls_toggle() -> String {
     "C".to_string()
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct AboutBoxBinds {
+    #[serde(default = "about_box_toggle")]
+    pub toggle: String,
+}
+
+impl Default for AboutBoxBinds {
+    fn default() -> Self {
+        Self {
+            toggle: about_box_toggle()
+        }
+    }
+}
+
+fn about_box_toggle() -> String {
+    "A".to_string()
+}
+

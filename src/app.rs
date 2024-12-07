@@ -4,7 +4,18 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{
+    config::config::Config, 
+    files, 
+    image::image::Image, 
+    image_loader::ImageLoader, 
+    panels::info_box::InfoBox, 
+    panels::magnification_panel::MagnificationPanel, 
+    panels::about_box::AboutBox,
+    notifier::NotifierAPI, 
+    window_scaling::WindowScaling, 
+    zoom_pan::ZoomPan
+};
 
 pub struct Roseate {
     theme: Theme,
@@ -13,6 +24,7 @@ pub struct Roseate {
     info_box: InfoBox,
     notifier: NotifierAPI,
     magnification_panel: MagnificationPanel,
+    about_box: AboutBox,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_loader: ImageLoader,
@@ -34,6 +46,7 @@ impl Roseate {
 
         let zoom_pan = ZoomPan::new(&config, &mut notifier);
         let info_box = InfoBox::new(&config, &mut notifier);
+        let about_box = AboutBox::new(&config, &mut notifier);
         let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
 
         Self {
@@ -43,6 +56,7 @@ impl Roseate {
             zoom_pan,
             info_box,
             magnification_panel,
+            about_box,
             window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
             image_loader: image_loader,
@@ -124,6 +138,7 @@ impl eframe::App for Roseate {
         self.zoom_pan.handle_zoom_input(ctx);
         self.zoom_pan.handle_reset_input(ctx);
         self.magnification_panel.handle_input(ctx);
+        self.about_box.handle_input(ctx);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -136,6 +151,7 @@ impl eframe::App for Roseate {
             }
 
             self.notifier.update(ctx);
+            self.about_box.update(ctx);
 
             if self.image.is_none() {
                 // Collect dropped files.
