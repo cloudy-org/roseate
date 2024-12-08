@@ -9,14 +9,14 @@ use crate::{config::config::Config, image::image::Image, notifier::NotifierAPI};
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
 
-pub struct InfoBox {
+pub struct InfoWindow {
     pub show: bool,
     image: Option<Image>,
     toggle_key: Key,
     pub response: Option<Response>
 }
 
-impl InfoBox {
+impl InfoWindow {
     pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
         let config_key = match Key::from_name(&config.key_binds.info_box.toggle) {
             Some(key) => key,

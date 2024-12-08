@@ -20,7 +20,7 @@ mod image;
 mod error;
 mod config;
 mod notifier;
-mod info_box;
+mod windows;
 mod zoom_pan;
 mod image_loader;
 mod window_scaling;

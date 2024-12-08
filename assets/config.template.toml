@@ -27,6 +27,7 @@ padding = 2
 
 [key_binds]
 info_box.toggle = "I"
+about_box.toggle = "A"
 # Keybind to reset the image pan 
 # position and zoom scale back to default.
 image.reset_pos = "R"

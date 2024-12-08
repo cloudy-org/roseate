@@ -9,6 +9,7 @@ repository = "https://github.com/cloudy-org/roseate/"
 rust-version = "1.80"
 
 [dependencies]
+cirrus_egui = { path = "./cirrus/egui" }
 cirrus_theming = { path = "./cirrus/theming" }
 
 rfd = "0.15.1"
