@@ -1,8 +1,46 @@
 use rayon::prelude::*;
 use imagesize::ImageSize;
-use std::sync::{Arc, Mutex};
+use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
-pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32, u32)) -> (Vec<u8>, (u32, u32)) {
+// math :akko_shrug:
+// SINNNNNNN, SIN CITY WASN'T MADE FOR YOU!!! ANGLES LIKEEEEE YOUUUU!
+fn sinc(x: f32) -> f32 {
+    if x == 0.0 {
+        return 1.0
+    }
+
+    (PI * x).sin() / (PI * x)
+}
+
+// Get Lanczos kernel for resampling
+// Reference: https://en.wikipedia.org/wiki/Lanczos_resampling#Lanczos_kernel
+fn lanczos_kernel(x: f32, a: f32) -> f32 {
+    if x.abs() < a {
+        sinc(x) * sinc(x / a)
+    } else {
+        0.0
+    }
+}
+
+fn precomputed_lanczos(window_size: f32, scale_factor: f32) -> Vec<f32> {
+    let max_distance = (window_size * scale_factor).ceil() as usize;
+    let mut lookup = vec![0.0; max_distance + 1];
+    for i in 0..=max_distance {
+        let distance = i as f32 / scale_factor;
+        lookup[i] = lanczos_kernel(distance, window_size);
+    }
+    lookup
+}
+
+pub fn fast_downsample(
+    pixels: Vec<u8>,
+    image_size: &ImageSize,
+    target_size: (u32, u32)
+) -> (Vec<u8>, (u32, u32)) {
+    let window_size: f32 = 3.0; // the window size that determines the level 
+    // of influence the kernel has on each original pixel. Larger values result in more smoothing 
+    // but may also result in slower computation time so beware.
+
     let (target_width, target_height) = target_size;
 
     let scale_factor = (image_size.width as f32 / target_width as f32)
@@ -11,7 +49,9 @@ pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32
     let new_width = (image_size.width as f32 / scale_factor) as u32;
     let new_height = (image_size.height as f32 / scale_factor) as u32;
 
-    let downsampled_pixels = Arc::new(
+    let kernel_lookup = precomputed_lanczos(window_size, scale_factor);
+
+    let downsampled_pixels_buffer = Arc::new(
         Mutex::new(
             vec![0u8; (new_width * new_height * 3) as usize]
         )
@@ -20,51 +60,67 @@ pub fn fast_downsample(pixels:Vec<u8>, image_size: &ImageSize, target_size: (u32
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
     (0..new_height).into_par_iter().for_each(|y| {
         let original_vertical_pos = y as f32 * scale_factor;
+        let mut local_downsampled_pixels_buffer = vec![0u8; (new_width * 3) as usize];
 
         for x in 0..new_width {
             let original_horizontal_pos = x as f32 * scale_factor;
-            let mut rgb_sum = [0u16; 3]; // basically --> "R, G, B"
 
-            let square_block_size: usize = 2;
+            let mut sum = 0.0;
+            let mut rgb_sum = [0.0; 3]; // basically --> "R, G, B"
 
-            // Here we basically take a 2x2 square block (4 pixels) from the source image so we can
-            // average their colour values to downscale that to one pixel in the downsampled image.
-            for vertical_offset in 0..square_block_size {
-                for horizontal_offset in 0..square_block_size {
-                    let relative_vertical_pos = (original_vertical_pos as usize + vertical_offset)
-                        .min(image_size.height - 1);
-                    let relative_horizontal_pos = (original_horizontal_pos as usize + horizontal_offset)
-                        .min(image_size.width - 1);
+            let lanczos_window = window_size.ceil() as isize;
+
+            // Here we iterate over the lanczos window which is a 
+            // window that evenly surrounds the original pixel position.
+            for vertical_offset in -lanczos_window..=lanczos_window {
+                for horizontal_offset in -lanczos_window..=lanczos_window {
+                    let relative_vertical_pos = (original_vertical_pos as isize + vertical_offset)
+                        .clamp(0, (image_size.height - 1) as isize);
+                    let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
+                        .clamp(0, (image_size.width - 1) as isize);
+
+                    // Each neighbouring pixel's influence is calculated based on it's 
+                    // distance from the relative and original pixel position using the Lanczos kernel.
+                    // 
+                    // In this case below this we use a predetermined lanczos 
+                    // (kernel_lookup) instead of calling the lanczos kernal each time.
+                    let relative_horizontal_distance = (relative_horizontal_pos as f32 - original_horizontal_pos).abs() as usize;
+                    let relative_vertical_distance = (relative_vertical_pos as f32 - original_vertical_pos).abs() as usize;
+
+                    // Weights determine how much each original pixel contributes to the new resized pixel RGB colour.
+                    let weight = kernel_lookup[relative_horizontal_distance] * kernel_lookup[relative_vertical_distance];
 
                     let index = (
-                        relative_vertical_pos * image_size.width + relative_horizontal_pos
+                        relative_vertical_pos as usize * image_size.width + relative_horizontal_pos as usize
                     ) * 3;
 
-                    rgb_sum[0] += pixels[index] as u16; // red owo
-                    rgb_sum[1] += pixels[index + 1] as u16; // green owo
-                    rgb_sum[2] += pixels[index + 2] as u16; // blue owo
+                    rgb_sum[0] += pixels[index] as f32 * weight; // red owo
+                    rgb_sum[1] += pixels[index + 1] as f32 * weight; // green owo
+                    rgb_sum[2] += pixels[index + 2] as f32 * weight; // blue owo
+                    sum += weight;
                     // this has made me go insane!
                 }
             }
-
+            
             // work out the index of where the new pixels will lie (destination index).
-            let destination_index: usize = ((y * new_width + x) * 3) as usize;
+            let destination_index: usize = (x * 3) as usize;
 
-            let mut downsampled_pixels = downsampled_pixels.lock().unwrap();
-
-            // compute the average colour values
-            let square_block_pixel_count = u16::pow(square_block_size as u16, 2);
-
-            downsampled_pixels[destination_index..destination_index + 3].copy_from_slice(&[
-                (rgb_sum[0] / square_block_pixel_count) as u8,
-                (rgb_sum[1] / square_block_pixel_count) as u8,
-                (rgb_sum[2] / square_block_pixel_count) as u8,
+            local_downsampled_pixels_buffer[destination_index..destination_index + 3].copy_from_slice(&[
+                (rgb_sum[0] / sum) as u8,
+                (rgb_sum[1] / sum) as u8,
+                (rgb_sum[2] / sum) as u8,
             ]);
         }
+
+        // Copy thread-local downsampled pixels buffer into the global downsampled pixels buffer.
+        let global_destination_index = (y * new_width * 3) as usize;
+
+        downsampled_pixels_buffer.lock().unwrap()[global_destination_index..global_destination_index + (new_width * 3) as usize]
+            .copy_from_slice(&local_downsampled_pixels_buffer);
     });
 
     (
-        Arc::try_unwrap(downsampled_pixels)
+        Arc::try_unwrap(downsampled_pixels_buffer)
             .expect("Arc unwrap of downsampled pixels failed!")
             .into_inner()
             .unwrap(),
