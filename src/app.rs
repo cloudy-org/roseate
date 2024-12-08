@@ -1,16 +1,17 @@
 use std::time::Duration;
 
 use cirrus_theming::v1::{Colour, Theme};
-use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, ImageSource, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
+use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{about_box::AboutBox, config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, joined_responses::JoinedResponses, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, zoom_pan::ZoomPan};
 
-pub struct Roseate {
+pub struct Roseate<'a> {
     theme: Theme,
     image: Option<Image>,
     zoom_pan: ZoomPan,
     info_box: InfoBox,
+    about_box: AboutBox<'a>,
     notifier: NotifierAPI,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
@@ -19,7 +20,7 @@ pub struct Roseate {
     config: Config,
 }
 
-impl Roseate {
+impl<'a> Roseate<'a> {
     pub fn new(image: Option<Image>, theme: Theme, mut notifier: NotifierAPI, config: Config) -> Self {
         let mut image_loader = ImageLoader::new();
 
@@ -34,6 +35,7 @@ impl Roseate {
 
         let zoom_pan = ZoomPan::new(&config, &mut notifier);
         let info_box = InfoBox::new(&config, &mut notifier);
+        let about_box = AboutBox::new(&config, &mut notifier);
         let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
 
         Self {
@@ -42,6 +44,7 @@ impl Roseate {
             notifier,
             zoom_pan,
             info_box,
+            about_box,
             magnification_panel,
             window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
@@ -113,17 +116,26 @@ impl Roseate {
     }
 }
 
-impl eframe::App for Roseate {
+impl eframe::App for Roseate<'_> {
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         self.set_app_style(ctx);
 
         self.info_box.init(&self.image);
-
         self.info_box.handle_input(ctx);
-        self.zoom_pan.handle_zoom_input(ctx);
+
+        let box_responses = JoinedResponses::new(
+            vec![
+                &self.info_box.response,
+                &self.about_box.response,
+                &self.about_box.about_widget.license_window_response,
+            ]
+        );
+
+        self.zoom_pan.handle_zoom_input(ctx, box_responses);
         self.zoom_pan.handle_reset_input(ctx);
         self.magnification_panel.handle_input(ctx);
+        self.about_box.handle_input(ctx);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -136,6 +148,8 @@ impl eframe::App for Roseate {
             }
 
             self.notifier.update(ctx);
+            self.about_box.update(ctx); // we update this box here because we want 
+            // the about box is to be toggleable even without an image.
 
             if self.image.is_none() {
                 // Collect dropped files.
@@ -186,7 +200,7 @@ impl eframe::App for Roseate {
                         )
                         .show(ui, |ui| {
                             let rose_response = ui.add(
-                                egui::Image::new(get_platform_rose_image())
+                                egui::Image::new(files::get_platform_rose_image())
                                     .max_width(rose_width)
                                     .sense(egui::Sense::click())
                             );
@@ -287,12 +301,11 @@ impl eframe::App for Roseate {
                     ).rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
     
-
-                    self.zoom_pan.handle_pan_input(ctx, &response, self.info_box.response.as_ref());
+                    self.zoom_pan.handle_pan_input(ctx, &response);
                 });
 
                 // We must update the WindowScaling with the window size AFTER
-                // the image has loaded to maintain that smooth scaling animation.
+                // the image has loaded to maintain that smooth scaling animation on image show.
                 self.window_scaling.update(&window_rect, &image.image_size);
 
                 ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
@@ -330,15 +343,4 @@ impl eframe::App for Roseate {
 
     }
 
-}
-
-
-fn get_platform_rose_image<'a>() -> ImageSource<'a> {
-    if cfg!(target_os = "windows") {
-        return egui::include_image!("../assets/rose_emojis/microsoft.png");
-    } else if cfg!(target_os = "macos") {
-        return egui::include_image!("../assets/rose_emojis/apple.png");
-    }
-
-    return egui::include_image!("../assets/rose_emojis/google_noto.png");
 }

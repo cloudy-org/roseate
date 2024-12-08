@@ -5,6 +5,8 @@ pub struct KeyBinds {
     #[serde(default)]
     pub info_box: InfoBoxBinds,
     #[serde(default)]
+    pub about_box: AboutBoxBinds,
+    #[serde(default)]
     pub image: ImageBinds,
     #[serde(default)]
     pub ui_controls: UIControlsBinds
@@ -27,6 +29,25 @@ impl Default for InfoBoxBinds {
 
 fn info_box_toggle() -> String {
     "I".to_string()
+}
+
+
+#[derive(Serialize, Deserialize)]
+pub struct AboutBoxBinds {
+    #[serde(default = "about_box_toggle")]
+    pub toggle: String,
+}
+
+impl Default for AboutBoxBinds {
+    fn default() -> Self {
+        Self {
+            toggle: about_box_toggle()
+        }
+    }
+}
+
+fn about_box_toggle() -> String {
+    "A".to_string()
 }
 
 

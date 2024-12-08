@@ -5,7 +5,7 @@ use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::{config::config::Config, notifier::NotifierAPI};
+use crate::{config::config::Config, joined_responses::JoinedResponses, notifier::NotifierAPI};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -73,7 +73,11 @@ impl ZoomPan {
     }
 
     // Method to handle zoom input (scrolling and PLUS/MINUS binds)
-    pub fn handle_zoom_input(&mut self, ctx: &Context) {
+    pub fn handle_zoom_input(&mut self, ctx: &Context, box_responses: JoinedResponses) {
+        if box_responses.contains_pointer() {
+            return;
+        }
+
         self.last_zoom_factor = self.zoom_factor;
 
         let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
@@ -97,7 +101,7 @@ impl ZoomPan {
     }
 
     // Method to handle panning (dragging)
-    pub fn handle_pan_input(&mut self, ctx: &Context, image_response: &Response, info_box_response: Option<&Response>) {
+    pub fn handle_pan_input(&mut self, ctx: &Context, image_response: &Response) {
         let mut can_pan = false;
 
         // "&& self.is_panning" allows for the panning to continue even 
@@ -106,12 +110,8 @@ impl ZoomPan {
         if ctx.input(|i| i.pointer.primary_down()) && self.is_panning {
             can_pan = true;
         } else if ctx.input(|i| i.pointer.primary_down()) && image_response.contains_pointer() {
-            if let Some(info_box_response) = info_box_response {
-                if info_box_response.is_pointer_button_down_on() {
-                    can_pan = false;
-                } else {
-                    can_pan = true;
-                }
+            if ctx.dragging_something_else(image_response.id) {
+                can_pan = false;
             } else {
                 can_pan = true;
             }
