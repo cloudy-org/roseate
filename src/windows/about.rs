@@ -7,14 +7,14 @@ use crate::{config::config::Config, files, notifier::NotifierAPI};
 const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub struct AboutBox<'a> {
+pub struct AboutWindow<'a> {
     pub show: bool,
     toggle_key: Key,
-    pub about_widget: About<'a>,
+    about_widget: About<'a>,
     pub response: Option<Response>,
 }
 
-impl<'a> AboutBox<'a> {
+impl<'a> AboutWindow<'a> {
     pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
         let config_key = match Key::from_name(&config.key_binds.about_box.toggle) {
             Some(key) => key,
@@ -31,7 +31,7 @@ impl<'a> AboutBox<'a> {
         let about_app_info = AboutApplicationInfo {
             name: "Roseate".to_string(),
             description: "Fast and minimal GPU accelerated image viewer that's cross platform.".to_string(),
-            license: include_str!("../LICENSE").to_string(),
+            license: include_str!("../../LICENSE").to_string(),
             version: VERSION.to_string(),
             authors: cargo_authors_to_about_authors(&AUTHORS.to_string()),
             webpage: "https://github.com/cloudy-org/roseate".to_string(),

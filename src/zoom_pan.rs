@@ -5,7 +5,7 @@ use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::{config::config::Config, joined_responses::JoinedResponses, notifier::NotifierAPI};
+use crate::{config::config::Config, notifier::NotifierAPI};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -73,8 +73,8 @@ impl ZoomPan {
     }
 
     // Method to handle zoom input (scrolling and PLUS/MINUS binds)
-    pub fn handle_zoom_input(&mut self, ctx: &Context, box_responses: JoinedResponses) {
-        if box_responses.contains_pointer() {
+    pub fn handle_zoom_input(&mut self, ctx: &Context, image_response: &Response) {
+        if !image_response.contains_pointer() {
             return;
         }
 

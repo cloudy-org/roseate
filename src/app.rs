@@ -4,14 +4,14 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{about_box::AboutBox, config::config::Config, files, image::image::Image, image_loader::ImageLoader, info_box::InfoBox, joined_responses::JoinedResponses, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, windows::info::InfoWindow, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, windows::about::AboutWindow, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
     image: Option<Image>,
     zoom_pan: ZoomPan,
-    info_box: InfoBox,
-    about_box: AboutBox<'a>,
+    info_box: InfoWindow,
+    about_box: AboutWindow<'a>,
     notifier: NotifierAPI,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
@@ -34,8 +34,8 @@ impl<'a> Roseate<'a> {
         }
 
         let zoom_pan = ZoomPan::new(&config, &mut notifier);
-        let info_box = InfoBox::new(&config, &mut notifier);
-        let about_box = AboutBox::new(&config, &mut notifier);
+        let info_box = InfoWindow::new(&config, &mut notifier);
+        let about_box = AboutWindow::new(&config, &mut notifier);
         let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
 
         Self {
@@ -124,15 +124,6 @@ impl eframe::App for Roseate<'_> {
         self.info_box.init(&self.image);
         self.info_box.handle_input(ctx);
 
-        let box_responses = JoinedResponses::new(
-            vec![
-                &self.info_box.response,
-                &self.about_box.response,
-                &self.about_box.about_widget.license_window_response,
-            ]
-        );
-
-        self.zoom_pan.handle_zoom_input(ctx, box_responses);
         self.zoom_pan.handle_reset_input(ctx);
         self.magnification_panel.handle_input(ctx);
         self.about_box.handle_input(ctx);
@@ -273,7 +264,7 @@ impl eframe::App for Roseate<'_> {
                     if self.zoom_pan.is_pan_out_of_bounds(scaled_image_size) {
                         self.zoom_pan.schedule_pan_reset(Duration::from_millis(300));
                     };
-    
+
                     // NOTE: umm do we move this to window scaling... *probably* if we 
                     // want to stay consistent with zoom_pan but this isn't important right now.
                     let scaled_image_width_animated = egui_animation::animate_eased(
@@ -282,16 +273,16 @@ impl eframe::App for Roseate<'_> {
                     let scaled_image_height_animated = egui_animation::animate_eased(
                         ctx, "image_scale_height", scaled_image_size.y, 1.5, simple_easing::cubic_in_out
                     ) as u32 as f32;
-    
+
                     let scaled_image_size = Vec2::new(scaled_image_width_animated, scaled_image_height_animated);
-    
+
                     let zoom_scaled_image_size = self.zoom_pan.relative_image_size(scaled_image_size);
                     let image_position = ui.max_rect().center() - zoom_scaled_image_size * 0.5 + self.zoom_pan.pan_offset;
-    
+
                     let zoom_pan_rect = Rect::from_min_size(image_position, zoom_scaled_image_size);
-    
+
                     let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
-    
+
                     egui::Image::from_bytes(
                         format!(
                             "bytes://{}", image.image_path.to_string_lossy()
@@ -300,8 +291,9 @@ impl eframe::App for Roseate<'_> {
                         image.image_bytes.lock().unwrap().clone().unwrap()
                     ).rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
-    
+
                     self.zoom_pan.handle_pan_input(ctx, &response);
+                    self.zoom_pan.handle_zoom_input(ctx, &response);
                 });
 
                 // We must update the WindowScaling with the window size AFTER
