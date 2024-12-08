@@ -16,7 +16,9 @@ pub enum ImageOptimization {
     /// can even display so to save memory we downsample the image. Downsampling 
     /// decreases the memory usage of the image at the cost of time wasted actually 
     /// resizing the image. The bigger the image the more time it will take to downsample 
-    /// but the memory savings are very valuable.
+    /// but we think memory savings are more valuable. You can enable or disable downsampling
+    /// in the config if you do not wish for such memory savings. Setting the overall optimization
+    /// mode to speed ("s") will automatically disable this.
     /// 
     /// NOTE: "The image's aspect ratio is preserved. The image is scaled to the maximum 
     /// possible size that fits within the bounds specified by the width and height." ~ Image Crate
