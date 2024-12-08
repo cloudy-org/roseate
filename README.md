@@ -3,7 +3,7 @@
   # 🌹 roseate
   <sub>A fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform. **VERY WIP!**</sub>
 
-  <img src="./assets/dev_preview_1.png">
+  <img src="./assets/dev_preview_2.png">
 
   <sub>(image from a WIP development build, this is **NOT** the final product)</sub>
 
