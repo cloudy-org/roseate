@@ -38,10 +38,10 @@ impl ImageOptimization {
         }
     }
 
-    pub fn apply_custom(&self, pixels: Vec<u8>, image_size: &ImageSize) -> (Vec<u8>, (u32, u32)) {
+    pub fn apply_custom(&self, pixels: Vec<u8>, image_size: &ImageSize, has_alpha: bool) -> (Vec<u8>, (u32, u32)) {
         match self {
             ImageOptimization::Downsample(width, height) => {
-                fast_downsample(pixels, image_size, (*width, *height))
+                fast_downsample(pixels, image_size, (*width, *height), has_alpha)
             },
         }
     }
