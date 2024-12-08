@@ -177,7 +177,16 @@ impl Image {
                     );
                     debug!("Applying '{:?}' optimization to image...", optimization);
 
-                    (pixels, (actual_width, actual_height)) = optimization.apply_custom(pixels, &self.image_size);
+                    let has_alpha = match image_colour_type {
+                        image::ColorType::La8 => true,
+                        image::ColorType::Rgba8 => true,
+                        image::ColorType::La16 => true,
+                        image::ColorType::Rgba16 => true,
+                        image::ColorType::Rgba32F => true,
+                        _ => false,
+                    };
+
+                    (pixels, (actual_width, actual_height)) = optimization.apply_custom(pixels, &self.image_size, has_alpha);
                 }
 
                 notifier.set_loading(

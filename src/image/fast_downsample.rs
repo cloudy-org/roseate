@@ -35,7 +35,8 @@ fn precomputed_lanczos(window_size: f32, scale_factor: f32) -> Vec<f32> {
 pub fn fast_downsample(
     pixels: Vec<u8>,
     image_size: &ImageSize,
-    target_size: (u32, u32)
+    target_size: (u32, u32),
+    has_alpha: bool
 ) -> (Vec<u8>, (u32, u32)) {
     let window_size: f32 = 3.0; // the window size that determines the level 
     // of influence the kernel has on each original pixel. Larger values result in more smoothing 
@@ -56,6 +57,11 @@ pub fn fast_downsample(
             vec![0u8; (new_width * new_height * 3) as usize]
         )
     );
+
+    let index_times = match has_alpha {
+        true => 4,
+        false => 3,
+    };
 
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
     (0..new_height).into_par_iter().for_each(|y| {
@@ -89,10 +95,9 @@ pub fn fast_downsample(
 
                     // Weights determine how much each original pixel contributes to the new resized pixel RGB colour.
                     let weight = kernel_lookup[relative_horizontal_distance] * kernel_lookup[relative_vertical_distance];
-
                     let index = (
                         relative_vertical_pos as usize * image_size.width + relative_horizontal_pos as usize
-                    ) * 3;
+                    ) * index_times;
 
                     rgb_sum[0] += pixels[index] as f32 * weight; // red owo
                     rgb_sum[1] += pixels[index + 1] as f32 * weight; // green owo
