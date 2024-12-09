@@ -4,8 +4,8 @@ use eframe::egui::{self, Key, Response, Vec2};
 
 use crate::{config::config::Config, files, notifier::NotifierAPI};
 
-const AUTHORS: &str = include_str!("../../assets/authors.toml");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const AUTHORS: &str = include_str!("../../authors.toml");
 
 pub struct AboutWindow<'a> {
     pub show: bool,
@@ -82,7 +82,7 @@ impl<'a> AboutWindow<'a> {
                 .default_pos(ctx.screen_rect().center() - default_window_size / 2.0)
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        self.about_widget.show(ui);
+                        self.about_widget.show(ctx, ui);
                     });
                 });
 

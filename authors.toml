@@ -2,10 +2,8 @@
 name = "Goldy"
 github = "THEGOLDENPRO"
 email = "goldy@devgoldy.xyz"
-webpage = "https://devgoldy.xyz"
 
 [[authors]]
 name = "Ananas"
 github = "r3tr0ananas"
 email = "ananas@ananas.moe"
-webpage = "https://ananas.moe"
