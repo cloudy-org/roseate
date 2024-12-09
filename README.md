@@ -15,7 +15,7 @@
 # 🌟 Devlogs
 <a href="https://www.youtube.com/watch?v=8bSdw34x98k&list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-&index=2">
   <img width="700px" src="https://img.youtube.com/vi/8bSdw34x98k/maxresdefault.jpg">
-<a/>
+</a>
 
 You can find devlogs **in video format** on my youtube channel; I have a playlist for it here: **https://www.youtube.com/playlist?list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-**
 
