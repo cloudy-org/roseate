@@ -1,10 +1,10 @@
 use egui_notify::ToastLevel;
-use cirrus_egui::v1::widgets::about::{cargo_authors_to_about_authors, About, AboutApplicationInfo};
+use cirrus_egui::v1::widgets::about::{authors_toml_to_about_authors, About, AboutApplicationInfo};
 use eframe::egui::{self, Key, Response, Vec2};
 
 use crate::{config::config::Config, files, notifier::NotifierAPI};
 
-const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
+const AUTHORS: &str = include_str!("../../assets/authors.toml");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct AboutWindow<'a> {
@@ -33,13 +33,13 @@ impl<'a> AboutWindow<'a> {
             description: "Fast and minimal GPU accelerated image viewer that's cross platform.".to_string(),
             license: include_str!("../../LICENSE").to_string(),
             version: VERSION.to_string(),
-            authors: cargo_authors_to_about_authors(&AUTHORS.to_string()),
+            authors: authors_toml_to_about_authors(&AUTHORS.to_string()),
             webpage: "https://github.com/cloudy-org/roseate".to_string(),
             git_repo: "https://github.com/cloudy-org/roseate".to_string(),
             copyright: "Copyright (C) 2024 Goldy".to_string()
         };
 
-        let about_widget= About::new(
+        let about_widget = About::new(
             files::get_platform_rose_image(), about_app_info
         );
 
