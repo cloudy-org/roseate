@@ -45,6 +45,6 @@ ui_controls.toggle = "C"
 
 
 # Setting this to true will enable the experimental lanczos roseate image processing backend
-# which is faster then the image-rs backend but may result in buggy/blocky images. 
+# which is faster than the image-rs backend but may result in buggy/blocky images. 
 # Disable this if the image looks weird.
 use_fast_roseate_backend = false
