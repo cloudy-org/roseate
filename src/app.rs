@@ -54,7 +54,6 @@ impl<'a> Roseate<'a> {
     }
 
     fn set_app_style(&self, ctx: &Context) {
-        // #1d0a0a # dark mode secondary colour for roseate
         let mut custom_style = Style {
             override_text_style: Some(TextStyle::Monospace),
             ..Default::default()

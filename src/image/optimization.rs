@@ -5,7 +5,7 @@ use log::debug;
 use imagesize::ImageSize;
 use display_info::DisplayInfo;
 
-use super::fast_downsample::fast_downsample;
+use super::{fast_downsample::fast_downsample, image::ImageSizeT};
 
 #[derive(Debug)]
 pub enum ImageOptimization {
@@ -38,7 +38,7 @@ impl ImageOptimization {
         }
     }
 
-    pub fn apply_custom(&self, pixels: Vec<u8>, image_size: &ImageSize, has_alpha: bool) -> (Vec<u8>, (u32, u32)) {
+    pub fn apply_roseate(&self, pixels: Vec<u8>, image_size: &ImageSizeT, has_alpha: bool) -> (Vec<u8>, ImageSizeT) {
         match self {
             ImageOptimization::Downsample(width, height) => {
                 fast_downsample(pixels, image_size, (*width, *height), has_alpha)

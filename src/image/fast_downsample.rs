@@ -1,6 +1,7 @@
 use rayon::prelude::*;
-use imagesize::ImageSize;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
+
+use super::image::ImageSizeT;
 
 // math :akko_shrug:
 // SINNNNNNN, SIN CITY WASN'T MADE FOR YOU!!! ANGLES LIKEEEEE YOUUUU!
@@ -34,21 +35,21 @@ fn precomputed_lanczos(window_size: f32, scale_factor: f32) -> Vec<f32> {
 
 pub fn fast_downsample(
     pixels: Vec<u8>,
-    image_size: &ImageSize,
+    image_size: &ImageSizeT,
     target_size: (u32, u32),
     has_alpha: bool
-) -> (Vec<u8>, (u32, u32)) {
+) -> (Vec<u8>, ImageSizeT) {
     let window_size: f32 = 3.0; // the window size that determines the level 
     // of influence the kernel has on each original pixel. Larger values result in more smoothing 
     // but may also result in slower computation time so beware.
 
     let (target_width, target_height) = target_size;
 
-    let scale_factor = (image_size.width as f32 / target_width as f32)
-        .max(image_size.height as f32 / target_height as f32);
+    let scale_factor = (image_size.0 as f32 / target_width as f32)
+        .max(image_size.1 as f32 / target_height as f32);
 
-    let new_width = (image_size.width as f32 / scale_factor) as u32;
-    let new_height = (image_size.height as f32 / scale_factor) as u32;
+    let new_width = (image_size.0 as f32 / scale_factor) as u32;
+    let new_height = (image_size.1 as f32 / scale_factor) as u32;
 
     let kernel_lookup = precomputed_lanczos(window_size, scale_factor);
 
@@ -81,9 +82,9 @@ pub fn fast_downsample(
             for vertical_offset in -lanczos_window..=lanczos_window {
                 for horizontal_offset in -lanczos_window..=lanczos_window {
                     let relative_vertical_pos = (original_vertical_pos as isize + vertical_offset)
-                        .clamp(0, (image_size.height - 1) as isize);
+                        .clamp(0, (image_size.1 - 1) as isize);
                     let relative_horizontal_pos = (original_horizontal_pos as isize + horizontal_offset)
-                        .clamp(0, (image_size.width - 1) as isize);
+                        .clamp(0, (image_size.0 - 1) as isize);
 
                     // Each neighbouring pixel's influence is calculated based on it's 
                     // distance from the relative and original pixel position using the Lanczos kernel.
@@ -96,7 +97,7 @@ pub fn fast_downsample(
                     // Weights determine how much each original pixel contributes to the new resized pixel RGB colour.
                     let weight = kernel_lookup[relative_horizontal_distance] * kernel_lookup[relative_vertical_distance];
                     let index = (
-                        relative_vertical_pos as usize * image_size.width + relative_horizontal_pos as usize
+                        relative_vertical_pos as usize * image_size.0 as usize + relative_horizontal_pos as usize
                     ) * index_times;
 
                     rgb_sum[0] += pixels[index] as f32 * weight; // red owo
@@ -130,7 +131,7 @@ pub fn fast_downsample(
             .into_inner()
             .unwrap(),
         (
-            new_width, 
+            new_width,
             new_height
         )
     )

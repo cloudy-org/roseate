@@ -11,6 +11,8 @@ use crate::{error::Error, notifier::NotifierAPI};
 
 use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimization};
 
+pub type ImageSizeT = (u32, u32);
+
 #[derive(Clone)]
 pub struct Image {
     pub image_size: ImageSize,
@@ -108,7 +110,25 @@ impl Image {
         )
     }
 
-    pub fn load_image(&mut self, optimizations: &[ImageOptimization], notifier: &mut NotifierAPI, image_processing_backend: &ImageProcessingBackend) -> Result<(), Error> {
+    pub fn reload_image(
+        &mut self,
+        optimizations: &[ImageOptimization],
+        notifier: &mut NotifierAPI,
+        image_processing_backend: &ImageProcessingBackend
+    ) -> Result<(), Error> {
+        if optimizations.is_empty() {
+            return Ok(());
+        }
+
+        Ok(())
+    }
+
+    pub fn load_image(
+        &mut self,
+        optimizations: &[ImageOptimization],
+        notifier: &mut NotifierAPI,
+        image_processing_backend: &ImageProcessingBackend
+    ) -> Result<(), Error> {
         if optimizations.is_empty() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
@@ -124,8 +144,7 @@ impl Image {
         }
 
         let (mut actual_width, mut actual_height) = (
-            self.image_size.width as u32,
-            self.image_size.height as u32
+            self.image_size.width as u32, self.image_size.height as u32
         );
 
         notifier.set_loading(Some("Opening file...".into()));
@@ -186,7 +205,9 @@ impl Image {
                         _ => false,
                     };
 
-                    (pixels, (actual_width, actual_height)) = optimization.apply_custom(pixels, &self.image_size, has_alpha);
+                    (pixels, (actual_width, actual_height)) = optimization.apply_roseate(
+                        pixels, &(self.image_size.width as u32, self.image_size.height as u32), has_alpha
+                    );
                 }
 
                 notifier.set_loading(

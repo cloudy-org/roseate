@@ -22,14 +22,11 @@ impl ImageLoader {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, ) {
         // I use an update function to keep the public fields update to date with their Arc<Mutex<T>> twins.
-        //
-        // I also use this to append the queued toast messages 
-        // from threads as we cannot take ownership of "&mut Toasts" sadly.
 
         if let Ok(value) = self.image_loaded_arc.try_lock() {
-            self.image_loaded = value.clone(); // TODO: find a way to reference instead of clone to save memory here.
+            self.image_loaded = value.clone(); // cloning here shouldn't too expensive
             self.image_loading = false;
         }
     }
