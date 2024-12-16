@@ -11,6 +11,18 @@
 
 > [!CAUTION]
 > This project is HEAVILY a work in progress, hence it may crash or harm your system. Github issues are very welcome. 🤝
+> With that being said, the features mentioned in this readme are also WIP and may not be available yet.
+
+# What is 🌹 Roseate?
+> *Or what **will** Roseate be?*
+> 
+> **Just because I mentioned something here doesn't mean it's true yet. Roseate is still WIP!**
+
+Roseate is a GPU accelerated, memory efficient and multi-threaded but simplistic GUI image viewer that is also cross-platform. 🌟
+
+It follows the [cloudy-org philosophy](https://github.com/cloudy-org#%EF%B8%8F-what-we-do-or-what-will-we-do) *(a more up to date and complete version of this is under works)* and it's focus is on user experience and efficiency.
+
+Unlike GUI images viewers like the Windows 10/11 Photo Viewer, Roseate is clean, telemetry free by default, open source and of course faster and more memory efficient, thanks to a number of Roseate's image optimization algorithms. 
 
 # 🌟 Devlogs
 <a href="https://www.youtube.com/watch?v=8bSdw34x98k&list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-&index=2">
