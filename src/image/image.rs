@@ -9,7 +9,7 @@ use image::{codecs::{gif::{GifDecoder, GifEncoder}, jpeg::{JpegDecoder, JpegEnco
 
 use crate::{error::{Error, Result}, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimization};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::{self, ImageOptimization}};
 
 pub type ImageSizeT = (u32, u32);
 
@@ -18,7 +18,8 @@ pub struct Image {
     pub image_size: ImageSize,
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
-    pub applied_optimizations: HashSet<ImageOptimization>,
+    /// Currently applied optimizations.
+    pub optimizations: HashSet<ImageOptimization>,
     pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
     // Look! I know you see that type above me but just  
     // so you know, I'm NOT crazy... well not yet at least...
@@ -107,7 +108,7 @@ impl Image {
                 image_format,
                 image_path: Arc::new(path.to_owned()),
                 image_bytes: Arc::new(Mutex::new(None)),
-                applied_optimizations: HashSet::new(),
+                optimizations: HashSet::new(),
             }
         )
     }
@@ -118,9 +119,20 @@ impl Image {
         notifier: &mut NotifierAPI,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if optimizations_to_apply.is_empty() {
+        if self.optimizations.is_empty() && optimizations_to_apply.is_empty() {
             return Ok(());
         }
+
+        notifier.set_loading_and_log(Some("Gathering required optimizations...".into()));
+
+        // what optimizations actually require to be applied / aren't applied already.
+        let required_optimizations = self.required_optimizations(optimizations_to_apply);
+
+        // TODO: we need to somehow figure out if we need to 
+        // read image bytes from the file again or not judging by the required optimizations.
+        // 
+        // E.g. If we are upsampling we will need the complete set of images bytes hence a re-read.
+        // If we are downsampling we can reuse the images bytes currently loaded in memory.
 
         Ok(())
     }
@@ -148,20 +160,7 @@ impl Image {
         notifier.set_loading(Some("Opening file...".into()));
         debug!("Opening file into buf reader for image crate to read...");
 
-        let image_file = match File::open(self.image_path.as_ref()) {
-            Ok(file) => file,
-            Err(error) => {
-                return Err(
-                    Error::FileNotFound(
-                        Some(error.to_string()),
-                        self.image_path.to_path_buf(),
-                        "The file we're trying to load does not exist any more!
-                        This might suggest that the image got deleted between the
-                        time you opened it and roseate was ready to load it.".to_string()
-                    )
-                )
-            },
-        };
+        let image_file = self.get_image_file()?;
 
         let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
         // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
@@ -212,10 +211,88 @@ impl Image {
         match self.image_format {
             ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
             ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
+            // NOTE: is this being handled somewhere else? 
+            // I forgot... I recall adding a check somewhere 
+            // to avoid us getting to this panic in the first place.
             ImageFormat::Svg => panic!("SVGs cannot be loaded with optimizations at the moment!"),
             ImageFormat::Gif => Box::new(GifDecoder::new(image_buf_reader).unwrap()),
             ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
         }
+    }
+
+    fn get_image_file(&self) -> Result<File> {
+        match File::open(self.image_path.as_ref()) {
+            Ok(file) => Ok(file),
+            Err(error) => {
+                Err(
+                    Error::FileNotFound(
+                        Some(error.to_string()),
+                        self.image_path.to_path_buf(),
+                        "The file we're trying to load does not exist any more!
+                        This might suggest that the image got deleted between the
+                        time you opened it and roseate was ready to load it.".to_string()
+                    )
+                )
+            },
+        }
+    }
+
+    fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {
+        let optimizations_wanted = optimizations.to_owned();
+
+        let mut optimizations_necessary: Vec<ImageOptimization> = Vec::new();
+
+        for optimization in optimizations_wanted {
+            if let Some(old_optimization) = self.has_optimization(&optimization) {
+
+                // NOTE: ignore the warning.
+                // TODO: We might need to introduce "ImageOptimization::Upsample".
+                if let (
+                    ImageOptimization::Downsample(width, height),
+                    ImageOptimization::Downsample(old_width, old_height)
+                ) = (&optimization, old_optimization) {
+                    // We don't want to apply a downsample optimization if the change 
+                    // in resolution isn't that big but we do want to upsample no matter what.
+
+                    // the scale difference between the old downsample and new.
+                    let scale_width = *width as f32 / *old_width as f32;
+                    let scale_height = *height as f32 / *old_height as f32;
+
+                    let is_upsample = scale_width > 1.0 || scale_height > 1.0;
+
+                    match is_upsample {
+                        false => {
+                            // downsample difference must be 
+                            // greater than this to allow the optimization.
+                            let allowed_downsample_diff: f32 = 1.2;
+
+                            if scale_width > allowed_downsample_diff && scale_height > allowed_downsample_diff {
+                                optimizations_necessary.push(optimization);
+                            }
+                        },
+                        true => {
+                            optimizations_necessary.push(optimization);
+                            continue;
+                        },
+                    }
+                }
+
+            }
+        }
+
+        optimizations_necessary
+    }
+
+    /// Checks if the image has this TYPE of optimization applied, not the exact 
+    /// optimization itself. Then it returns a reference to the exact optimization found.
+    fn has_optimization(&self, optimization: &ImageOptimization) -> Option<&ImageOptimization> {
+        for applied_optimization in self.optimizations.iter() {
+            if applied_optimization.id() == optimization.id() {
+                return Some(applied_optimization);
+            }
+        }
+
+        return None;
     }
 
     fn optimize_and_decode_image_to_buffer(

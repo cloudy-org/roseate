@@ -7,7 +7,7 @@ use display_info::DisplayInfo;
 
 use super::{fast_downsample::fast_downsample, image::ImageSizeT};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum ImageOptimization {
     /// Downsamples the image to this width and height.
     /// 
@@ -45,6 +45,12 @@ impl ImageOptimization {
             },
         }
     }
+
+    pub fn id(&self) -> &str {
+        match self {
+            ImageOptimization::Downsample(_, _) => "downsample",
+        }
+    }
 }
 
 impl Display for ImageOptimization {
@@ -68,7 +74,7 @@ pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, imag
 
     let marginal_allowance: f32 = 1.3;
     // TODO: Make this adjustable in the config too as down sample strength.
-    // I'm still thinking about this. ~ Goldy
+    // I'm still thinking about this so leave it out for now. ~ Goldy
 
     let (width, height) = (
         primary_display_maybe.width as f32 * marginal_allowance, 
