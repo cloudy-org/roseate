@@ -87,10 +87,7 @@ impl<'a> Roseate<'a> {
         // Text styling.
         custom_style.visuals.override_text_color = Some(
             Color32::from_hex(
-                match self.theme.is_dark {
-                    true => "#b5b5b5",
-                    false => "#3b3b3b"
-                }
+                &self.theme.text_colour.hex_code
             ).unwrap()
         );
 

@@ -7,7 +7,7 @@ use display_info::DisplayInfo;
 
 use super::{fast_downsample::fast_downsample, image::ImageSizeT};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ImageOptimization {
     /// Downsamples the image to this width and height.
     /// 
