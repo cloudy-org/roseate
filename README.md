@@ -26,10 +26,14 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 ### Prerequisites:
 - [Rust](https://www.rust-lang.org/tools/install) and Cargo (Rust **`1.80.0`**+ is required!).
 
-- Linux dependecies for [eframe](https://crates.io/crates/eframe):
+- Linux dependencies required by [eframe](https://crates.io/crates/eframe):
   - [libxcb](https://archlinux.org/packages/extra/x86_64/libxcb/)
   - [libxkbcommon](https://archlinux.org/packages/extra/x86_64/libxkbcommon/)
   - [openssl](https://archlinux.org/packages/core/x86_64/openssl/)
+- [libxrandr](https://archlinux.org/packages/extra/x86_64/libxrandr/) (required by [display-info](https://crates.io/crates/display-info) for smart downsampling)
+- [xdg-desktop-portal](https://github.com/flatpak/xdg-desktop-portal) (required by [rfd](https://docs.rs/rfd/latest/rfd/) for file dialog)
+
+All of these deps are required on Linux. However they are *common* x11 / wayland dependencies so you most likely already have them installed.
 
 1. Clone the repo.
 ```sh
