@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cirrus_theming::v1::{Colour, Theme};
-use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
+use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
 use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, windows::info::InfoWindow, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, windows::about::AboutWindow, zoom_pan::ZoomPan};
@@ -53,47 +53,6 @@ impl<'a> Roseate<'a> {
         }
     }
 
-    fn set_app_style(&self, ctx: &Context) {
-        let mut custom_style = Style {
-            override_text_style: Some(TextStyle::Monospace),
-            ..Default::default()
-        };
-
-        // TODO: override more default   
-        // colours here with colours from our theme.
-
-        // Background colour styling.
-        custom_style.visuals.panel_fill = Color32::from_hex(
-            &self.theme.primary_colour.hex_code
-        ).unwrap();
-
-        // Window styling.
-        custom_style.visuals.window_highlight_topmost = false;
-
-        custom_style.visuals.window_fill = Color32::from_hex(
-            &self.theme.secondary_colour.hex_code
-        ).unwrap();
-        custom_style.visuals.window_stroke = Stroke::new(
-            1.0,
-            Color32::from_hex(&self.theme.third_colour.hex_code).unwrap()
-        );
-        custom_style.visuals.window_shadow = Shadow::NONE;
-
-        custom_style.visuals.widgets.inactive.bg_fill =
-            Color32::from_hex(
-                &self.theme.primary_colour.hex_code
-            ).unwrap();
-
-        // Text styling.
-        custom_style.visuals.override_text_color = Some(
-            Color32::from_hex(
-                &self.theme.text_colour.hex_code
-            ).unwrap()
-        );
-
-        ctx.set_style(custom_style);
-    }
-
     fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
         ui.add(
             egui::Shape::dashed_line(
@@ -115,8 +74,6 @@ impl<'a> Roseate<'a> {
 impl eframe::App for Roseate<'_> {
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        self.set_app_style(ctx);
-
         self.info_box.init(&self.image);
         self.info_box.handle_input(ctx);
 

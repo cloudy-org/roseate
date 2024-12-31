@@ -2,6 +2,7 @@
 
 use std::{env, path::Path, time::Duration};
 
+use cirrus_egui::v1::styling::Styling;
 use config::config::Config;
 use log::debug;
 use eframe::egui;
@@ -138,6 +139,10 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+            Styling::new(&theme, None)
+                .set_all()
+                .apply(&cc.egui_ctx);
+
             Ok(Box::new(Roseate::new(image, theme, notifier, config)))
         }),
     )
