@@ -120,6 +120,7 @@ impl ImageLoader {
 
         // NOTE: wip, so just returning some basic optimizations for testing sake
         optimizations.push(ImageOptimization::MonitorDownsampling(130));
+        optimizations.push(ImageOptimization::DynamicUpsampling);
 
         optimizations
     }
