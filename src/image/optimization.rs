@@ -23,6 +23,7 @@ pub enum ImageOptimization {
     /// NOTE: "The image's aspect ratio is preserved. The image is scaled to the maximum 
     /// possible size that fits within the bounds specified by the width and height." ~ Image Crate
     Downsample(u32, u32),
+    Upsample(u32, u32)
 }
 
 impl ImageOptimization {
@@ -35,6 +36,7 @@ impl ImageOptimization {
                     image::imageops::FilterType::Lanczos3
                 )
             },
+            _ => image
         }
     }
 
@@ -43,12 +45,14 @@ impl ImageOptimization {
             ImageOptimization::Downsample(width, height) => {
                 fast_downsample(pixels, image_size, (*width, *height), has_alpha)
             },
+            _ => (pixels, *image_size)
         }
     }
 
     pub fn id(&self) -> &str {
         match self {
             ImageOptimization::Downsample(_, _) => "downsample",
+            ImageOptimization::Upsample(_, _) => "upsample",
         }
     }
 }
@@ -57,6 +61,7 @@ impl Display for ImageOptimization {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ImageOptimization::Downsample(_, _) => write!(f, "Downsample"),
+            ImageOptimization::Upsample(_, _) => write!(f, "Upsample"),
         }
     }
 }
