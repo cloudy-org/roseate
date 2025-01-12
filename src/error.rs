@@ -1,7 +1,5 @@
 use std::{fmt::{self, Display, Formatter}, path::PathBuf, result::Result as StdResult};
 
-use image::ImageError;
-
 type ActualError = Option<String>;
 pub type Result<T, E = Error> = StdResult<T, E>;
 

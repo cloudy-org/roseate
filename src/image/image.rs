@@ -1,15 +1,15 @@
-use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Cursor, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use eframe::egui::Vec2;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
 use display_info::DisplayInfo;
-use image::{codecs::{gif::{GifDecoder, GifEncoder}, jpeg::{JpegDecoder, JpegEncoder}, png::{PngDecoder, PngEncoder}, webp::{WebPDecoder, WebPEncoder}}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder, ImageResult};
+use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ImageDecoder};
 
-use crate::{error::{Error, Result}, image::optimization::OptimizationProcessingMeat, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::{self, ImageOptimization}};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimization};
 
 pub type ImageSizeT = (u32, u32);
 
@@ -282,159 +282,9 @@ impl Image {
     //     optimizations_necessary
     // }
 
-    /// Checks if the image has this TYPE of optimization applied, not the exact 
-    /// optimization itself. Then it returns a reference to the exact optimization found.
-    fn has_optimization(&self, optimization: &ImageOptimization) -> Option<&ImageOptimization> {
-        for applied_optimization in self.optimizations.iter() {
-            if applied_optimization.id() == optimization.id() {
-                return Some(applied_optimization);
-            }
-        }
-
-        return None;
-    }
-
-    fn optimize_and_decode_image_to_buffer(
-        &self,
-        image_processing_backend: &ImageProcessingBackend,
-        image_decoder: Box<dyn ImageDecoder>,
-        optimized_image_buffer: &mut Vec<u8>,
-        notifier: &mut NotifierAPI,
-    ) -> Result<()> {
-        let image_colour_type = image_decoder.color_type();
-
-        // mutable width and height because some optimizations 
-        // modify the image size hence we need to keep track of that.
-        let mut actual_image_size = (
-            self.image_size.width as u32, self.image_size.height as u32
-        );
-
-        match image_processing_backend {
-            ImageProcessingBackend::Roseate => {
-                let mut pixels = vec![0; image_decoder.total_bytes() as usize];
-
-                debug!("Decoding pixels from image using image decoder...");
-                image_decoder.read_image(&mut pixels).unwrap();
-
-                let has_alpha = image_colour_type.has_alpha();
-
-                // TODO: handle result and errors 
-                self.apply_optimizations(
-                    notifier,
-                    OptimizationProcessingMeat::Roseate(
-                        &mut pixels,
-                        &mut actual_image_size,
-                        has_alpha
-                    )
-                )?;
-
-                notifier.set_loading(
-                    Some("Encoding optimized image...".into())
-                );
-                debug!("Encoding optimized image from pixels to a buffer...");
-
-                let (actual_width, actual_height) = actual_image_size;
-
-                let image_result = match self.image_format {
-                    ImageFormat::Png => {
-                        PngEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            ExtendedColorType::Rgb8
-                        )
-                    },
-                    ImageFormat::Jpeg => {
-                        JpegEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Svg => {
-                        PngEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Gif => {
-                        GifEncoder::new(optimized_image_buffer).encode(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Webp => {
-                        WebPEncoder::new_lossless(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                };
-
-                match image_result {
-                    Ok(_) => Ok(()),
-                    Err(error) => Err(
-                        Error::ImageFailedToEncode(
-                            Some(error.to_string()),
-                            "Failed to encode optimized pixels!".to_string()
-                        )
-                    ),
-                }
-            },
-            ImageProcessingBackend::ImageRS => {
-                debug!("Decoding image into dynamic image...");
-
-                let result = DynamicImage::from_decoder(image_decoder);
-
-                match result {
-                    Ok(mut dynamic_image) => {
-                        // TODO: handle result and errors
-                        self.apply_optimizations(
-                            notifier,
-                            OptimizationProcessingMeat::ImageRS(&mut dynamic_image)
-                        )?;
-
-                        notifier.set_loading(
-                            Some("Encoding optimized image...".into())
-                        );
-                        debug!("Encoding optimized dynamic image into image buffer...");
-
-                        let image_result = dynamic_image.write_to(
-                            &mut Cursor::new(optimized_image_buffer),
-                            self.image_format.to_image_rs_format()
-                        );
-
-                        match image_result {
-                            Ok(_) => Ok(()),
-                            Err(error) => Err(
-                                Error::ImageFailedToEncode(
-                                    Some(error.to_string()),
-                                    "Failed to encode optimized dynamic image!".to_string()
-                                )
-                            ),
-                        }
-                    },
-                    Err(error) => {
-                        Err(
-                            Error::ImageFailedToDecode(
-                                Some(error.to_string()),
-                                "Failed to decode image into dynamic image!".to_string()
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
+// TODO: probably should have a centralized place for this, idk.
 fn get_primary_display_info() -> DisplayInfo {
     let all_display_infos = DisplayInfo::all().expect(
         "Failed to get information about your display monitor!"

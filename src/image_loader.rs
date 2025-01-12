@@ -2,7 +2,7 @@ use std::{sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use log::{debug, info, warn};
 
-use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::{self, ImageOptimization}}, notifier::NotifierAPI};
+use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimization}, notifier::NotifierAPI};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
