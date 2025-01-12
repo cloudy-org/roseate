@@ -2,10 +2,9 @@ use std::fmt::Display;
 
 use image::DynamicImage;
 use log::debug;
-use imagesize::ImageSize;
 use display_info::DisplayInfo;
 
-use crate::{error::Result, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, notifier::NotifierAPI};
 
 use super::{fast_downsample::fast_downsample, image::{Image, ImageSizeT}};
 
@@ -63,7 +62,7 @@ impl Display for ImageOptimization {
 
 impl Image {
     // TODO: Return actual error instead of "()".
-    pub fn apply_optimizations(&self, notifier: &mut NotifierAPI, meat: OptimizationProcessingMeat) -> Result<(), ()> {
+    pub fn apply_optimizations(&self, notifier: &mut NotifierAPI, meat: OptimizationProcessingMeat) -> Result<()> {
         match meat {
             OptimizationProcessingMeat::ImageRS(dynamic_image) => {
 
@@ -170,7 +169,7 @@ impl Image {
 // }
 
 // TODO: Return actual error instead of "()".
-fn get_monitor_size_before_egui_window() -> Result<(u32, u32), ()> {
+fn get_monitor_size_before_egui_window() -> Result<(u32, u32)> {
     let all_display_infos = DisplayInfo::all().expect(
         "Failed to get information about your display monitor!"
     );
@@ -181,6 +180,8 @@ fn get_monitor_size_before_egui_window() -> Result<(u32, u32), ()> {
         Some(primary_monitor_maybe) => {
             Ok((primary_monitor_maybe.width, primary_monitor_maybe.height))
         },
-        None => Err(()),
+        None => Err(
+            Error::MonitorNotFound(None)
+        ),
     }
 }

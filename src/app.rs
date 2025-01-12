@@ -213,9 +213,15 @@ impl eframe::App for Roseate<'_> {
                     let scaled_image_size = self.window_scaling.relative_image_size(
                         Vec2::new(image.image_size.width as f32, image.image_size.height as f32)
                     );
-    
+
+                    // TODO: umm I think we should move this to self.zoom_pan.update() 
+                    // and then move that function in here as we need `scaled_image_size`.
                     if self.zoom_pan.is_pan_out_of_bounds(scaled_image_size) {
                         self.zoom_pan.schedule_pan_reset(Duration::from_millis(300));
+
+                        // As resetting the pan will just snap us back to the center 
+                        // of the image we might as well schedule a reset for image scale too.
+                        self.zoom_pan.schedule_scale_reset(Duration::from_millis(300));
                     };
 
                     // NOTE: umm do we move this to window scaling... *probably* if we 

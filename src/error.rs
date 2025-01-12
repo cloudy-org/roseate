@@ -1,5 +1,7 @@
 use std::{fmt::{self, Display, Formatter}, path::PathBuf, result::Result as StdResult};
 
+use image::ImageError;
+
 type ActualError = Option<String>;
 pub type Result<T, E = Error> = StdResult<T, E>;
 
@@ -11,6 +13,9 @@ pub enum Error {
     FailedToInitImage(ActualError, PathBuf, String),
     FailedToLoadImage(ActualError, String),
     ImageFormatNotSupported(ActualError, String),
+    MonitorNotFound(ActualError),
+    ImageFailedToEncode(ActualError, String),
+    ImageFailedToDecode(ActualError, String),
 }
 
 impl Error {
@@ -56,6 +61,17 @@ impl Display for Error {
             ),
             Error::ImageFormatNotSupported(_, image_format) => write!(
                 f, "The image format '{}' is not supported!", image_format
+            ),
+            Error::MonitorNotFound(_) => write!(
+                f, "For some reason we couldn't detect your monitor.",
+            ),
+            Error::ImageFailedToEncode(_, technical_reason) => write!(
+                f, "Image failed to encode! \n\nTechnical Reason: {}",
+                technical_reason
+            ),
+            Error::ImageFailedToDecode(_, technical_reason) => write!(
+                f, "Image failed to decode! \n\nTechnical Reason: {}",
+                technical_reason
             ),
         }
     }

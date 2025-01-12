@@ -300,12 +300,12 @@ impl Image {
         image_decoder: Box<dyn ImageDecoder>,
         optimized_image_buffer: &mut Vec<u8>,
         notifier: &mut NotifierAPI,
-    ) -> ImageResult<()> {
+    ) -> Result<()> {
         let image_colour_type = image_decoder.color_type();
 
         // mutable width and height because some optimizations 
         // modify the image size hence we need to keep track of that.
-        let (mut actual_width, mut actual_height) = (
+        let mut actual_image_size = (
             self.image_size.width as u32, self.image_size.height as u32
         );
 
@@ -318,22 +318,24 @@ impl Image {
 
                 let has_alpha = image_colour_type.has_alpha();
 
-                // TODO: handle result and errors
+                // TODO: handle result and errors 
                 self.apply_optimizations(
                     notifier,
                     OptimizationProcessingMeat::Roseate(
                         &mut pixels,
-                        &mut (actual_width, actual_height),
+                        &mut actual_image_size,
                         has_alpha
                     )
-                );
+                )?;
 
                 notifier.set_loading(
                     Some("Encoding optimized image...".into())
                 );
                 debug!("Encoding optimized image from pixels to a buffer...");
 
-                match self.image_format {
+                let (actual_width, actual_height) = actual_image_size;
+
+                let image_result = match self.image_format {
                     ImageFormat::Png => {
                         PngEncoder::new(optimized_image_buffer).write_image(
                             &pixels,
@@ -374,6 +376,16 @@ impl Image {
                             image_colour_type.into()
                         )
                     },
+                };
+
+                match image_result {
+                    Ok(_) => Ok(()),
+                    Err(error) => Err(
+                        Error::ImageFailedToEncode(
+                            Some(error.to_string()),
+                            "Failed to encode optimized pixels!".to_string()
+                        )
+                    ),
                 }
             },
             ImageProcessingBackend::ImageRS => {
@@ -387,19 +399,36 @@ impl Image {
                         self.apply_optimizations(
                             notifier,
                             OptimizationProcessingMeat::ImageRS(&mut dynamic_image)
-                        );
+                        )?;
 
                         notifier.set_loading(
                             Some("Encoding optimized image...".into())
                         );
                         debug!("Encoding optimized dynamic image into image buffer...");
 
-                        dynamic_image.write_to(
+                        let image_result = dynamic_image.write_to(
                             &mut Cursor::new(optimized_image_buffer),
                             self.image_format.to_image_rs_format()
-                        )
+                        );
+
+                        match image_result {
+                            Ok(_) => Ok(()),
+                            Err(error) => Err(
+                                Error::ImageFailedToEncode(
+                                    Some(error.to_string()),
+                                    "Failed to encode optimized dynamic image!".to_string()
+                                )
+                            ),
+                        }
                     },
-                    Err(error) => Err(error)
+                    Err(error) => {
+                        Err(
+                            Error::ImageFailedToDecode(
+                                Some(error.to_string()),
+                                "Failed to decode image into dynamic image!".to_string()
+                            )
+                        )
+                    }
                 }
             }
         }
