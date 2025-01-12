@@ -2,7 +2,7 @@ use std::{sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use log::{debug, info, warn};
 
-use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::apply_image_optimizations}, notifier::NotifierAPI};
+use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::{self, ImageOptimization}}, notifier::NotifierAPI};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -48,12 +48,13 @@ impl ImageLoader {
         );
 
         let mut image = image.clone();
-        let mut optimizations = Vec::new();
 
         notifier.set_loading(
             Some("Applying image optimizations...".into())
         );
-        optimizations = apply_image_optimizations(optimizations, &image.image_size);
+        // optimizations = apply_image_optimizations(optimizations, &image.image_size);
+
+        let mut optimizations = self.get_image_optimisations();
 
         // Our svg implementation is very experimental. Let's warn the user.
         if image.image_path.extension().unwrap_or_default() == "svg" {
@@ -70,6 +71,8 @@ impl ImageLoader {
             optimizations.clear();
         }
 
+        image.optimizations.extend(optimizations);
+
         let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_arc = notifier.clone();
 
@@ -82,7 +85,6 @@ impl ImageLoader {
             notifier_arc.set_loading(Some("Loading image...".into()));
             let now = Instant::now();
             let result = image.load_image(
-                &optimizations, 
                 &mut notifier_arc, 
                 &backend
             );
@@ -110,4 +112,16 @@ impl ImageLoader {
             loading_logic()
         }
     }
+
+    // TODO: Make it apply optimizations following 
+    // the user's config and other various factors.
+    fn get_image_optimisations(&self) -> Vec<ImageOptimization> {
+        let mut optimizations = Vec::new();
+
+        // NOTE: wip, so just returning some basic optimizations for testing sake
+        optimizations.push(ImageOptimization::MonitorDownsampling(130));
+
+        optimizations
+    }
+
 }
