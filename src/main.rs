@@ -16,6 +16,7 @@ use image::image::Image;
 use notifier::NotifierAPI;
 
 mod app;
+mod utils;
 mod files;
 mod image;
 mod error;

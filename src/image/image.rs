@@ -9,7 +9,7 @@ use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::
 
 use crate::{error::{Error, Result}, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimization};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimizations};
 
 pub type ImageSizeT = (u32, u32);
 
@@ -19,7 +19,7 @@ pub struct Image {
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
     /// Currently applied optimizations.
-    pub optimizations: HashSet<ImageOptimization>,
+    pub optimizations: HashSet<ImageOptimizations>,
     pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
     // Look! I know you see that type above me but just  
     // so you know, I'm NOT crazy... well not yet at least...
@@ -142,7 +142,7 @@ impl Image {
         notifier: &mut NotifierAPI,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if self.optimizations.is_empty() {
+        if !self.contains_initial_optimization() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
             let mut image_bytes_lock = self.image_bytes.lock().unwrap();
@@ -234,6 +234,16 @@ impl Image {
                 )
             },
         }
+    }
+
+    fn contains_initial_optimization(&self) -> bool {
+        for optimization in &self.optimizations {
+            if let ImageOptimizations::Initial(_) = optimization {
+                return true;
+            }
+        }
+
+        false
     }
 
     // fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {

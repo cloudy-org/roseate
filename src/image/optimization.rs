@@ -2,9 +2,8 @@ use std::{fmt::Display, io::Cursor};
 
 use image::{codecs::{gif::GifEncoder, jpeg::JpegEncoder, png::PngEncoder, webp::WebPEncoder}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder};
 use log::debug;
-use display_info::DisplayInfo;
 
-use crate::{error::{Error, Result}, image::image_formats::ImageFormat, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, image::image_formats::ImageFormat, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
 
 use super::{backends::ImageProcessingBackend, fast_downsample::fast_downsample, image::{Image, ImageSizeT}};
 
@@ -14,7 +13,7 @@ pub enum OptimizationProcessingMeat<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ImageOptimization {
+pub enum InitialImageOptimizations {
     /// Downsamples the image roughly to the resolution of your monitor.
     /// 
     /// Images don't always have to be displayed at their native resolution, 
@@ -29,6 +28,10 @@ pub enum ImageOptimization {
     /// NOTE: "The image's aspect ratio is preserved. The image is scaled to the maximum 
     /// possible size that fits within the bounds specified by the width and height." ~ Image Crate
     MonitorDownsampling(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum EventImageOptimizations {
     /// Basically `MonitorDownsampling` but the image is 
     /// dynamically downsampled when full detail is no longer required 
     /// (for example, when the user zooms back out from a zoom that triggered `DynamicUpsampling`).
@@ -40,22 +43,44 @@ pub enum ImageOptimization {
     DynamicUpsampling,
 }
 
-impl ImageOptimization {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ImageOptimizations {
+    Initial(InitialImageOptimizations),
+    EventBased(EventImageOptimizations),
+}
+
+impl ImageOptimizations {
     pub fn id(&self) -> &str {
         match self {
-            ImageOptimization::MonitorDownsampling(_) => "monitor-downsampling",
-            ImageOptimization::DynamicDownsampling => "dynamic-downsampling",
-            ImageOptimization::DynamicUpsampling => "dynamic-upsampling",
+            ImageOptimizations::Initial(optimization) => {
+                match optimization {
+                    InitialImageOptimizations::MonitorDownsampling(_) => "monitor-downsampling",
+                }
+            },
+            ImageOptimizations::EventBased(optimization) => {
+                match optimization {
+                    EventImageOptimizations::DynamicDownsampling => "dynamic-downsampling",
+                    EventImageOptimizations::DynamicUpsampling => "dynamic-upsampling",
+                }
+            }
         }
     }
 }
 
-impl Display for ImageOptimization {
+impl Display for ImageOptimizations {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImageOptimization::MonitorDownsampling(_) => write!(f, "Monitor Downsampling"),
-            ImageOptimization::DynamicDownsampling => write!(f, "Dynamic Downsampling"),
-            ImageOptimization::DynamicUpsampling => write!(f, "Dynamic Upsampling"),
+            ImageOptimizations::Initial(optimization) => {
+                match optimization {
+                    InitialImageOptimizations::MonitorDownsampling(_) => write!(f, "Monitor Downsampling"),
+                }
+            },
+            ImageOptimizations::EventBased(optimization) => {
+                match optimization {
+                    EventImageOptimizations::DynamicDownsampling => write!(f, "Dynamic Downsampling"),
+                    EventImageOptimizations::DynamicUpsampling => write!(f, "Dynamic Upsampling"),
+                }
+            }
         }
     }
 }
@@ -209,51 +234,44 @@ impl Image {
                 for optimization in self.optimizations.clone() {
                     self.debug_applying_optimization(notifier, &optimization);
 
-                    *dynamic_image = match optimization {
-                        ImageOptimization::MonitorDownsampling(marginal_allowance) => {
-                            let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()?;
+                    if let ImageOptimizations::Initial(optimization) = optimization {
+                        *dynamic_image = match optimization {
+                            InitialImageOptimizations::MonitorDownsampling(marginal_allowance) => {
+                                let (width, height) = get_monitor_downsampling_size(
+                                    marginal_allowance, (dynamic_image.width(), dynamic_image.height())
+                                );
 
-                            let marginal_allowance_scale = marginal_allowance as f32 / 100.0;
-
-                            let (width, height) = (
-                                monitor_width as f32 * marginal_allowance_scale, monitor_height as f32 * marginal_allowance_scale
-                            );
-
-                            dynamic_image.resize(
-                                width as u32,
-                                height as u32,
-                                image::imageops::FilterType::Lanczos3
-                            )
-                        },
-                        _ => todo!()
+                                dynamic_image.resize(
+                                    width as u32,
+                                    height as u32,
+                                    image::imageops::FilterType::Lanczos3
+                                )
+                            },
+                        }
                     };
                 }
-
             },
             OptimizationProcessingMeat::Roseate(pixels, image_size, has_alpha) => {
 
                 for optimization in self.optimizations.clone() {
                     self.debug_applying_optimization(notifier, &optimization);
 
-                    (*pixels, *image_size) = match optimization {
-                        ImageOptimization::MonitorDownsampling(marginal_allowance) => {
-                            let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()?;
+                    if let ImageOptimizations::Initial(optimization) = optimization {
+                        (*pixels, *image_size) = match optimization {
+                            InitialImageOptimizations::MonitorDownsampling(marginal_allowance) => {
+                                let (width, height) = get_monitor_downsampling_size(
+                                    marginal_allowance, (image_size.0, image_size.1)
+                                );
 
-                            let marginal_allowance_scale = marginal_allowance as f32 / 100.0;
-
-                            let (width, height) = (
-                                monitor_width as f32 * marginal_allowance_scale, monitor_height as f32 * marginal_allowance_scale
-                            );
-
-                            fast_downsample(
-                                pixels.to_vec(), // this is pretty bad, .to_vec() will clone all these pixels. 
-                                // We need to find a way to avoid this for memory spiking and performance sake.
-                                &image_size,
-                                (width as u32, height as u32), 
-                                has_alpha
-                            )
-                        },
-                        _ => todo!()
+                                fast_downsample(
+                                    pixels.to_vec(), // this is pretty bad, .to_vec() will clone all these pixels. 
+                                    // We need to find a way to avoid this for memory spiking and performance sake.
+                                    &image_size,
+                                    (width as u32, height as u32),
+                                    has_alpha
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -265,7 +283,7 @@ impl Image {
 
     /// Checks if the image has this TYPE of optimization applied, not the exact 
     /// optimization itself. Then it returns a reference to the exact optimization found.
-    pub(super) fn has_optimization(&self, optimization: &ImageOptimization) -> Option<&ImageOptimization> {
+    pub(super) fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {
         for applied_optimization in self.optimizations.iter() {
             if applied_optimization.id() == optimization.id() {
                 return Some(applied_optimization);
@@ -275,7 +293,7 @@ impl Image {
         return None;
     }
 
-    fn debug_applying_optimization(&self, notifier: &mut NotifierAPI, optimization: &ImageOptimization) {
+    fn debug_applying_optimization(&self, notifier: &mut NotifierAPI, optimization: &ImageOptimizations) {
         notifier.set_loading(
             Some(format!("Applying {:#} optimization...", optimization))
         );
@@ -283,63 +301,34 @@ impl Image {
     }
 }
 
-// pub fn apply_image_optimizations(mut optimizations: Vec<ImageOptimization>, image_size: &ImageSize) -> Vec<ImageOptimization> {
-//     let all_display_infos = DisplayInfo::all().expect(
-//         "Failed to get information about your display monitor!"
-//     );
+// TODO: when I have a centralized place for individual optimization logic move this there.
+pub fn get_monitor_downsampling_size(marginal_allowance: u32, image_size: (u32, u32)) -> (u32, u32) {
+    // marginal_allowance is supposed to be a f32 but instead 
+    // it's a u32 hence all it's units have been shifted forward one.
+    // 
+    // E.g. "130" is "1.3"
+    let marginal_allowance_scale = marginal_allowance as f32 / 100.0;
 
-//     // NOTE: I don't think the first monitor is always the primary and 
-//     // if that is the case then we're gonna have a problem. (i.e images overly downsampled or not at all)
-//     let primary_display_maybe = all_display_infos.first().expect(
-//         "Uhhhhh, you don't have a monitor. WHAT!"
-//     );
-
-//     let marginal_allowance: f32 = 1.3;
-//     // TODO: Make this adjustable in the config too as down sample strength.
-//     // I'm still thinking about this so leave it out for now. ~ Goldy
-
-//     let (width, height) = (
-//         primary_display_maybe.width as f32 * marginal_allowance, 
-//         primary_display_maybe.height as f32 * marginal_allowance
-//     );
-
-//     debug!(
-//         "Display Size: {} x {}",
-//         primary_display_maybe.width,
-//         primary_display_maybe.height
-//     );
-//     debug!(
-//         "Display Size + Downsample Marginal Allowance: {} x {}", width, height
-//     );
-//     debug!(
-//         "Image Size: {} x {}",
-//         image_size.width,
-//         image_size.height
-//     );
-
-//     // If the image is a lot bigger than the user's monitor 
-//     // then apply the downsample optimization for this image.
-//     if image_size.width > width as usize && image_size.height > height as usize {
-//         optimizations.push(ImageOptimization::Downsample(width as u32, height as u32));
-//     }
-
-//     optimizations
-// }
-
-// TODO: Return actual error instead of "()".
-fn get_monitor_size_before_egui_window() -> Result<(u32, u32)> {
-    let all_display_infos = DisplayInfo::all().expect(
-        "Failed to get information about your display monitor!"
+    debug!(
+        "Image Size: {} x {}", image_size.0, image_size.1
     );
 
-    // NOTE: I don't think the first monitor is always the primary and 
-    // if that is the case then we're gonna have a problem. (i.e images overly downsampled or not at all)
-    match all_display_infos.first() {
-        Some(primary_monitor_maybe) => {
-            Ok((primary_monitor_maybe.width, primary_monitor_maybe.height))
-        },
-        None => Err(
-            Error::MonitorNotFound(None)
-        ),
-    }
+    let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()
+        .unwrap_or((1920, 1080));
+
+    debug!(
+        "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
+    );
+
+    let (width, height) = (
+        (monitor_width as f32 * marginal_allowance_scale) as u32,
+        (monitor_height as f32 * marginal_allowance_scale) as u32
+    );
+
+    debug!(
+        "Display + Monitor Downsample Marginal Allowance ({}): {} x {}",
+        marginal_allowance_scale, width, height
+    );
+
+    (width, height)
 }

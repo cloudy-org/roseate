@@ -2,7 +2,7 @@ use std::{sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use log::{debug, info, warn};
 
-use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimization}, notifier::NotifierAPI};
+use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -22,11 +22,11 @@ impl ImageLoader {
         }
     }
 
-    pub fn update(&mut self, ) {
+    pub fn update(&mut self) {
         // I use an update function to keep the public fields update to date with their Arc<Mutex<T>> twins.
 
         if let Ok(value) = self.image_loaded_arc.try_lock() {
-            self.image_loaded = value.clone(); // cloning here shouldn't too expensive
+            self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
             self.image_loading = false;
         }
     }
@@ -54,7 +54,7 @@ impl ImageLoader {
         );
         // optimizations = apply_image_optimizations(optimizations, &image.image_size);
 
-        let mut optimizations = self.get_image_optimisations();
+        let mut optimizations = self.get_image_optimisations(&image);
 
         // Our svg implementation is very experimental. Let's warn the user.
         if image.image_path.extension().unwrap_or_default() == "svg" {
@@ -113,14 +113,24 @@ impl ImageLoader {
         }
     }
 
-    // TODO: Make it apply optimizations following 
-    // the user's config and other various factors.
-    fn get_image_optimisations(&self) -> Vec<ImageOptimization> {
+    // TODO: Make it apply optimizations following the user's config.
+    fn get_image_optimisations(&self, image: &Image) -> Vec<ImageOptimizations> {
+        use crate::image::optimization::EventImageOptimizations::*;
+        use crate::image::optimization::InitialImageOptimizations::*;
+
         let mut optimizations = Vec::new();
 
-        // NOTE: wip, so just returning some basic optimizations for testing sake
-        optimizations.push(ImageOptimization::MonitorDownsampling(130));
-        optimizations.push(ImageOptimization::DynamicUpsampling);
+        let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()
+            .unwrap_or((1920, 1080));
+
+        // If the image is a lot bigger than the user's 
+        // monitor then apply monitor downsample, if not we shouldn't.
+        if image.image_size.width as u32 > monitor_width && image.image_size.height as u32 > monitor_height {
+            optimizations.push(ImageOptimizations::Initial(MonitorDownsampling(130)));
+        }
+
+        // NOTE: wip, so just returning some random optimizations for testing sake
+        optimizations.push(ImageOptimizations::EventBased(DynamicUpsampling));
 
         optimizations
     }
