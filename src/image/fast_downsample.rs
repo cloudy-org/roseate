@@ -34,7 +34,7 @@ fn precomputed_lanczos(window_size: f32, scale_factor: f32) -> Vec<f32> {
 }
 
 pub(super) fn fast_downsample(
-    pixels: Vec<u8>,
+    pixels: &Vec<u8>,
     image_size: &ImageSizeT,
     target_size: (u32, u32),
     has_alpha: bool

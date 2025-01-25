@@ -264,8 +264,7 @@ impl Image {
                                 );
 
                                 fast_downsample(
-                                    pixels.to_vec(), // this is pretty bad, .to_vec() will clone all these pixels. 
-                                    // We need to find a way to avoid this for memory spiking and performance sake.
+                                    pixels,
                                     &image_size,
                                     (width as u32, height as u32),
                                     has_alpha
