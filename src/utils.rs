@@ -4,7 +4,6 @@
 use display_info::DisplayInfo;
 use crate::error::{Error, Result};
 
-// TODO: Return actual error instead of "()".
 pub fn get_monitor_size_before_egui_window() -> Result<(u32, u32)> {
     let all_display_infos = DisplayInfo::all().expect(
         "Failed to get information about your display monitor!"

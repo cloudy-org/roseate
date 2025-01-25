@@ -40,8 +40,6 @@ pub struct Image {
 }
 
 impl Image {
-    // TODO: Return result instead of panicking (e.g. right now if you 
-    // open an unsupported file type roseate will crash because we panic at line 60).
     pub fn from_path(path: &Path) -> Result<Self> {
         // Changed this to unwrap_or_default so it returns an empty 
         // string ("") and doesn't panic if a file has no extension. I need to begin adding tests.

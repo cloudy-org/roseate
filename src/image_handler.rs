@@ -1,29 +1,69 @@
-use std::{sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use log::{debug, info, warn};
+use rfd::FileDialog;
 
-use crate::{image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
-pub struct ImageLoader {
+pub struct ImageHandler {
+    pub image: Option<Image>,
     pub image_loaded: bool,
 
     image_loaded_arc: Arc<Mutex<bool>>,
     image_loading: bool,
 }
 
-impl ImageLoader {
+impl ImageHandler {
     pub fn new() -> Self {
         Self {
+            image: None,
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
         }
     }
 
+    pub fn init_image(&mut self, image_path: &Path) -> Result<()> {
+        let mut image = Image::from_path(image_path)?;
+
+        image.optimizations.extend(self.get_user_image_optimisations(&image));
+
+        self.image = Some(image);
+
+        Ok(())
+    }
+
+    pub fn select_image(&mut self) -> Result<()> {
+        let image_path = FileDialog::new()
+            .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
+            .pick_file();
+
+        match image_path {
+            Some(path) => {
+                if !path.exists() {
+                    return Err(
+                        Error::FileNotFound(
+                            None,
+                            path,
+                            "The file picked in the file selector does not exist!".to_string()
+                        )
+                    )
+                }
+
+                self.init_image(&path)?;
+
+                Ok(())
+            },
+            None => Err(Error::NoFileSelected(None))
+        }
+    }
+
     pub fn update(&mut self) {
-        // I use an update function to keep the public fields update to date with their Arc<Mutex<T>> twins.
+        // I use an update function to keep the public 
+        // fields update to date with their Arc<Mutex<T>> twins
+        // and also now to perform dynamic downsampling.
 
         if let Ok(value) = self.image_loaded_arc.try_lock() {
             self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
@@ -35,7 +75,7 @@ impl ImageLoader {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, image: &mut Image, lazy_load: bool, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -47,14 +87,13 @@ impl ImageLoader {
             Some("Preparing to load image...".into())
         );
 
-        let mut image = image.clone();
+        let mut image = self.image.clone().expect(
+            "You must run 'ImageHandler.init_image()' before using 'ImageHandler.load_image()'!"
+        );
 
         notifier.set_loading(
             Some("Applying image optimizations...".into())
         );
-        // optimizations = apply_image_optimizations(optimizations, &image.image_size);
-
-        let mut optimizations = self.get_image_optimisations(&image);
 
         // Our svg implementation is very experimental. Let's warn the user.
         if image.image_path.extension().unwrap_or_default() == "svg" {
@@ -68,10 +107,8 @@ impl ImageLoader {
 
             // SVGs cannot be loaded with optimizations at 
             // the moment or else image.load_image() will panic.
-            optimizations.clear();
+            image.optimizations.clear();
         }
-
-        image.optimizations.extend(optimizations);
 
         let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_arc = notifier.clone();
@@ -114,7 +151,7 @@ impl ImageLoader {
     }
 
     // TODO: Make it apply optimizations following the user's config.
-    fn get_image_optimisations(&self, image: &Image) -> Vec<ImageOptimizations> {
+    fn get_user_image_optimisations(&self, image: &Image) -> Vec<ImageOptimizations> {
         use crate::image::optimization::EventImageOptimizations::*;
         use crate::image::optimization::InitialImageOptimizations::*;
 
