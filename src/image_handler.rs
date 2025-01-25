@@ -69,6 +69,8 @@ impl ImageHandler {
             self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
             self.image_loading = false;
         }
+
+        // TODO: perform dynamic downsampling here! (25/01/2025)
     }
 
     /// Handles loading the image in a background thread or on the main thread. 
