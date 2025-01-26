@@ -3,7 +3,7 @@ use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 use log::{debug, info, warn};
 use rfd::FileDialog;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window, zoom_pan::ZoomPan};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -13,6 +13,8 @@ pub struct ImageHandler {
 
     image_loaded_arc: Arc<Mutex<bool>>,
     image_loading: bool,
+
+    last_zoom_factor: f32
 }
 
 impl ImageHandler {
@@ -22,6 +24,7 @@ impl ImageHandler {
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
+            last_zoom_factor: 1.0,
         }
     }
 
@@ -60,17 +63,35 @@ impl ImageHandler {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, zoom_pan: &ZoomPan) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
         // and also now to perform dynamic downsampling.
 
         if let Ok(value) = self.image_loaded_arc.try_lock() {
             self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
-            self.image_loading = false;
+            self.image_loading = false; // set that bitch back to false yeah
         }
 
         // TODO: perform dynamic downsampling here! (25/01/2025)
+        self.dynamic_sampling_update(zoom_pan);
+    }
+
+    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan) {
+        if let Some(image) = &self.image {
+            // the zoom factor change since the last dynamic upsample / downsample.
+            let zoom_factor_change = zoom_pan.zoom_factor - self.last_zoom_factor;
+
+            // TODO: also don't upsample if image is already at it's max resolution.
+            if image.optimizations.contains(
+                &ImageOptimizations::EventBased(EventImageOptimizations::DynamicUpsampling)
+            ) && zoom_factor_change >= 0.2 {
+                // TODO: reload image with new dimensions
+
+                self.last_zoom_factor = zoom_pan.zoom_factor;
+            }
+
+        }
     }
 
     /// Handles loading the image in a background thread or on the main thread. 

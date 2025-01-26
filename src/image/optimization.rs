@@ -50,6 +50,7 @@ pub enum ImageOptimizations {
 }
 
 impl ImageOptimizations {
+    // TODO: remove this when has_optimization is also removed.
     pub fn id(&self) -> &str {
         match self {
             ImageOptimizations::Initial(optimization) => {
@@ -280,6 +281,7 @@ impl Image {
         Ok(())
     }
 
+    // TODO: I don't think we'll need this anymore, remove if this is not needed anymore.
     /// Checks if the image has this TYPE of optimization applied, not the exact 
     /// optimization itself. Then it returns a reference to the exact optimization found.
     pub(super) fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {

@@ -192,7 +192,7 @@ impl eframe::App for Roseate<'_> {
 
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
-            self.image_handler.update();
+            self.image_handler.update(&self.zoom_pan);
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image_handler.image.clone().unwrap();
