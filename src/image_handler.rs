@@ -3,7 +3,7 @@ use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 use log::{debug, info, warn};
 use rfd::FileDialog;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, monitor_size::{self, MonitorSize}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window, zoom_pan::ZoomPan};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -28,17 +28,17 @@ impl ImageHandler {
         }
     }
 
-    pub fn init_image(&mut self, image_path: &Path) -> Result<()> {
+    pub fn init_image(&mut self, image_path: &Path, monitor_size: &MonitorSize) -> Result<()> {
         let mut image = Image::from_path(image_path)?;
 
-        image.optimizations.extend(self.get_user_image_optimisations(&image));
+        image.optimizations.extend(self.get_user_image_optimisations(&image, monitor_size));
 
         self.image = Some(image);
 
         Ok(())
     }
 
-    pub fn select_image(&mut self) -> Result<()> {
+    pub fn select_image(&mut self, monitor_size: &MonitorSize) -> Result<()> {
         let image_path = FileDialog::new()
             .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
             .pick_file();
@@ -55,7 +55,7 @@ impl ImageHandler {
                     )
                 }
 
-                self.init_image(&path)?;
+                self.init_image(&path, monitor_size)?;
 
                 Ok(())
             },
@@ -174,18 +174,17 @@ impl ImageHandler {
     }
 
     // TODO: Make it apply optimizations following the user's config.
-    fn get_user_image_optimisations(&self, image: &Image) -> Vec<ImageOptimizations> {
+    fn get_user_image_optimisations(&self, image: &Image, monitor_size: &MonitorSize) -> Vec<ImageOptimizations> {
         use crate::image::optimization::EventImageOptimizations::*;
         use crate::image::optimization::InitialImageOptimizations::*;
 
         let mut optimizations = Vec::new();
 
-        let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()
-            .unwrap_or((1920, 1080));
+        let (monitor_width, monitor_height) = monitor_size.get();
 
         // If the image is a lot bigger than the user's 
         // monitor then apply monitor downsample, if not we shouldn't.
-        if image.image_size.width as u32 > monitor_width && image.image_size.height as u32 > monitor_height {
+        if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
             optimizations.push(ImageOptimizations::Initial(MonitorDownsampling(130)));
         }
 

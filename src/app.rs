@@ -4,7 +4,7 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, windows::info::InfoWindow, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, windows::about::AboutWindow, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -16,11 +16,12 @@ pub struct Roseate<'a> {
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_handler: ImageHandler,
+    monitor_size: MonitorSize,
     config: Config,
 }
 
 impl<'a> Roseate<'a> {
-    pub fn new(mut image_handler: ImageHandler, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
+    pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
         if image_handler.image.is_some() {
             image_handler.load_image(
                 config.image.loading.initial.lazy_loading, 
@@ -43,7 +44,8 @@ impl<'a> Roseate<'a> {
             magnification_panel,
             window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
-            image_handler: image_handler,
+            monitor_size,
+            image_handler,
             config,
         }
     }
@@ -87,6 +89,7 @@ impl eframe::App for Roseate<'_> {
             }
 
             self.notifier.update(ctx);
+            self.monitor_size.update(ctx);
             self.about_box.update(ctx); // we update this box here because we want 
             // the about box is to be toggleable even without an image.
 
@@ -101,7 +104,7 @@ impl eframe::App for Roseate<'_> {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let result = self.image_handler.init_image(path);
+                        let result = self.image_handler.init_image(path, &self.monitor_size);
 
                         if let Err(error) = result {
                             self.notifier.toasts.lock().unwrap().toast_and_log(
@@ -150,7 +153,7 @@ impl eframe::App for Roseate<'_> {
                             rose_response.clone().on_hover_cursor(CursorIcon::PointingHand);
 
                             if rose_response.clicked() {
-                                let result = self.image_handler.select_image();
+                                let result = self.image_handler.select_image(&self.monitor_size);
 
                                 match result {
                                     Ok(_) => {
