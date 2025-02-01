@@ -3,7 +3,7 @@ use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 use log::{debug, info, warn};
 use rfd::FileDialog;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, monitor_size::{self, MonitorSize}, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -98,7 +98,7 @@ impl ImageHandler {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -135,6 +135,7 @@ impl ImageHandler {
 
         let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_arc = notifier.clone();
+        let monitor_size_arc = monitor_size.clone();
 
         let mut loading_logic = move || {
             let backend = match use_experimental_backend {
@@ -145,7 +146,8 @@ impl ImageHandler {
             notifier_arc.set_loading(Some("Loading image...".into()));
             let now = Instant::now();
             let result = image.load_image(
-                &mut notifier_arc, 
+                &mut notifier_arc,
+                &monitor_size_arc,
                 &backend
             );
 

@@ -26,6 +26,7 @@ impl<'a> Roseate<'a> {
             image_handler.load_image(
                 config.image.loading.initial.lazy_loading, 
                 &mut notifier,
+                &monitor_size,
                 config.misc.experimental.use_fast_roseate_backend
             );
         }
@@ -116,6 +117,7 @@ impl eframe::App for Roseate<'_> {
                         self.image_handler.load_image(
                             true, 
                             &mut self.notifier,
+                            &self.monitor_size,
                             self.config.misc.experimental.use_fast_roseate_backend
                         );
                     }
@@ -160,6 +162,7 @@ impl eframe::App for Roseate<'_> {
                                         self.image_handler.load_image(
                                             self.config.image.loading.gui.lazy_loading,
                                             &mut self.notifier,
+                                            &self.monitor_size,
                                             self.config.misc.experimental.use_fast_roseate_backend
                                         );
                                     },

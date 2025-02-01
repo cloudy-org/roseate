@@ -1,5 +1,6 @@
 use eframe::egui::Context;
 
+#[derive(Clone)]
 pub struct MonitorSize {
     monitor_size: Option<(f32, f32)>,
 }

@@ -27,7 +27,6 @@ re_format = "0.20.0"
 cap = "0.1.2"
 clap = {version = "4.5.21", features = ["derive"]}
 rand = "0.8.5"
-display-info = "0.5.2"
 egui-notify = "0.17.0"
 svg_metadata = "0.5.1"
 textwrap = "0.16.1"
