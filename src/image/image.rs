@@ -1,13 +1,11 @@
 use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
-use eframe::egui::Vec2;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
-use display_info::DisplayInfo;
 use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ImageDecoder};
 
-use crate::{error::{Error, Result}, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, monitor_size::MonitorSize, notifier::NotifierAPI};
 
 use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimizations};
 
@@ -138,6 +136,7 @@ impl Image {
     pub fn load_image(
         &mut self,
         notifier: &mut NotifierAPI,
+        monitor_size: &MonitorSize,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
         if !self.contains_initial_optimization() {
@@ -175,6 +174,7 @@ impl Image {
             image_processing_backend,
             image_decoder,
             &mut optimized_image_buffer,
+            monitor_size,
             notifier
         );
 
@@ -190,7 +190,7 @@ impl Image {
 
             // load image without optimizations
             self.optimizations.clear();
-            let result = self.load_image(notifier, image_processing_backend);
+            let result = self.load_image(notifier, monitor_size, image_processing_backend);
 
             match result {
                 Ok(_) => return Ok(()),
@@ -292,21 +292,6 @@ impl Image {
 
 }
 
-// TODO: probably should have a centralized place for this, idk.
-fn get_primary_display_info() -> DisplayInfo {
-    let all_display_infos = DisplayInfo::all().expect(
-        "Failed to get information about your display monitor!"
-    );
-
-    // NOTE: I don't think the first monitor is always the primary and 
-    // if that is the case then we're gonna have a problem. (i.e images overly downsampled or not at all)
-    let primary_display_maybe = all_display_infos.first().expect(
-        "Uhhhhh, you don't have a monitor. WHAT!"
-    );
-
-    primary_display_maybe.clone()
-}
-
 fn get_svg_image_size(path: &Path) -> ImageSize {
     let metadata = Metadata::parse_file(path).expect(
         "Failed to parse metadata of the svg file!"
@@ -315,14 +300,23 @@ fn get_svg_image_size(path: &Path) -> ImageSize {
     let width = metadata.width().expect("Failed to get SVG width");
     let height = metadata.height().expect("Failed to get SVG height");
 
-    let display_info = get_primary_display_info();
+    // let display_info = get_primary_display_info();
 
-    let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
-        Vec2::new(display_info.width as f32, display_info.height as f32);
+    // let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
+    //    Vec2::new(display_info.width as f32, display_info.height as f32);
 
     // Temporary solution to give svg images a little bit higher quality.
+    // ImageSize {
+    //     width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
+    //     height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
+    // }
+
+    // NOTE: Commented out the above lines as we are no longer using display-info crate.
+    // Sadly this means svg images now will be even broken and worse image quality.
+    // too bad... deal with it... *for now*
+
     ImageSize {
-        width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
-        height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
+        width: width as usize,
+        height: height as usize
     }
 }

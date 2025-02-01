@@ -3,7 +3,7 @@ use std::{fmt::Display, io::Cursor};
 use image::{codecs::{gif::GifEncoder, jpeg::JpegEncoder, png::PngEncoder, webp::WebPEncoder}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder};
 use log::debug;
 
-use crate::{error::{Error, Result}, image::image_formats::ImageFormat, notifier::NotifierAPI, utils::get_monitor_size_before_egui_window};
+use crate::{error::{Error, Result}, image::image_formats::ImageFormat, monitor_size::{self, MonitorSize}, notifier::NotifierAPI};
 
 use super::{backends::ImageProcessingBackend, fast_downsample::fast_downsample, image::{Image, ImageSizeT}};
 
@@ -92,6 +92,7 @@ impl Image {
         image_processing_backend: &ImageProcessingBackend,
         image_decoder: Box<dyn ImageDecoder>,
         optimized_image_buffer: &mut Vec<u8>,
+        monitor_size: &MonitorSize,
         notifier: &mut NotifierAPI,
     ) -> Result<()> {
         let image_colour_type = image_decoder.color_type();
@@ -114,6 +115,7 @@ impl Image {
                 // TODO: handle result and errors 
                 self.apply_optimizations(
                     notifier,
+                    monitor_size,
                     OptimizationProcessingMeat::Roseate(
                         &mut pixels,
                         &mut actual_image_size,
@@ -191,6 +193,7 @@ impl Image {
                         // TODO: handle result and errors
                         self.apply_optimizations(
                             notifier,
+                            monitor_size,
                             OptimizationProcessingMeat::ImageRS(&mut dynamic_image)
                         )?;
 
@@ -227,7 +230,7 @@ impl Image {
         }
     }
 
-    fn apply_optimizations(&self, notifier: &mut NotifierAPI, meat: OptimizationProcessingMeat) -> Result<()> {
+    fn apply_optimizations(&self, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, meat: OptimizationProcessingMeat) -> Result<()> {
 
         match meat {
             OptimizationProcessingMeat::ImageRS(dynamic_image) => {
@@ -239,7 +242,7 @@ impl Image {
                         *dynamic_image = match optimization {
                             InitialImageOptimizations::MonitorDownsampling(marginal_allowance) => {
                                 let (width, height) = get_monitor_downsampling_size(
-                                    marginal_allowance, (dynamic_image.width(), dynamic_image.height())
+                                    marginal_allowance, (dynamic_image.width(), dynamic_image.height()), monitor_size
                                 );
 
                                 dynamic_image.resize(
@@ -261,7 +264,7 @@ impl Image {
                         (*pixels, *image_size) = match optimization {
                             InitialImageOptimizations::MonitorDownsampling(marginal_allowance) => {
                                 let (width, height) = get_monitor_downsampling_size(
-                                    marginal_allowance, (image_size.0, image_size.1)
+                                    marginal_allowance, (image_size.0, image_size.1), monitor_size
                                 );
 
                                 fast_downsample(
@@ -303,7 +306,7 @@ impl Image {
 }
 
 // TODO: when I have a centralized place for individual optimization logic move this there.
-pub fn get_monitor_downsampling_size(marginal_allowance: u32, image_size: (u32, u32)) -> (u32, u32) {
+pub fn get_monitor_downsampling_size(marginal_allowance: u32, image_size: (u32, u32), monitor_size: &MonitorSize) -> (u32, u32) {
     // marginal_allowance is supposed to be a f32 but instead 
     // it's a u32 hence all it's units have been shifted forward one.
     // 
@@ -314,8 +317,7 @@ pub fn get_monitor_downsampling_size(marginal_allowance: u32, image_size: (u32, 
         "Image Size: {} x {}", image_size.0, image_size.1
     );
 
-    let (monitor_width, monitor_height) = get_monitor_size_before_egui_window()
-        .unwrap_or((1920, 1080));
+    let (monitor_width, monitor_height) = monitor_size.get();
 
     debug!(
         "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
