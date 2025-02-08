@@ -74,6 +74,9 @@ impl ToastsManager {
                     Error::FailedToInitImage(actual_error, _, _) => actual_error.unwrap_or_default(),
                     Error::ImageFormatNotSupported(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::FailedToLoadImage(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::MonitorNotFound(actual_error) => actual_error.unwrap_or_default(),
+                    Error::ImageFailedToEncode(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::ImageFailedToDecode(actual_error, _) => actual_error.unwrap_or_default(),
                 }
             },
             StringOrError::String(string) => string,
