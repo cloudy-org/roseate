@@ -44,5 +44,12 @@ egui = "0.29.1"
 toml = "0.8.19"
 serde = {version = "1.0.215", features = ["derive"]}
 
-[profile.dev.package."*"]
-opt-level = 3
+# I've now disabled compiling release builds of dependices to speed up dev compile time.
+# 
+# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
+# SLOWER ON DEV BUILDS COMPARED TO RELEASE BUILDS
+# 
+# So with that said ALWAYS compile release unless you are developing Roseate.
+# 
+#[profile.dev.package."*"]
+#opt-level = 3

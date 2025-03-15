@@ -45,10 +45,37 @@ cd roseate
 git submodule update --init --recursive
 ```
 
-#### ⚙️ For Development
-At this stage, for development, you would just run ``cargo run``. If you would like to install it to your system continue ahead to the [next section](#-install-into-your-system).
+#### 🎀 Install into your system.
+Installing it to your system I advise you use GNU Make or else copy the commands from the "[Makefile](./Makefile)" (you will need to install Make if you haven't already).
+If you would like to run roseate for development continue ahead to the [next section](#%EF%B8%8F-for-development).
 
-4. Run dev binary.
+3. Build the release binary.
+```sh
+make
+```
+4. Install to your system.
+```sh
+sudo make install
+```
+5. Then the `roseate` binary will be available in your terminal.
+```sh
+roseate
+```
+
+Open an image by passing its path.
+```sh
+roseate ./anime_girls.png
+```
+You might want to also set the binary at ``/usr/bin/roseate`` as your default image viewer so double clicking on images calls it. 
+You can look up how to perform that for your desktop environment or operating system but on many popular Linux desktop environments, the [`roseate.desktop`](https://github.com/cloudy-org/roseate/blob/main/assets/roseate.desktop) file that is now installed on your system is your friend. 😉
+
+#### ⚙️ For Development
+> [!WARNING]
+> Building a development build WILL SIGNIFICANTLY KILL performance! Read more [here](https://github.com/cloudy-org/roseate/blob/6e7e638997110af0149f06ceadb87c3ec088cf84/Cargo.toml#L48-L53).
+
+Now for development, you would just run ``cargo run``.
+
+3. Run dev binary.
 ```sh
 cargo run
 ```
@@ -71,28 +98,6 @@ RUST_LOG=DEBUG cargo run -- ./anime_girl.png
 
 ... (truncated for the sanity of this readme)
 ```
-
-#### 🎀 Install into your system.
-Installing it to your system I advise you use GNU Make or else copy the commands from the "[Makefile](./Makefile)" (you will need to install Make if you haven't already).
-
-4. Build the release binary.
-```sh
-make
-```
-5. Install to your system.
-```sh
-sudo make install
-```
-6. Then the `roseate` binary will be available in your terminal.
-```sh
-roseate
-```
-
-Open an image by passing its path.
-```sh
-roseate ./anime_girls.png
-```
-You might want to also set the binary at ``/usr/bin/roseate`` as your default image viewer so double clicking on images calls it. You can look up how to perform that for your desktop environment or OS.
 
 <br>
 
