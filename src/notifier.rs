@@ -77,6 +77,8 @@ impl ToastsManager {
                     Error::MonitorNotFound(actual_error) => actual_error.unwrap_or_default(),
                     Error::ImageFailedToEncode(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::ImageFailedToDecode(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::OSDirNotFound(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToCreatePath(actual_error, _) => actual_error.unwrap_or_default(),
                 }
             },
             StringOrError::String(string) => string,

@@ -33,6 +33,7 @@ textwrap = "0.16.1"
 dirs = "5.0.1"
 rayon = "1.10.0"
 serde_derive = "1.0.215"
+serde_json = "1.0"
 toml = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 

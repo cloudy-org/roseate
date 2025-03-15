@@ -14,6 +14,9 @@ pub enum Error {
     MonitorNotFound(ActualError),
     ImageFailedToEncode(ActualError, String),
     ImageFailedToDecode(ActualError, String),
+    OSDirNotFound(ActualError, String),
+    /// PathBuf: the path that failed to be created
+    FailedToCreatePath(ActualError, PathBuf)
 }
 
 impl Error {
@@ -64,13 +67,26 @@ impl Display for Error {
                 f, "For some reason we couldn't detect your monitor.",
             ),
             Error::ImageFailedToEncode(_, technical_reason) => write!(
-                f, "Image failed to encode! \n\nTechnical Reason: {}",
+                f,
+                "Image failed to encode! \n\nTechnical Reason: {}",
                 technical_reason
             ),
             Error::ImageFailedToDecode(_, technical_reason) => write!(
-                f, "Image failed to decode! \n\nTechnical Reason: {}",
+                f,
+                "Image failed to decode! \n\nTechnical Reason: {}",
                 technical_reason
             ),
+            Error::OSDirNotFound(_, directory_name) => write!(
+                f,
+                "No '{}' directory was found for your Operating System!? \
+                    This should not happen, please report this!",
+                directory_name
+            ),
+            Error::FailedToCreatePath(_, path) => write!(
+                f,
+                "Failed to create path at '{}'!",
+                path.to_string_lossy()
+            )
         }
     }
 }

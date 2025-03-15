@@ -31,6 +31,9 @@ impl Config {
 
         let roseate_config_dir_path = local_config_dir.join("cloudy").join("roseate");
 
+        // TODO: switch to get_local_config_path function.
+        // let roseate_config_path = files::get_local_config_path()?;
+
         if !roseate_config_dir_path.exists() {
             debug!("Creating config directory for roseate...");
             if let Err(err) = fs::create_dir_all(&roseate_config_dir_path) {
