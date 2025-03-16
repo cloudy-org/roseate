@@ -55,7 +55,8 @@ fn main() -> eframe::Result {
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
     let notifier = NotifierAPI::new();
-    let monitor_size = MonitorSize::new(None);
+    // TODO: fill monitor size params with values from config
+    let monitor_size = MonitorSize::new(None, None);
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

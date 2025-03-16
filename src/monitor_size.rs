@@ -1,39 +1,57 @@
-use std::fs::{self};
+use std::{fs::OpenOptions, io::{Read, Seek, Write}, time::{Duration, Instant}};
 
+use fs2::FileExt;
 use eframe::egui::Context;
-use serde::Deserialize;
+use log::{debug, error, warn};
+use serde::{Deserialize, Serialize};
 
 use crate::files;
 
 // TODO: move this to cirrus when it's good and stable enough.
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct MonitorSizeCacheData {
     #[serde(default)]
-    sizes: Vec<String>,
+    sizes: Vec<(f32, f32)>,
 }
 
 #[derive(Clone)]
 pub struct MonitorSize {
     monitor_size: Option<(f32, f32)>,
     last_monitor_size: Option<(f32, f32)>,
+    retry_persistent_state_update: Option<Instant>,
     default_fallback_size: (f32, f32),
+    override_monitor_size: Option<(f32, f32)>
 }
 
 // NOTE: need this to be a struct because soon I'll be
 // implementing a system where monitor size is cached somewhere so
 // roseate knows the correct monitor resolution before the window is available.
 impl MonitorSize {
-    pub fn new(fallback_monitor_size: Option<(f32, f32)>) -> Self {
+    pub fn new(fallback_monitor_size: Option<(f32, f32)>, override_monitor_size: Option<(f32, f32)>) -> Self {
         Self {
-            monitor_size: None,
+            monitor_size: override_monitor_size,
             last_monitor_size: None,
-            default_fallback_size: fallback_monitor_size.unwrap_or((1920.0, 1080.0))
+            retry_persistent_state_update: None,
+            default_fallback_size: fallback_monitor_size.unwrap_or((1920.0, 1080.0)),
+            override_monitor_size: override_monitor_size
         }
+    }
+
+    /// Returns the resolution of the current monitor (the monitor the window is currently at)
+    /// if it can't retrieve the real monitor resolution the default fallback resolution is returned.
+    pub fn get(&self) -> (f32, f32) {
+        self.monitor_size.unwrap_or(self.default_fallback_size)
     }
 
     pub fn update(&mut self, ctx: &Context) {
         self.last_monitor_size = self.monitor_size;
+
+        if self.override_monitor_size.is_some() {
+            // monitor size is forever overridden so we can 
+            // now ignore anything from egui's viewport monitor size.
+            return;
+        }
 
         ctx.input(|i| {
             let active_viewpoint = i.viewport();
@@ -46,34 +64,105 @@ impl MonitorSize {
         self.persistent_state_update();
     }
 
-    fn persistent_state_update(&self) {
-        if self.monitor_size == self.last_monitor_size {
+    fn persistent_state_update(&mut self) {
+        // TODO: improve error handling in the entirety of this method
+
+        if self.monitor_size == self.last_monitor_size && self.retry_persistent_state_update == None {
             return;
         }
+
+        // skip update if 2 seconds hasn't passed since the last time we tried.
+        if let Some(last_retry) = self.retry_persistent_state_update {
+            if Duration::from_secs(2) > last_retry.elapsed() {
+                return;
+            }
+        }
+
+        debug!("Updating persistent monitor size state...");
+
+        // we can unwrap because "self.monitor_size" will never be None once it's Some() in my logic.
+        let monitor_size_to_add = self.monitor_size.unwrap();
 
         let cache_path = files::get_cache_path();
 
         if let Ok(cache_path) = cache_path {
             let monitor_size_file_path = cache_path.join("monitor_size");
 
-            if !monitor_size_file_path.exists() {
-                if fs::write(&monitor_size_file_path, "{}").is_err() {
-                    return;
-                }
-            }
+            debug!("Opening or creating 'monitor_size' cache file...");
+            let mut json_file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .read(true)
+                .open(monitor_size_file_path)
+                .unwrap(); // TODO: remove unwrap
 
-            if let Ok(contents) = fs::read_to_string(monitor_size_file_path) {
-                if let Ok(data) = serde_json::from_str::<MonitorSizeCacheData>(&contents) {
-                    let monitor_sizes = data.sizes;
-                    // TODO: (15/03/2025) where I left off!
-                }
+            debug!("Appling file lock to 'monitor_size' cache file...");
+            let result = json_file.try_lock_exclusive();
+
+            match result {
+                Ok(_) => {
+                    debug!("File locked successfully! Reading json string from 'monitor_size' cache file...");
+                    let mut json_contents = String::new();
+
+                    if let Err(error) = json_file.read_to_string(&mut json_contents) {
+                        error!("Failed to read json string from the 'monitor_size' file! Error: {}", error);
+                        return;
+                    }
+
+                    debug!("Parsing json from 'monitor_size'...");
+                    let json_data_result = serde_json::from_str::<MonitorSizeCacheData>(&json_contents);
+
+                    let mut json_data = match json_data_result {
+                        Ok(json_data) => json_data,
+                        Err(error) => {
+                            // if the file is empty like when it's first created there will be a serde_json error.
+                            if !error.is_eof() {
+                                error!(
+                                    "Failed to parse json in 'monitor_size'! Defaulting to default values! Error: {}",
+                                    error
+                                );
+                            }
+
+                            MonitorSizeCacheData { sizes: Vec::default() }
+                        },
+                    };
+
+                    if let Some(last_size) = json_data.sizes.last() {
+                        if last_size == &monitor_size_to_add {
+                            debug!(
+                                "The 'monitor_size' persistent cache already contains this \
+                                monitor's size as it's last appended size so we'll skip a rewrite."
+                            );
+                            return;
+                        }
+                    }
+
+                    json_data.sizes.retain(|size| *size != monitor_size_to_add);
+                    json_data.sizes.push(monitor_size_to_add);
+
+                    debug!("Writing json data to 'monitor_size' cache file...");
+                    json_file.rewind().expect("Rewinding the 'monitor_size' file somehow failed!");
+                    // panicking because in my logic this really should never fail
+                    // but this is also just a temp solution so I can focus on more important stuff
+                    // 
+                    // TODO: if we really don't want to panic then we should figure out a way to 
+                    // handle this elegantly (notify the user? log it? escalate it to the parent function?)
+
+                    if let Err(error) = json_file.write(&serde_json::to_vec(&json_data).unwrap()) {
+                        error!("Failed to write to 'monitor_size' cache file! Error: {}", error);
+                        return;
+                    }
+                },
+                Err(error) => {
+                    warn!(
+                        "The 'monitor_size' file is currently locked by another Roseate 
+                        instant, so we will have to wait until the other instance let's go of 
+                        the file until we can save our monitor size state to it. \n\n Error: {}",
+                        error
+                    );
+                    self.retry_persistent_state_update = Some(Instant::now());
+                },
             }
         }
-    }
-
-    /// Returns the resolution of the current monitor (the monitor the window is currently at)
-    /// if it can't retrieve the real monitor resolution the default fallback resolution is returned.
-    pub fn get(&self) -> (f32, f32) {
-        self.monitor_size.unwrap_or(self.default_fallback_size)
     }
 }
