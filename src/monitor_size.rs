@@ -78,10 +78,10 @@ impl MonitorSize {
             }
         }
 
-        debug!("Updating persistent monitor size state...");
-
         // we can unwrap because "self.monitor_size" will never be None once it's Some() in my logic.
         let monitor_size_to_add = self.monitor_size.unwrap();
+
+        debug!("Updating persistent monitor size state with '{:?}'...", monitor_size_to_add);
 
         let cache_path = files::get_cache_path();
 
@@ -109,7 +109,7 @@ impl MonitorSize {
                         return;
                     }
 
-                    debug!("Parsing json from 'monitor_size'...");
+                    debug!("Parsing json string ({})...", json_contents);
                     let json_data_result = serde_json::from_str::<MonitorSizeCacheData>(&json_contents);
 
                     let mut json_data = match json_data_result {
