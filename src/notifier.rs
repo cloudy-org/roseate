@@ -31,7 +31,7 @@ impl ToastsManager {
         let message = self.string_or_error_to_string(message);
 
         let toast = Toast::custom(
-            textwrap::wrap(message.as_str(), 75).join("\n"),
+            textwrap::wrap(message.as_str(), 65).join("\n"),
             level
         );
 
@@ -79,6 +79,7 @@ impl ToastsManager {
                     Error::ImageFailedToDecode(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::OSDirNotFound(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::FailedToCreatePath(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToOpenFile(actual_error, _) => actual_error.unwrap_or_default(),
                 }
             },
             StringOrError::String(string) => string,

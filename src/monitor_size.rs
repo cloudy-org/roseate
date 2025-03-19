@@ -1,11 +1,11 @@
-use std::{fs::OpenOptions, io::{Read, Seek, Write}, time::{Duration, Instant}};
+use std::{fs::{File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
 
 use fs2::FileExt;
 use eframe::egui::Context;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::files;
+use crate::{error::{Error, Result}, files};
 
 // TODO: move this to cirrus when it's good and stable enough.
 
@@ -42,6 +42,37 @@ impl MonitorSize {
     /// if it can't retrieve the real monitor resolution the default fallback resolution is returned.
     pub fn get(&self) -> (f32, f32) {
         self.monitor_size.unwrap_or(self.default_fallback_size)
+    }
+
+    pub fn exists(&self) -> bool {
+        self.monitor_size.is_some()
+    }
+
+    pub fn fetch_from_cache(&mut self) -> Result<(), Error> {
+        let cache_path = files::get_cache_path()?;
+
+        let monitor_size_file_path = cache_path.join("monitor_size");
+
+        let file = File::open(&monitor_size_file_path);
+
+        if let Err(error) = file {
+            return Err(
+                Error::FailedToOpenFile(Some(error.to_string()), monitor_size_file_path)
+            )
+        }
+
+        let data_result = serde_json::from_reader::<BufReader<File>, MonitorSizeCacheData>(
+            BufReader::new(file.unwrap())
+        );
+
+        if let Ok(data) = data_result {
+            // NOTE: should we make this customizable???
+            let last_size = data.sizes.last();
+
+            self.monitor_size = last_size.copied();
+        }
+
+        Ok(())
     }
 
     pub fn update(&mut self, ctx: &Context) {
@@ -83,6 +114,7 @@ impl MonitorSize {
 
         debug!("Updating persistent monitor size state with '{:?}'...", monitor_size_to_add);
 
+        // TODO: handle Err from this result (we should notify the user that we failed to create the cache path).
         let cache_path = files::get_cache_path();
 
         if let Ok(cache_path) = cache_path {
@@ -94,10 +126,10 @@ impl MonitorSize {
                 .create(true)
                 .read(true)
                 .open(monitor_size_file_path)
-                .unwrap(); // TODO: remove unwrap
+                .unwrap(); // TODO: remove unwrap and handle case where file can fail to open
 
             debug!("Appling file lock to 'monitor_size' cache file...");
-            let result = json_file.try_lock_exclusive();
+            let result = json_file.try_lock_shared();
 
             match result {
                 Ok(_) => {

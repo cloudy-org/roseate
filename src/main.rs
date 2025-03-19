@@ -56,7 +56,22 @@ fn main() -> eframe::Result {
     // so we can queue up notifications when things go wrong here.
     let notifier = NotifierAPI::new();
     // TODO: fill monitor size params with values from config
-    let monitor_size = MonitorSize::new(None, None);
+    let mut monitor_size = MonitorSize::new(None, None);
+
+    // TODO: take advantage of result
+    monitor_size.fetch_from_cache();
+
+    if !monitor_size.exists() {
+        // we should be 100% safe to unwrap here 
+        // as we're the first ones to access notifier.toasts at this point.
+        notifier.toasts.lock().unwrap()
+            .toast_and_log(
+                "The monitor size was not cached yet so the \
+                image MAY appear a little blurry or over sharpened at first. Roseate will \
+                clear this up and this should never happen again the next time you launch Roseate.".into(),
+                ToastLevel::Warning
+            ).duration(Some(Duration::from_secs(10)));
+    }
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
