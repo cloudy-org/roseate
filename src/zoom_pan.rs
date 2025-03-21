@@ -71,8 +71,9 @@ impl ZoomPan {
 
                 if is_scheduled {
                     debug!(
-                        "User zoomed out enough to also schedule pan reset.\n{}",
-                        format!("[ZOOM FACTOR = {:.2} (< 0.48)]", self.zoom_factor)
+                        "User zoomed out enough to also schedule pan reset. \
+                        [ZOOM FACTOR = {:.2} (< 0.48)]",
+                        self.zoom_factor
                     );
                 }
             }

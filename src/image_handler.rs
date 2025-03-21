@@ -7,6 +7,8 @@ use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, im
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
+/// 
+/// ImageHandler struct is a ui facing, Image struct is low-level stuff.
 pub struct ImageHandler {
     pub image: Option<Image>,
     pub image_loaded: bool,
@@ -14,7 +16,8 @@ pub struct ImageHandler {
     image_loaded_arc: Arc<Mutex<bool>>,
     image_loading: bool,
 
-    last_zoom_factor: f32
+    last_zoom_factor: f32,
+    accumulated_zoom_factor: f32
 }
 
 impl ImageHandler {
@@ -25,6 +28,7 @@ impl ImageHandler {
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
             last_zoom_factor: 1.0,
+            accumulated_zoom_factor: 0.0,
         }
     }
 
@@ -82,15 +86,39 @@ impl ImageHandler {
             // the zoom factor change since the last dynamic upsample / downsample.
             let zoom_factor_change = zoom_pan.zoom_factor - self.last_zoom_factor;
 
-            // TODO: also don't upsample if image is already at it's max resolution.
-            if image.optimizations.contains(
+            let is_enabled = image.optimizations.contains(
                 &ImageOptimizations::EventBased(EventImageOptimizations::DynamicUpsampling)
-            ) && zoom_factor_change >= 0.2 {
-                // TODO: reload image with new dimensions
+            );
 
-                self.last_zoom_factor = zoom_pan.zoom_factor;
+            if !is_enabled || !(zoom_factor_change <= -0.4) && !(zoom_factor_change >= 0.4) {
+                return;
             }
 
+            if zoom_pan.zoom_factor <= 1.0 {
+                return;
+            }
+
+            // TODO: (20/03/2025) use accumulated_zoom_factor to determin when to do a dynamic sample.
+            // we only want the image to sample when the user zooms into the image far enough for the 
+            // quality to drop. (e.g: micro zooms should not trigger samples unless many of them have 
+            // been done overall accumulating to a "far enough" zoom)
+
+            println!("uwu {}", zoom_pan.zoom_factor);
+
+            // TODO: also don't upsample if image is already at it's max resolution.
+            if zoom_factor_change >= 0.4 {
+                // TODO: reload image with new dimensions
+
+                // TODO: fix the weird bug where this doesn't always trigger when zoom factor is reset by roseate.
+
+                println!("owo + {}", zoom_factor_change);
+            }
+
+            if zoom_factor_change <= -0.4 {
+                println!("owo - {}", zoom_factor_change);
+            }
+
+            self.last_zoom_factor = zoom_pan.zoom_factor;
         }
     }
 
