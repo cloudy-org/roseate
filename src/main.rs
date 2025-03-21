@@ -81,7 +81,6 @@ fn main() -> eframe::Result {
         }
     );
 
-    // TODO: take advantage of result
     monitor_size.fetch_from_cache();
 
     if !monitor_size.exists() {

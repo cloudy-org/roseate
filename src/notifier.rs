@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock};
+use std::{sync::{Arc, Mutex, RwLock}, time::Duration};
 
 use eframe::egui::Context;
 use egui_notify::{Toast, ToastLevel, Toasts};
@@ -30,10 +30,16 @@ impl ToastsManager {
     pub fn toast(&mut self, message: StringOrError, level: ToastLevel) -> &mut Toast {
         let message = self.string_or_error_to_string(message);
 
-        let toast = Toast::custom(
+        let mut toast = Toast::custom(
             textwrap::wrap(message.as_str(), 65).join("\n"),
-            level
+            level.clone()
         );
+
+        if level == ToastLevel::Error {
+            toast.duration(
+                Some(Duration::from_secs(8))
+            );
+        }
 
         self.toasts.add(toast)
     }

@@ -4,7 +4,7 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::{self, NotifierAPI}, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -90,7 +90,7 @@ impl eframe::App for Roseate<'_> {
             }
 
             self.notifier.update(ctx);
-            self.monitor_size.update(ctx);
+            self.monitor_size.update(ctx, &mut self.notifier);
             self.about_box.update(ctx); // we update this box here because we want 
             // the about box is to be toggleable even without an image.
 
