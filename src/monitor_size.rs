@@ -49,6 +49,11 @@ impl MonitorSize {
     }
 
     pub fn fetch_from_cache(&mut self) -> Result<(), Error> {
+        if self.override_monitor_size.is_some() {
+            debug!("Ignoring fetch from cache as monitor size was overridden!");
+            return Ok(());
+        }
+
         let cache_path = files::get_cache_path()?;
 
         let monitor_size_file_path = cache_path.join("monitor_size");

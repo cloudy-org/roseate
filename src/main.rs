@@ -55,8 +55,31 @@ fn main() -> eframe::Result {
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
     let notifier = NotifierAPI::new();
+
+    let config = match Config::new() {
+        Ok(config) => config,
+        Err(error) => {
+
+            notifier.toasts.lock().unwrap().toast_and_log(
+                format!(
+                    "Error occurred getting roseate's config file! \
+                    Defaulting to default config. Error: {}", error.to_string().as_str()
+                ).into(), 
+                ToastLevel::Error
+            ).duration(Some(Duration::from_secs(10)));
+
+            Config::default()
+        }
+    };
+
     // TODO: fill monitor size params with values from config
-    let mut monitor_size = MonitorSize::new(None, None);
+    let mut monitor_size = MonitorSize::new(
+        None,
+        match &config.misc.override_monitor_size {
+            Some(size) => Some((size.width as f32, size.height as f32)),
+            None => None,
+        }
+    );
 
     // TODO: take advantage of result
     monitor_size.fetch_from_cache();
@@ -128,22 +151,6 @@ fn main() -> eframe::Result {
             }
         },
         _ => Theme::default(true)
-    };
-
-    let config = match Config::new() {
-        Ok(config) => config,
-        Err(error) => {
-
-            notifier.toasts.lock().unwrap().toast_and_log(
-                format!(
-                    "Error occurred getting roseate's config file! \
-                    Defaulting to default config. Error: {}", error.to_string().as_str()
-                ).into(), 
-                ToastLevel::Error
-            ).duration(Some(Duration::from_secs(10)));
-
-            Config::default()
-        }
     };
 
     eframe::run_native(
