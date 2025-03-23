@@ -17,7 +17,7 @@ pub struct ImageHandler {
     image_loading: bool,
 
     last_zoom_factor: f32,
-    accumulated_zoom_factor: f32
+    accumulated_zoom_factor_change: f32
 }
 
 impl ImageHandler {
@@ -28,7 +28,7 @@ impl ImageHandler {
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
             last_zoom_factor: 1.0,
-            accumulated_zoom_factor: 0.0,
+            accumulated_zoom_factor_change: 0.0,
         }
     }
 
@@ -77,48 +77,46 @@ impl ImageHandler {
             self.image_loading = false; // set that bitch back to false yeah
         }
 
-        // TODO: perform dynamic downsampling here! (25/01/2025)
         self.dynamic_sampling_update(zoom_pan);
     }
 
     pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan) {
         if let Some(image) = &self.image {
             // the zoom factor change since the last dynamic upsample / downsample.
-            let zoom_factor_change = zoom_pan.zoom_factor - self.last_zoom_factor;
-
             let is_enabled = image.optimizations.contains(
                 &ImageOptimizations::EventBased(EventImageOptimizations::DynamicUpsampling)
             );
 
-            if !is_enabled || !(zoom_factor_change <= -0.4) && !(zoom_factor_change >= 0.4) {
+            if zoom_pan.zoom_factor <= 1.0 || !is_enabled {
+                self.last_zoom_factor = 1.0;
+                self.accumulated_zoom_factor_change = 0.0;
                 return;
             }
 
-            if zoom_pan.zoom_factor <= 1.0 {
+            self.accumulated_zoom_factor_change += (zoom_pan.zoom_factor).log2() - (self.last_zoom_factor).log2();
+
+            self.last_zoom_factor = zoom_pan.zoom_factor;
+
+            let change = 0.8;
+
+            if !(self.accumulated_zoom_factor_change <= -change) && !(self.accumulated_zoom_factor_change >= change) {
                 return;
             }
-
-            // TODO: (20/03/2025) use accumulated_zoom_factor to determin when to do a dynamic sample.
-            // we only want the image to sample when the user zooms into the image far enough for the 
-            // quality to drop. (e.g: micro zooms should not trigger samples unless many of them have 
-            // been done overall accumulating to a "far enough" zoom)
 
             println!("uwu {}", zoom_pan.zoom_factor);
 
             // TODO: also don't upsample if image is already at it's max resolution.
-            if zoom_factor_change >= 0.4 {
-                // TODO: reload image with new dimensions
+            if self.accumulated_zoom_factor_change >= change {
+                // TODO: schedule a image reload with new dimensions.
 
-                // TODO: fix the weird bug where this doesn't always trigger when zoom factor is reset by roseate.
-
-                println!("owo + {}", zoom_factor_change);
+                println!("owo + {}", self.accumulated_zoom_factor_change);
             }
 
-            if zoom_factor_change <= -0.4 {
-                println!("owo - {}", zoom_factor_change);
+            if self.accumulated_zoom_factor_change <= -change  {
+                println!("owo - {}", self.accumulated_zoom_factor_change);
             }
 
-            self.last_zoom_factor = zoom_pan.zoom_factor;
+            self.accumulated_zoom_factor_change = 0.0;
         }
     }
 
@@ -224,4 +222,23 @@ impl ImageHandler {
         optimizations
     }
 
+    // TODO: should probably just pre-set a delay in here.
+    pub fn schedule_image_dynamic_sample(&mut self, delay: Duration, ) -> bool {
+        if self.reset_scale_factor.is_none() {
+
+            self.reset_scale_factor = Some(
+                ResetManager {
+                    timer: Instant::now(),
+                    delay: delay,
+                    animation_id: rand::thread_rng().gen::<u32>(),
+                    in_animation: false
+                }
+            );
+
+            debug!("Scale factor reset has been scheduled.");
+            return true;
+        }
+
+        false
+    }
 }
