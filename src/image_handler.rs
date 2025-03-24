@@ -3,7 +3,7 @@ use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 use log::{debug, info, warn};
 use rfd::FileDialog;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::{EventImageOptimizations, ImageOptimizations}}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -12,12 +12,12 @@ use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, im
 pub struct ImageHandler {
     pub image: Option<Image>,
     pub image_loaded: bool,
-
-    image_loaded_arc: Arc<Mutex<bool>>,
     image_loading: bool,
-
-    last_zoom_factor: f32,
-    accumulated_zoom_factor_change: f32
+    image_loaded_arc: Arc<Mutex<bool>>,
+    pub(super) dynamic_sample_schedule: Option<Scheduler>,
+    pub(super) last_zoom_factor: f32,
+    pub(super) dynamic_sampling_old_resolution: (f32, f32),
+    pub(super) accumulated_zoom_factor_change: f32
 }
 
 impl ImageHandler {
@@ -27,7 +27,9 @@ impl ImageHandler {
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
+            dynamic_sample_schedule: None,
             last_zoom_factor: 1.0,
+            dynamic_sampling_old_resolution: (0.0, 0.0), 
             accumulated_zoom_factor_change: 0.0,
         }
     }
@@ -67,7 +69,7 @@ impl ImageHandler {
         }
     }
 
-    pub fn update(&mut self, zoom_pan: &ZoomPan) {
+    pub fn update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
         // and also now to perform dynamic downsampling.
@@ -77,46 +79,12 @@ impl ImageHandler {
             self.image_loading = false; // set that bitch back to false yeah
         }
 
-        self.dynamic_sampling_update(zoom_pan);
-    }
+        self.dynamic_sampling_update(zoom_pan, monitor_size);
 
-    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan) {
-        if let Some(image) = &self.image {
-            // the zoom factor change since the last dynamic upsample / downsample.
-            let is_enabled = image.optimizations.contains(
-                &ImageOptimizations::EventBased(EventImageOptimizations::DynamicUpsampling)
-            );
-
-            if zoom_pan.zoom_factor <= 1.0 || !is_enabled {
-                self.last_zoom_factor = 1.0;
-                self.accumulated_zoom_factor_change = 0.0;
-                return;
+        if let Some(schedule) = &mut self.dynamic_sample_schedule {
+            if !zoom_pan.is_panning {
+                schedule.update();
             }
-
-            self.accumulated_zoom_factor_change += (zoom_pan.zoom_factor).log2() - (self.last_zoom_factor).log2();
-
-            self.last_zoom_factor = zoom_pan.zoom_factor;
-
-            let change = 0.8;
-
-            if !(self.accumulated_zoom_factor_change <= -change) && !(self.accumulated_zoom_factor_change >= change) {
-                return;
-            }
-
-            println!("uwu {}", zoom_pan.zoom_factor);
-
-            // TODO: also don't upsample if image is already at it's max resolution.
-            if self.accumulated_zoom_factor_change >= change {
-                // TODO: schedule a image reload with new dimensions.
-
-                println!("owo + {}", self.accumulated_zoom_factor_change);
-            }
-
-            if self.accumulated_zoom_factor_change <= -change  {
-                println!("owo - {}", self.accumulated_zoom_factor_change);
-            }
-
-            self.accumulated_zoom_factor_change = 0.0;
         }
     }
 
@@ -220,25 +188,5 @@ impl ImageHandler {
         optimizations.push(ImageOptimizations::EventBased(DynamicUpsampling));
 
         optimizations
-    }
-
-    // TODO: should probably just pre-set a delay in here.
-    pub fn schedule_image_dynamic_sample(&mut self, delay: Duration, ) -> bool {
-        if self.reset_scale_factor.is_none() {
-
-            self.reset_scale_factor = Some(
-                ResetManager {
-                    timer: Instant::now(),
-                    delay: delay,
-                    animation_id: rand::thread_rng().gen::<u32>(),
-                    in_animation: false
-                }
-            );
-
-            debug!("Scale factor reset has been scheduled.");
-            return true;
-        }
-
-        false
     }
 }

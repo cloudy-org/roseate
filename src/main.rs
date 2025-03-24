@@ -30,6 +30,7 @@ mod window_scaling;
 mod magnification_panel;
 mod monitor_size;
 mod scheduler;
+mod dynamic_sampling;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]

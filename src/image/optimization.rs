@@ -245,6 +245,12 @@ impl Image {
                                     marginal_allowance, (dynamic_image.width(), dynamic_image.height()), monitor_size
                                 );
 
+                                debug!(
+                                    "Downsampling image closer to monitor resolution \
+                                    ({}x{}) with Dynamic Image resize to save memory...",
+                                    width, height
+                                );
+
                                 dynamic_image.resize(
                                     width as u32,
                                     height as u32,
@@ -267,6 +273,12 @@ impl Image {
                                     marginal_allowance, (image_size.0, image_size.1), monitor_size
                                 );
 
+                                debug!(
+                                    "Downsampling image closer to monitor resolution \
+                                    ({}x{}) with Roseate fast downsample to save memory...",
+                                    width, height
+                                );
+
                                 fast_downsample(
                                     pixels,
                                     &image_size,
@@ -284,10 +296,9 @@ impl Image {
         Ok(())
     }
 
-    // TODO: I don't think we'll need this anymore, remove if this is not needed anymore.
     /// Checks if the image has this TYPE of optimization applied, not the exact 
     /// optimization itself. Then it returns a reference to the exact optimization found.
-    pub(super) fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {
+    pub fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {
         for applied_optimization in self.optimizations.iter() {
             if applied_optimization.id() == optimization.id() {
                 return Some(applied_optimization);

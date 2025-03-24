@@ -12,7 +12,7 @@ pub struct ZoomPan {
     reset_key: Key,
     pub zoom_factor: f32,
     last_zoom_factor: f32,
-    is_panning: bool,
+    pub is_panning: bool,
     pub pan_offset: Vec2,
     drag_start: Option<Pos2>,
     reset_pan_offset: Option<ResetManager>,
@@ -173,6 +173,7 @@ impl ZoomPan {
         }
     }
 
+    // TODO: switch "image_size: Vec2" to "image_size: (u32, u32)".
     pub fn relative_image_size(&self, image_size: Vec2) -> Vec2 {   
         image_size * self.zoom_factor
     }
