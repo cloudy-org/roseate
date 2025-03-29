@@ -4,7 +4,7 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::{self, NotifierAPI}, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -105,7 +105,7 @@ impl eframe::App for Roseate<'_> {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let result = self.image_handler.init_image(path, &self.monitor_size);
+                        let result = self.image_handler.init_image(path);
 
                         if let Err(error) = result {
                             self.notifier.toasts.lock().unwrap().toast_and_log(

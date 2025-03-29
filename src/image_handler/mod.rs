@@ -1,9 +1,16 @@
-use std::{path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use log::{debug, info, warn};
 use rfd::FileDialog;
+use log::{debug, info, warn};
+use monitor_downsampling::get_monitor_downsampling_size;
+use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::Image, optimization::ImageOptimizations}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
+
+mod dynamic_sampling;
+
+pub mod optimization;
+pub mod monitor_downsampling;
 
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
@@ -14,9 +21,11 @@ pub struct ImageHandler {
     pub image_loaded: bool,
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
+    pub image_optimizations: HashSet<ImageOptimizations>,
     pub(super) dynamic_sample_schedule: Option<Scheduler>,
     pub(super) last_zoom_factor: f32,
-    pub(super) dynamic_sampling_old_resolution: (f32, f32),
+    pub(super) dynamic_sampling_new_resolution: ImageSizeT,
+    dynamic_sampling_old_resolution: ImageSizeT,
     pub(super) accumulated_zoom_factor_change: f32
 }
 
@@ -27,17 +36,27 @@ impl ImageHandler {
             image_loaded: false,
             image_loaded_arc: Arc::new(Mutex::new(false)),
             image_loading: false,
+            image_optimizations: HashSet::new(),
             dynamic_sample_schedule: None,
             last_zoom_factor: 1.0,
-            dynamic_sampling_old_resolution: (0.0, 0.0), 
+            dynamic_sampling_new_resolution: (0, 0),
+            dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
         }
     }
 
-    pub fn init_image(&mut self, image_path: &Path, monitor_size: &MonitorSize) -> Result<()> {
-        let mut image = Image::from_path(image_path)?;
+    pub fn init_image(&mut self, image_path: &Path) -> Result<()> {
+        let image = Image::from_path(image_path)?;
 
-        image.optimizations.extend(self.get_user_image_optimisations(&image, monitor_size));
+        // TODO: pass optimizations into this function instead 
+        // or have the developer manipulate image_optimizations directly.
+        // TODO: also maybe just have the image optimization set when ImageHandler is initialized.
+        self.image_optimizations = HashSet::from_iter(
+            vec![
+                ImageOptimizations::MonitorDownsampling(130),
+                ImageOptimizations::DynamicSampling(true, true)
+            ].iter().cloned()
+        );
 
         self.image = Some(image);
 
@@ -61,7 +80,7 @@ impl ImageHandler {
                     )
                 }
 
-                self.init_image(&path, monitor_size)?;
+                self.init_image(&path)?;
 
                 Ok(())
             },
@@ -88,6 +107,8 @@ impl ImageHandler {
         }
     }
 
+    // TODO: (28/03/2025) ImageHandler::load_image should decide whether we image.reload or image.load.
+
     /// Handles loading the image in a background thread or on the main thread. 
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
@@ -109,7 +130,11 @@ impl ImageHandler {
         );
 
         notifier.set_loading(
-            Some("Applying image optimizations...".into())
+            Some("Gathering necessary image modifications...".into())
+        );
+
+        let mut image_modifications = self.get_image_modifications(
+            &image, &monitor_size
         );
 
         // Our svg implementation is very experimental. Let's warn the user.
@@ -122,16 +147,16 @@ impl ImageHandler {
                 )
                 .duration(Some(Duration::from_secs(8)));
 
-            // SVGs cannot be loaded with optimizations at 
+            // SVGs cannot be loaded with modifications at 
             // the moment or else image.load_image() will panic.
-            image.optimizations.clear();
+            image_modifications.clear();
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_arc = notifier.clone();
         let monitor_size_arc = monitor_size.clone();
 
-        let mut loading_logic = move || {
+        let loading_logic = move || {
             let backend = match use_experimental_backend {
                 true => ImageProcessingBackend::Roseate,
                 false => ImageProcessingBackend::ImageRS
@@ -139,9 +164,11 @@ impl ImageHandler {
 
             notifier_arc.set_loading(Some("Loading image...".into()));
             let now = Instant::now();
+
             let result = image.load_image(
                 &mut notifier_arc,
                 &monitor_size_arc,
+                image_modifications,
                 &backend
             );
 
@@ -169,24 +196,61 @@ impl ImageHandler {
         }
     }
 
-    // TODO: Make it apply optimizations following the user's config.
-    fn get_user_image_optimisations(&self, image: &Image, monitor_size: &MonitorSize) -> Vec<ImageOptimizations> {
-        use crate::image::optimization::EventImageOptimizations::*;
-        use crate::image::optimization::InitialImageOptimizations::*;
+    /// Method that handles choosing which type of modifications 
+    /// should be done to the image at this time. It decides that on a number of various factors, 
+    /// like image optimizations applied by the user, monitor size, zoom factor and etc.
+    fn get_image_modifications(&mut self, image: &Image, monitor_size: &MonitorSize) -> HashSet<ImageModifications> {
+        let mut image_modifications = HashSet::new();
 
-        let mut optimizations = Vec::new();
+        // the reason why we don't just loop over self.image_optimizations 
+        // is because I need to make absolute sure I'm doing these checks in this exact order.
 
-        let (monitor_width, monitor_height) = monitor_size.get();
+        if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
+            &ImageOptimizations::MonitorDownsampling(u32::default())
+        ) {
+            let (monitor_width, monitor_height) = monitor_size.get();
 
-        // If the image is a lot bigger than the user's 
-        // monitor then apply monitor downsample, if not we shouldn't.
-        if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
-            optimizations.push(ImageOptimizations::Initial(MonitorDownsampling(130)));
+            // If the image is a lot bigger than the user's 
+            // monitor then apply monitor downsample, if not we shouldn't.
+            if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
+                debug!(
+                    "Image is significantly bigger than system's \
+                    display monitor so monitor downsampling will be applied..."
+                );
+
+                let image_size = get_monitor_downsampling_size(
+                    *marginal_allowance, (image.image_size.width as u32, image.image_size.height as u32), monitor_size
+                );
+
+                image_modifications.insert(ImageModifications::Resize(image_size));
+            }
         }
 
-        // NOTE: wip, so just returning some random optimizations for testing sake
-        optimizations.push(ImageOptimizations::EventBased(DynamicUpsampling));
+        if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.has_optimization(
+            &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
+        ) {
+            let new_resolution = self.dynamic_sampling_new_resolution;
 
-        optimizations
+            if !(&new_resolution == &self.dynamic_sampling_old_resolution) {
+                image_modifications.insert(
+                    ImageModifications::Resize(new_resolution.clone())
+                );
+                self.dynamic_sampling_old_resolution = new_resolution.clone();
+            }
+        }
+
+        image_modifications
+    }
+
+    /// Checks if the image has this TYPE of optimization applied, not the exact 
+    /// optimization itself. Then it returns a reference to the exact optimization found.
+    pub fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {
+        for applied_optimization in self.image_optimizations.iter() {
+            if applied_optimization.id() == optimization.id() {
+                return Some(applied_optimization);
+            }
+        }
+
+        return None;
     }
 }
