@@ -58,8 +58,7 @@ impl<'a> Roseate<'a> {
                 Stroke {
                     width: 2.0,
                     color: Color32::from_hex(
-                        &self.theme.accent_colour.as_ref()
-                            .unwrap_or(&Colour {hex_code: "e05f78".into()}).hex_code
+                        &self.theme.accent_colour.hex_code
                     ).unwrap()
                 },
                 10.0, 
