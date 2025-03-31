@@ -37,6 +37,7 @@ serde_derive = "1.0.215"
 toml = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 
+# NOTE: Workspace deps will be removed here when we soon update to the latest commit of cirrus.
 [workspace.dependencies]
 cirrus_egui = { path = "./cirrus/egui" }
 cirrus_theming = { path = "./cirrus/theming" }
