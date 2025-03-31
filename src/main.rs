@@ -8,7 +8,7 @@ use image_handler::ImageHandler;
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
-use cirrus_theming::v1::Theme;
+use cirrus_theming::v1::{Colour, Theme};
 use clap::{arg, command, Parser};
 
 use error::Error;
@@ -30,7 +30,6 @@ mod window_scaling;
 mod magnification_panel;
 mod monitor_size;
 mod scheduler;
-mod dynamic_sampling;
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
@@ -127,7 +126,7 @@ fn main() -> eframe::Result {
                 error.into(), ToastLevel::Error
             ).duration(Some(Duration::from_secs(10)));
         } else {
-            let result = image_handler.init_image(path, &monitor_size);
+            let result = image_handler.init_image(path);
 
             if let Err(error) = result {
                 notifier.toasts.lock().unwrap().toast_and_log(
@@ -137,22 +136,43 @@ fn main() -> eframe::Result {
         }
     }
 
-    let theme = match theme_string {
+    let is_dark = match theme_string {
         Some(string) => {
             if string == "light" {
-                Theme::default(false)
+                false
             } else if string == "dark" {
-                Theme::default(true)
+                true
             } else {
                 log::warn!(
                     "'{}' is not a valid theme. Pass either 'dark' or 'light'.", string
                 );
 
-                Theme::default(true)
+                true
             }
         },
-        _ => Theme::default(true)
+        _ => true
     };
+
+    let theme_colours = match is_dark {
+        true => vec![
+            Colour::from_hex("#0a0909"),
+            Colour::from_hex("#201f1f"),
+            Colour::from_hex("#494848"),
+        ],
+        false => vec![
+            Colour::from_hex("#b4dede"),
+            Colour::from_hex("#aec5d4"),
+            Colour::from_hex("#57575b"),
+        ],
+    };
+
+    let theme = Theme::new(
+        is_dark,
+        theme_colours,
+        Some(
+            Colour::from_hex("#e05f78")
+        )
+    );
 
     eframe::run_native(
         "Roseate",

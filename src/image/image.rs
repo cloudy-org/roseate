@@ -7,17 +7,15 @@ use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::
 
 use crate::{error::{Error, Result}, monitor_size::MonitorSize, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimizations};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, modifications::ImageModifications};
 
 pub type ImageSizeT = (u32, u32);
 
 #[derive(Clone)]
 pub struct Image {
-    pub image_size: ImageSize,
+    pub image_size: ImageSize, // TODO: change this to ImageSizeT
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
-    /// Currently applied optimizations.
-    pub optimizations: HashSet<ImageOptimizations>,
     pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
     // Look! I know you see that type above me but just  
     // so you know, I'm NOT crazy... well not yet at least...
@@ -104,7 +102,6 @@ impl Image {
                 image_format,
                 image_path: Arc::new(path.to_owned()),
                 image_bytes: Arc::new(Mutex::new(None)),
-                optimizations: HashSet::new(),
             }
         )
     }
@@ -137,12 +134,15 @@ impl Image {
         &mut self,
         notifier: &mut NotifierAPI,
         monitor_size: &MonitorSize,
+        modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if !self.contains_initial_optimization() {
-            debug!("No optimizations were set so loading with fs::read instead...");
+        if modifications.is_empty() {
+            debug!("No modifications were set so we're loading with fs::read instead...");
 
             let mut image_bytes_lock = self.image_bytes.lock().unwrap();
+
+            notifier.set_loading(Some("Opening file...".into()));
 
             // TODO: return Error instead of panic.
             *image_bytes_lock = Some(
@@ -166,15 +166,15 @@ impl Image {
 
         let image_decoder = self.get_image_decoder(image_buf_reader);
 
-        let mut optimized_image_buffer: Vec<u8> = Vec::new();
+        let mut modified_image_buffer: Vec<u8> = Vec::new();
 
         notifier.set_loading(Some("Decoding image...".into()));
 
-        let image_result = self.optimize_and_decode_image_to_buffer(
+        let image_result = self.modify_and_decode_image_to_buffer(
             image_processing_backend,
             image_decoder,
-            &mut optimized_image_buffer,
-            monitor_size,
+            modifications,
+            &mut modified_image_buffer,
             notifier
         );
 
@@ -189,8 +189,12 @@ impl Image {
                 .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
 
             // load image without optimizations
-            self.optimizations.clear();
-            let result = self.load_image(notifier, monitor_size, image_processing_backend);
+            let result = self.load_image(
+                notifier,
+                monitor_size,
+                HashSet::new(),
+                image_processing_backend
+            );
 
             match result {
                 Ok(_) => return Ok(()),
@@ -198,8 +202,8 @@ impl Image {
             }
         }
 
-        // NOTE: At this point "optimized_image_buffer" should definitely have the image.
-        *self.image_bytes.lock().unwrap() = Some(Arc::from(optimized_image_buffer));
+        // NOTE: At this point "modified_image_buffer" should definitely have the image.
+        *self.image_bytes.lock().unwrap() = Some(Arc::from(modified_image_buffer));
 
         Ok(())
     }
@@ -232,16 +236,6 @@ impl Image {
                 )
             },
         }
-    }
-
-    fn contains_initial_optimization(&self) -> bool {
-        for optimization in &self.optimizations {
-            if let ImageOptimizations::Initial(_) = optimization {
-                return true;
-            }
-        }
-
-        false
     }
 
     // fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {

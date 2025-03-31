@@ -4,7 +4,7 @@ use cirrus_theming::v1::{Colour, Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::{self, NotifierAPI}, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -24,7 +24,8 @@ impl<'a> Roseate<'a> {
     pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
         if image_handler.image.is_some() {
             image_handler.load_image(
-                config.image.loading.initial.lazy_loading, 
+                config.image.loading.initial.lazy_loading,
+                false,
                 &mut notifier,
                 &monitor_size,
                 config.misc.experimental.use_fast_roseate_backend
@@ -58,8 +59,7 @@ impl<'a> Roseate<'a> {
                 Stroke {
                     width: 2.0,
                     color: Color32::from_hex(
-                        &self.theme.accent_colour.as_ref()
-                            .unwrap_or(&Colour {hex_code: "e05f78".into()}).hex_code
+                        &self.theme.accent_colour.hex_code
                     ).unwrap()
                 },
                 10.0, 
@@ -105,7 +105,7 @@ impl eframe::App for Roseate<'_> {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let result = self.image_handler.init_image(path, &self.monitor_size);
+                        let result = self.image_handler.init_image(path);
 
                         if let Err(error) = result {
                             self.notifier.toasts.lock().unwrap().toast_and_log(
@@ -116,6 +116,7 @@ impl eframe::App for Roseate<'_> {
 
                         self.image_handler.load_image(
                             true, 
+                            false,
                             &mut self.notifier,
                             &self.monitor_size,
                             self.config.misc.experimental.use_fast_roseate_backend
@@ -161,6 +162,7 @@ impl eframe::App for Roseate<'_> {
                                     Ok(_) => {
                                         self.image_handler.load_image(
                                             self.config.image.loading.gui.lazy_loading,
+                                            false,
                                             &mut self.notifier,
                                             &self.monitor_size,
                                             self.config.misc.experimental.use_fast_roseate_backend
@@ -198,7 +200,12 @@ impl eframe::App for Roseate<'_> {
 
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
-            self.image_handler.update(&self.zoom_pan, &self.monitor_size);
+            self.image_handler.update(
+                &self.zoom_pan,
+                &self.monitor_size,
+                &mut self.notifier,
+                self.config.misc.experimental.use_fast_roseate_backend
+            );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image_handler.image.clone().unwrap();

@@ -61,7 +61,7 @@ impl MonitorSize {
             let monitor_size_file_path = cache_path.join("monitor_size");
 
             let file = File::open(&monitor_size_file_path);
-    
+
             if let Err(error) = file {
                 let error = Error::FailedToOpenFile(
                     Some(error.to_string()), monitor_size_file_path
