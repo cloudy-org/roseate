@@ -3,12 +3,12 @@ use std::time::Duration;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
 
 use super::ImageHandler;
 
 impl ImageHandler {
-    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
+    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
         if let Some(image) = &self.image {
             let is_enabled = self.has_optimization(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
@@ -57,19 +57,38 @@ impl ImageHandler {
                 // TODO: schedule a image reload with new dimensions.
 
                 println!("change + {}", self.accumulated_zoom_factor_change);
-                self.schedule_image_dynamic_sample(true, new_resolution);
+                self.schedule_image_dynamic_sample(
+                    true,
+                    new_resolution,
+                    notifier,
+                    monitor_size,
+                    use_experimental_backend
+                );
             }
 
             if self.accumulated_zoom_factor_change <= -change  {
                 println!("change - {}", self.accumulated_zoom_factor_change);
-                self.schedule_image_dynamic_sample(false, new_resolution);
+                self.schedule_image_dynamic_sample(
+                    false,
+                    new_resolution,
+                    notifier,
+                    monitor_size,
+                    use_experimental_backend
+                );
             }
 
             self.accumulated_zoom_factor_change = 0.0;
         }
     }
 
-    pub fn schedule_image_dynamic_sample(&mut self, upsample: bool, resolution: ImageSizeT) {
+    pub fn schedule_image_dynamic_sample(
+        &mut self,
+        upsample: bool,
+        resolution: ImageSizeT,
+        notifier: &mut NotifierAPI,
+        monitor_size: &MonitorSize,
+        use_experimental_backend: bool
+    ) {
         // if resolution == self.dynamic_sampling_old_resolution {
         //     debug!(
         //         "Not scheduling dynamic image sample for '{:.0}x{:.0}' \
@@ -87,13 +106,7 @@ impl ImageHandler {
 
         // TODO: fix lifetime reference error here
         let schedule = Scheduler::new(
-            move || {
-                self.dynamic_sampling_new_resolution = resolution;
-                // TODO: implement reloading mechanician into 
-                // ImageHandler::load_image then we are safe to call it here.
-
-                // self.load_image();
-            },
+            move || resolution,
             delay
         );
 

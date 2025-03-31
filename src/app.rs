@@ -24,7 +24,8 @@ impl<'a> Roseate<'a> {
     pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
         if image_handler.image.is_some() {
             image_handler.load_image(
-                config.image.loading.initial.lazy_loading, 
+                config.image.loading.initial.lazy_loading,
+                false,
                 &mut notifier,
                 &monitor_size,
                 config.misc.experimental.use_fast_roseate_backend
@@ -115,6 +116,7 @@ impl eframe::App for Roseate<'_> {
 
                         self.image_handler.load_image(
                             true, 
+                            false,
                             &mut self.notifier,
                             &self.monitor_size,
                             self.config.misc.experimental.use_fast_roseate_backend
@@ -160,6 +162,7 @@ impl eframe::App for Roseate<'_> {
                                     Ok(_) => {
                                         self.image_handler.load_image(
                                             self.config.image.loading.gui.lazy_loading,
+                                            false,
                                             &mut self.notifier,
                                             &self.monitor_size,
                                             self.config.misc.experimental.use_fast_roseate_backend
@@ -197,7 +200,12 @@ impl eframe::App for Roseate<'_> {
 
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
-            self.image_handler.update(&self.zoom_pan, &self.monitor_size);
+            self.image_handler.update(
+                &self.zoom_pan,
+                &self.monitor_size,
+                &mut self.notifier,
+                self.config.misc.experimental.use_fast_roseate_backend
+            );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
             let image = self.image_handler.image.clone().unwrap();

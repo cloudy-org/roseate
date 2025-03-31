@@ -1,14 +1,14 @@
 use std::time::{Duration, Instant};
 
-pub struct Scheduler {
+pub struct Scheduler<T> {
     delay: Duration,
-    callback: Box<dyn FnMut()>,
+    callback: Box<dyn FnMut() -> T>,
     time_scheduled: Instant,
     pub done: bool
 }
 
-impl Scheduler {
-    pub fn new(callback: impl FnMut() + 'static, delay: Duration) -> Self {
+impl<T> Scheduler<T> {
+    pub fn new(callback: impl FnMut() -> T + 'static, delay: Duration) -> Self {
         Self {
             delay,
             callback: Box::new(callback),
@@ -17,14 +17,18 @@ impl Scheduler {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Option<T> {
         if self.done == true {
-            return;
+            return None;
         }
 
         if self.time_scheduled.elapsed() >= self.delay {
-            (self.callback)();
+            let return_value = (self.callback)();
             self.done = true;
+
+            return Some(return_value);
         }
+
+        None
     }
 }

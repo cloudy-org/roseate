@@ -22,9 +22,9 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    pub(super) dynamic_sample_schedule: Option<Scheduler>,
+    pub(super) dynamic_sample_schedule: Option<Scheduler<(ImageSizeT)>>,
     pub(super) last_zoom_factor: f32,
-    pub(super) dynamic_sampling_new_resolution: ImageSizeT,
+    dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
     pub(super) accumulated_zoom_factor_change: f32
 }
@@ -88,7 +88,13 @@ impl ImageHandler {
         }
     }
 
-    pub fn update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
+    pub fn update(
+        &mut self,
+        zoom_pan: &ZoomPan,
+        monitor_size: &MonitorSize,
+        notifier: &mut NotifierAPI,
+        use_experimental_backend: bool
+    ) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
         // and also now to perform dynamic downsampling.
@@ -98,11 +104,23 @@ impl ImageHandler {
             self.image_loading = false; // set that bitch back to false yeah
         }
 
-        self.dynamic_sampling_update(zoom_pan, monitor_size);
+        self.dynamic_sampling_update(zoom_pan, monitor_size, notifier, use_experimental_backend);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             if !zoom_pan.is_panning {
-                schedule.update();
+                // TODO: maybe we should have it return the callback's return value
+                // so later we can just return the new res.
+                if let Some(new_resolution) = schedule.update() {
+                    self.dynamic_sampling_new_resolution = new_resolution;
+
+                    self.load_image(
+                        true,
+                        true,
+                        notifier,
+                        monitor_size,
+                        use_experimental_backend
+                    );
+                }
             }
         }
     }
@@ -113,7 +131,7 @@ impl ImageHandler {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, reload: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -121,7 +139,7 @@ impl ImageHandler {
 
         self.image_loading = true;
 
-        notifier.set_loading(
+        notifier.set_loading_and_log(
             Some("Preparing to load image...".into())
         );
 
@@ -129,7 +147,7 @@ impl ImageHandler {
             "You must run 'ImageHandler.init_image()' before using 'ImageHandler.load_image()'!"
         );
 
-        notifier.set_loading(
+        notifier.set_loading_and_log(
             Some("Gathering necessary image modifications...".into())
         );
 
@@ -139,6 +157,7 @@ impl ImageHandler {
 
         // Our svg implementation is very experimental. Let's warn the user.
         if image.image_path.extension().unwrap_or_default() == "svg" {
+            // TODO: Allow svg enum in image.image_format.
             notifier.toasts.lock().unwrap()
                 .toast_and_log(
                     "SVG files are experimental! \
@@ -162,20 +181,45 @@ impl ImageHandler {
                 false => ImageProcessingBackend::ImageRS
             };
 
-            notifier_arc.set_loading(Some("Loading image...".into()));
             let now = Instant::now();
 
-            let result = image.load_image(
-                &mut notifier_arc,
-                &monitor_size_arc,
-                image_modifications,
-                &backend
-            );
+            let result = match reload {
+                true => {
+                    notifier_arc.set_loading(Some("Reloading image...".into()));
 
-            info!(
-                "Image loaded in '{}' seconds using '{}' backend.", 
-                now.elapsed().as_secs_f32(), backend
-            );
+                    // TODO: use low level reload image method instead when that is implemented
+                    let result = image.load_image(
+                        &mut notifier_arc,
+                        &monitor_size_arc,
+                        image_modifications,
+                        &backend
+                    );
+
+                    debug!(
+                        "Image reloaded in '{}' seconds using '{}' backend.", 
+                        now.elapsed().as_secs_f32(), backend
+                    );
+
+                    result
+                },
+                false => {
+                    notifier_arc.set_loading(Some("Loading image...".into()));
+        
+                    let result = image.load_image(
+                        &mut notifier_arc,
+                        &monitor_size_arc,
+                        image_modifications,
+                        &backend
+                    );
+
+                    info!(
+                        "Image loaded in '{}' seconds using '{}' backend.", 
+                        now.elapsed().as_secs_f32(), backend
+                    );
+
+                    result
+                }
+            };
 
             if let Err(error) = result {
                 notifier_arc.toasts.lock().unwrap()
@@ -222,7 +266,7 @@ impl ImageHandler {
                     *marginal_allowance, (image.image_size.width as u32, image.image_size.height as u32), monitor_size
                 );
 
-                image_modifications.insert(ImageModifications::Resize(image_size));
+                image_modifications.replace(ImageModifications::Resize(image_size));
             }
         }
 
@@ -231,10 +275,13 @@ impl ImageHandler {
         ) {
             let new_resolution = self.dynamic_sampling_new_resolution;
 
-            if !(&new_resolution == &self.dynamic_sampling_old_resolution) {
-                image_modifications.insert(
+            println!("---> {:?} | {:?}", new_resolution, self.dynamic_sampling_new_resolution);
+
+            if !(new_resolution == self.dynamic_sampling_old_resolution) {
+                image_modifications.replace(
                     ImageModifications::Resize(new_resolution.clone())
                 );
+                
                 self.dynamic_sampling_old_resolution = new_resolution.clone();
             }
         }
