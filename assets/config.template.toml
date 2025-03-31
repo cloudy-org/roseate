@@ -37,11 +37,15 @@ ui_controls.toggle = "C"
 [misc]
 # All other configs that don't yet have a specific place or are experimental.
 
+# override_monitor_size = {width = 1920, height = 1080}
+
 [misc.experimental]
-# Settings to toggle experimental features that aren't yet ready to be
+# Settings to toggle experimental features that aren't yet ready yet to be 
 # used by the wider user audience. This exists for the sole purpose of testing.
 # 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
 
+# Setting this to true will enable the experimental lanczos roseate image processing backend
+# which is faster than the image-rs backend but may result in buggy/blocky images. 
+# Disable this if the image looks weird.
 use_fast_roseate_backend = false
-# Setting this to true will enable the experimental roseate image processing backend.

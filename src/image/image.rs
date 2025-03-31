@@ -1,15 +1,13 @@
-use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Cursor, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
-use eframe::egui::Vec2;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
-use display_info::DisplayInfo;
-use image::{codecs::{gif::{GifDecoder, GifEncoder}, jpeg::{JpegDecoder, JpegEncoder}, png::{PngDecoder, PngEncoder}, webp::{WebPDecoder, WebPEncoder}}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder, ImageResult};
+use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ImageDecoder};
 
-use crate::{error::{Error, Result}, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, monitor_size::MonitorSize, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::{self, ImageOptimization}};
+use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, optimization::ImageOptimizations};
 
 pub type ImageSizeT = (u32, u32);
 
@@ -19,7 +17,7 @@ pub struct Image {
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
     /// Currently applied optimizations.
-    pub optimizations: HashSet<ImageOptimization>,
+    pub optimizations: HashSet<ImageOptimizations>,
     pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
     // Look! I know you see that type above me but just  
     // so you know, I'm NOT crazy... well not yet at least...
@@ -40,8 +38,6 @@ pub struct Image {
 }
 
 impl Image {
-    // TODO: Return result instead of panicking (e.g. right now if you 
-    // open an unsupported file type roseate will crash because we panic at line 60).
     pub fn from_path(path: &Path) -> Result<Self> {
         // Changed this to unwrap_or_default so it returns an empty 
         // string ("") and doesn't panic if a file has no extension. I need to begin adding tests.
@@ -113,37 +109,37 @@ impl Image {
         )
     }
 
-    pub fn reload_image(
-        &mut self,
-        optimizations_to_apply: &[ImageOptimization],
-        notifier: &mut NotifierAPI,
-        image_processing_backend: &ImageProcessingBackend
-    ) -> Result<()> {
-        if self.optimizations.is_empty() && optimizations_to_apply.is_empty() {
-            return Ok(());
-        }
+    // pub fn reload_image(
+    //     &mut self,
+    //     optimizations_to_apply: &[ImageOptimization],
+    //     notifier: &mut NotifierAPI,
+    //     image_processing_backend: &ImageProcessingBackend
+    // ) -> Result<()> {
+    //     if self.optimizations.is_empty() && optimizations_to_apply.is_empty() {
+    //         return Ok(());
+    //     }
 
-        notifier.set_loading_and_log(Some("Gathering required optimizations...".into()));
+    //     notifier.set_loading_and_log(Some("Gathering required optimizations...".into()));
 
-        // what optimizations actually require to be applied / aren't applied already.
-        let required_optimizations = self.required_optimizations(optimizations_to_apply);
+    //     // what optimizations actually require to be applied / aren't applied already.
+    //     let required_optimizations = self.required_optimizations(optimizations_to_apply);
 
-        // TODO: we need to somehow figure out if we need to 
-        // read image bytes from the file again or not judging by the required optimizations.
-        // 
-        // E.g. If we are upsampling we will need the complete set of images bytes hence a re-read.
-        // If we are downsampling we can reuse the images bytes currently loaded in memory.
+    //     // TODO: we need to somehow figure out if we need to 
+    //     // read image bytes from the file again or not judging by the required optimizations.
+    //     // 
+    //     // E.g. If we are upsampling we will need the complete set of images bytes hence a re-read.
+    //     // If we are downsampling we can reuse the images bytes currently loaded in memory.
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn load_image(
         &mut self,
-        optimizations: &[ImageOptimization],
         notifier: &mut NotifierAPI,
+        monitor_size: &MonitorSize,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if optimizations.is_empty() {
+        if !self.contains_initial_optimization() {
             debug!("No optimizations were set so loading with fs::read instead...");
 
             let mut image_bytes_lock = self.image_bytes.lock().unwrap();
@@ -177,8 +173,8 @@ impl Image {
         let image_result = self.optimize_and_decode_image_to_buffer(
             image_processing_backend,
             image_decoder,
-            optimizations,
             &mut optimized_image_buffer,
+            monitor_size,
             notifier
         );
 
@@ -193,7 +189,8 @@ impl Image {
                 .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
 
             // load image without optimizations
-            let result = self.load_image(&[], notifier, image_processing_backend);
+            self.optimizations.clear();
+            let result = self.load_image(notifier, monitor_size, image_processing_backend);
 
             match result {
                 Ok(_) => return Ok(()),
@@ -237,192 +234,62 @@ impl Image {
         }
     }
 
-    fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {
-        let optimizations_wanted = optimizations.to_owned();
-
-        let mut optimizations_necessary: Vec<ImageOptimization> = Vec::new();
-
-        for optimization in optimizations_wanted {
-            if let Some(old_optimization) = self.has_optimization(&optimization) {
-
-                // NOTE: ignore the warning.
-                // TODO: We might need to introduce "ImageOptimization::Upsample".
-                if let (
-                    ImageOptimization::Downsample(width, height),
-                    ImageOptimization::Downsample(old_width, old_height)
-                ) = (&optimization, old_optimization) {
-                    // We don't want to apply a downsample optimization if the change 
-                    // in resolution isn't that big but we do want to upsample no matter what.
-
-                    // the scale difference between the old downsample and new.
-                    let scale_width = *width as f32 / *old_width as f32;
-                    let scale_height = *height as f32 / *old_height as f32;
-
-                    let is_upsample = scale_width > 1.0 || scale_height > 1.0;
-
-                    match is_upsample {
-                        false => {
-                            // downsample difference must be 
-                            // greater than this to allow the optimization.
-                            let allowed_downsample_diff: f32 = 1.2;
-
-                            if scale_width > allowed_downsample_diff && scale_height > allowed_downsample_diff {
-                                optimizations_necessary.push(optimization);
-                            }
-                        },
-                        true => {
-                            optimizations_necessary.push(optimization);
-                            continue;
-                        },
-                    }
-                }
-
+    fn contains_initial_optimization(&self) -> bool {
+        for optimization in &self.optimizations {
+            if let ImageOptimizations::Initial(_) = optimization {
+                return true;
             }
         }
 
-        optimizations_necessary
+        false
     }
 
-    /// Checks if the image has this TYPE of optimization applied, not the exact 
-    /// optimization itself. Then it returns a reference to the exact optimization found.
-    fn has_optimization(&self, optimization: &ImageOptimization) -> Option<&ImageOptimization> {
-        for applied_optimization in self.optimizations.iter() {
-            if applied_optimization.id() == optimization.id() {
-                return Some(applied_optimization);
-            }
-        }
+    // fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {
+    //     let optimizations_wanted = optimizations.to_owned();
 
-        return None;
-    }
+    //     let mut optimizations_necessary: Vec<ImageOptimization> = Vec::new();
 
-    fn optimize_and_decode_image_to_buffer(
-        &self,
-        image_processing_backend: &ImageProcessingBackend,
-        image_decoder: Box<dyn ImageDecoder>,
-        optimizations: &[ImageOptimization],
-        optimized_image_buffer: &mut Vec<u8>,
-        notifier: &mut NotifierAPI,
-    ) -> ImageResult<()> {
-        let image_colour_type = image_decoder.color_type();
+    //     for optimization in optimizations_wanted {
+    //         if let Some(old_optimization) = self.has_optimization(&optimization) {
 
-        // mutable width and height
-        let (mut actual_width, mut actual_height) = (
-            self.image_size.width as u32, self.image_size.height as u32
-        );
+    //             // NOTE: ignore the warning.
+    //             // TODO: We might need to introduce "ImageOptimization::Upsample".
+    //             if let (
+    //                 ImageOptimization::Downsample(width, height),
+    //                 ImageOptimization::Downsample(old_width, old_height)
+    //             ) = (&optimization, old_optimization) {
+    //                 // We don't want to apply a downsample optimization if the change 
+    //                 // in resolution isn't that big but we do want to upsample no matter what.
 
-        match image_processing_backend {
-            ImageProcessingBackend::Roseate => {
-                let mut pixels = vec![0; image_decoder.total_bytes() as usize];
+    //                 // the scale difference between the old downsample and new.
+    //                 let scale_width = *width as f32 / *old_width as f32;
+    //                 let scale_height = *height as f32 / *old_height as f32;
 
-                debug!("Decoding pixels from image using image decoder...");
-                image_decoder.read_image(&mut pixels).unwrap();
+    //                 let is_upsample = scale_width > 1.0 || scale_height > 1.0;
 
-                let has_alpha = image_colour_type.has_alpha();
+    //                 match is_upsample {
+    //                     false => {
+    //                         // downsample difference must be 
+    //                         // greater than this to allow the optimization.
+    //                         let allowed_downsample_diff: f32 = 1.2;
 
-                for optimization in optimizations {
-                    notifier.set_loading(
-                        Some(format!("Applying {:#} optimization...", optimization))
-                    );
-                    debug!("Applying '{:?}' optimization to image...", optimization);
+    //                         if scale_width > allowed_downsample_diff && scale_height > allowed_downsample_diff {
+    //                             optimizations_necessary.push(optimization);
+    //                         }
+    //                     },
+    //                     true => {
+    //                         optimizations_necessary.push(optimization);
+    //                         continue;
+    //                     },
+    //                 }
+    //             }
 
-                    (pixels, (actual_width, actual_height)) = optimization.apply_roseate(
-                        pixels, &(self.image_size.width as u32, self.image_size.height as u32), has_alpha
-                    );
-                }
+    //         }
+    //     }
 
-                notifier.set_loading(
-                    Some("Encoding optimized image...".into())
-                );
-                debug!("Encoding optimized image from pixels to a buffer...");
+    //     optimizations_necessary
+    // }
 
-                match self.image_format {
-                    ImageFormat::Png => {
-                        PngEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            ExtendedColorType::Rgb8
-                        )
-                    },
-                    ImageFormat::Jpeg => {
-                        JpegEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Svg => {
-                        PngEncoder::new(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Gif => {
-                        GifEncoder::new(optimized_image_buffer).encode(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                    ImageFormat::Webp => {
-                        WebPEncoder::new_lossless(optimized_image_buffer).write_image(
-                            &pixels,
-                            actual_width,
-                            actual_height,
-                            image_colour_type.into()
-                        )
-                    },
-                }
-            },
-            ImageProcessingBackend::ImageRS => {
-                debug!("Decoding image into dynamic image...");
-
-                let result = DynamicImage::from_decoder(image_decoder);
-
-                match result {
-                    Ok(mut dynamic_image) => {
-                        for optimization in optimizations {
-                            notifier.set_loading(
-                                Some(format!("Applying {:#} optimization...", optimization))
-                            );
-                            debug!("Applying '{:?}' optimization to image...", optimization);
-
-                            dynamic_image = optimization.apply_dynamic_image(dynamic_image);
-                        }
-
-                        notifier.set_loading(
-                            Some("Encoding optimized image...".into())
-                        );
-                        debug!("Encoding optimized dynamic image into image buffer...");
-
-                        dynamic_image.write_to(
-                            &mut Cursor::new(optimized_image_buffer),
-                            self.image_format.to_image_rs_format()
-                        )
-                    },
-                    Err(error) => Err(error)
-                }
-            }
-        }
-    }
-}
-
-fn get_primary_display_info() -> DisplayInfo {
-    let all_display_infos = DisplayInfo::all().expect(
-        "Failed to get information about your display monitor!"
-    );
-
-    // NOTE: I don't think the first monitor is always the primary and 
-    // if that is the case then we're gonna have a problem. (i.e images overly downsampled or not at all)
-    let primary_display_maybe = all_display_infos.first().expect(
-        "Uhhhhh, you don't have a monitor. WHAT!"
-    );
-
-    primary_display_maybe.clone()
 }
 
 fn get_svg_image_size(path: &Path) -> ImageSize {
@@ -433,14 +300,23 @@ fn get_svg_image_size(path: &Path) -> ImageSize {
     let width = metadata.width().expect("Failed to get SVG width");
     let height = metadata.height().expect("Failed to get SVG height");
 
-    let display_info = get_primary_display_info();
+    // let display_info = get_primary_display_info();
 
-    let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
-        Vec2::new(display_info.width as f32, display_info.height as f32);
+    // let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
+    //    Vec2::new(display_info.width as f32, display_info.height as f32);
 
     // Temporary solution to give svg images a little bit higher quality.
+    // ImageSize {
+    //     width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
+    //     height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
+    // }
+
+    // NOTE: Commented out the above lines as we are no longer using display-info crate.
+    // Sadly this means svg images now will be even broken and worse image quality.
+    // too bad... deal with it... *for now*
+
     ImageSize {
-        width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
-        height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
+        width: width as usize,
+        height: height as usize
     }
 }

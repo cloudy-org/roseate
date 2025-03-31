@@ -12,7 +12,7 @@ pub struct ZoomPan {
     reset_key: Key,
     pub zoom_factor: f32,
     last_zoom_factor: f32,
-    is_panning: bool,
+    pub is_panning: bool,
     pub pan_offset: Vec2,
     drag_start: Option<Pos2>,
     reset_pan_offset: Option<ResetManager>,
@@ -61,7 +61,22 @@ impl ZoomPan {
 
         // Schedule scale factor reset if the user zoom out too far.
         if self.zoom_factor < 1.0 {
-            self.schedule_scale_reset(Duration::from_millis(500))
+            let delay = Duration::from_millis(500);
+
+            self.schedule_scale_reset(delay);
+
+            // reset the pan too if the user has zoomed out enough.
+            if self.zoom_factor < 0.48 {
+                let is_scheduled = self.schedule_pan_reset(delay);
+
+                if is_scheduled {
+                    debug!(
+                        "User zoomed out enough to also schedule pan reset. \
+                        [ZOOM FACTOR = {:.2} (< 0.48)]",
+                        self.zoom_factor
+                    );
+                }
+            }
         }
     }
 
@@ -158,13 +173,14 @@ impl ZoomPan {
         }
     }
 
+    // TODO: switch "image_size: Vec2" to "image_size: (u32, u32)".
     pub fn relative_image_size(&self, image_size: Vec2) -> Vec2 {   
         image_size * self.zoom_factor
     }
 }
 
 impl ZoomPan {
-    pub fn schedule_pan_reset(&mut self, delay: Duration) {
+    pub fn schedule_pan_reset(&mut self, delay: Duration) -> bool {
         if self.reset_pan_offset.is_none() {
 
             self.reset_pan_offset = Some(
@@ -177,11 +193,29 @@ impl ZoomPan {
             );
 
             debug!("Pan offset reset has been scheduled.");
-
-            // As resetting the pan will just snap us back to the center 
-            // of the image we might as well schedule a reset for image scale too.
-            self.schedule_scale_reset(delay);
+            return true;
         }
+
+        false
+    }
+
+    pub fn schedule_scale_reset(&mut self, delay: Duration) -> bool {
+        if self.reset_scale_factor.is_none() {
+
+            self.reset_scale_factor = Some(
+                ResetManager {
+                    timer: Instant::now(),
+                    delay: delay,
+                    animation_id: rand::thread_rng().gen::<u32>(),
+                    in_animation: false
+                }
+            );
+
+            debug!("Scale factor reset has been scheduled.");
+            return true;
+        }
+
+        false
     }
 
     fn pan_reset_update(&mut self, ctx: &Context) {
@@ -231,24 +265,8 @@ impl ZoomPan {
         }
     }
 
-    pub fn schedule_scale_reset(&mut self, delay: Duration) {
-        if self.reset_scale_factor.is_none() {
-
-            self.reset_scale_factor = Some(
-                ResetManager {
-                    timer: Instant::now(),
-                    delay: delay,
-                    animation_id: rand::thread_rng().gen::<u32>(),
-                    in_animation: false
-                }
-            );
-
-            debug!("Scale factor reset has been scheduled.");
-        }
-    }
-
     fn scale_reset_update(&mut self, ctx: &Context) {
-        // We don't want to reset the pan offset while the user is still panning.
+        // We don't want to reset the zoom scale while the user is still zooming / scaling.
         if self.is_panning {
             return;
         }

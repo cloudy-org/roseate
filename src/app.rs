@@ -1,14 +1,13 @@
 use std::time::Duration;
 
 use cirrus_theming::v1::{Colour, Theme};
-use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Shadow, Stroke, Style, TextStyle, Vec2};
+use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image::image::Image, image_loader::ImageLoader, windows::info::InfoWindow, magnification_panel::MagnificationPanel, notifier::NotifierAPI, window_scaling::WindowScaling, windows::about::AboutWindow, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::{self, NotifierAPI}, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
-    image: Option<Image>,
     zoom_pan: ZoomPan,
     info_box: InfoWindow,
     about_box: AboutWindow<'a>,
@@ -16,19 +15,18 @@ pub struct Roseate<'a> {
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
-    image_loader: ImageLoader,
+    image_handler: ImageHandler,
+    monitor_size: MonitorSize,
     config: Config,
 }
 
 impl<'a> Roseate<'a> {
-    pub fn new(image: Option<Image>, theme: Theme, mut notifier: NotifierAPI, config: Config) -> Self {
-        let mut image_loader = ImageLoader::new();
-
-        if image.is_some() {
-            image_loader.load_image(
-                &mut image.clone().unwrap(), 
+    pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
+        if image_handler.image.is_some() {
+            image_handler.load_image(
                 config.image.loading.initial.lazy_loading, 
                 &mut notifier,
+                &monitor_size,
                 config.misc.experimental.use_fast_roseate_backend
             );
         }
@@ -39,7 +37,6 @@ impl<'a> Roseate<'a> {
         let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
 
         Self {
-            image,
             theme,
             notifier,
             zoom_pan,
@@ -48,50 +45,10 @@ impl<'a> Roseate<'a> {
             magnification_panel,
             window_scaling: WindowScaling::new(&config),
             last_window_rect: Rect::NOTHING,
-            image_loader: image_loader,
+            monitor_size,
+            image_handler,
             config,
         }
-    }
-
-    fn set_app_style(&self, ctx: &Context) {
-        let mut custom_style = Style {
-            override_text_style: Some(TextStyle::Monospace),
-            ..Default::default()
-        };
-
-        // TODO: override more default   
-        // colours here with colours from our theme.
-
-        // Background colour styling.
-        custom_style.visuals.panel_fill = Color32::from_hex(
-            &self.theme.primary_colour.hex_code
-        ).unwrap();
-
-        // Window styling.
-        custom_style.visuals.window_highlight_topmost = false;
-
-        custom_style.visuals.window_fill = Color32::from_hex(
-            &self.theme.secondary_colour.hex_code
-        ).unwrap();
-        custom_style.visuals.window_stroke = Stroke::new(
-            1.0,
-            Color32::from_hex(&self.theme.third_colour.hex_code).unwrap()
-        );
-        custom_style.visuals.window_shadow = Shadow::NONE;
-
-        custom_style.visuals.widgets.inactive.bg_fill =
-            Color32::from_hex(
-                &self.theme.primary_colour.hex_code
-            ).unwrap();
-
-        // Text styling.
-        custom_style.visuals.override_text_color = Some(
-            Color32::from_hex(
-                &self.theme.text_colour.hex_code
-            ).unwrap()
-        );
-
-        ctx.set_style(custom_style);
     }
 
     fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
@@ -115,9 +72,7 @@ impl<'a> Roseate<'a> {
 impl eframe::App for Roseate<'_> {
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        self.set_app_style(ctx);
-
-        self.info_box.init(&self.image);
+        self.info_box.init(&self.image_handler.image);
         self.info_box.handle_input(ctx);
 
         self.zoom_pan.handle_reset_input(ctx);
@@ -135,10 +90,11 @@ impl eframe::App for Roseate<'_> {
             }
 
             self.notifier.update(ctx);
+            self.monitor_size.update(ctx, &mut self.notifier);
             self.about_box.update(ctx); // we update this box here because we want 
             // the about box is to be toggleable even without an image.
 
-            if self.image.is_none() {
+            if self.image_handler.image.is_none() {
                 // Collect dropped files.
                 ctx.input(|i| {
                     let dropped_files = &i.raw.dropped_files;
@@ -149,21 +105,19 @@ impl eframe::App for Roseate<'_> {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let mut image = match Image::from_path(path) {
-                            Ok(value) => value,
-                            Err(error) => {
-                                self.notifier.toasts.lock().unwrap().toast_and_log(
-                                    error.into(), ToastLevel::Error
-                                );
-                                return;
-                            }
-                        };
+                        let result = self.image_handler.init_image(path, &self.monitor_size);
 
-                        self.image = Some(image.clone());
-                        self.image_loader.load_image(
-                            &mut image, 
+                        if let Err(error) = result {
+                            self.notifier.toasts.lock().unwrap().toast_and_log(
+                                error.into(), ToastLevel::Error
+                            );
+                            return;
+                        }
+
+                        self.image_handler.load_image(
                             true, 
                             &mut self.notifier,
+                            &self.monitor_size,
                             self.config.misc.experimental.use_fast_roseate_backend
                         );
                     }
@@ -201,16 +155,14 @@ impl eframe::App for Roseate<'_> {
                             rose_response.clone().on_hover_cursor(CursorIcon::PointingHand);
 
                             if rose_response.clicked() {
-                                let image_result = files::select_image();
+                                let result = self.image_handler.select_image(&self.monitor_size);
 
-                                match image_result {
-                                    Ok(mut image) => {
-                                        self.image = Some(image.clone());
-
-                                        self.image_loader.load_image(
-                                            &mut image,
+                                match result {
+                                    Ok(_) => {
+                                        self.image_handler.load_image(
                                             self.config.image.loading.gui.lazy_loading,
                                             &mut self.notifier,
+                                            &self.monitor_size,
                                             self.config.misc.experimental.use_fast_roseate_backend
                                         );
                                     },
@@ -246,19 +198,25 @@ impl eframe::App for Roseate<'_> {
 
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
-            self.image_loader.update();
+            self.image_handler.update(&self.zoom_pan, &self.monitor_size);
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
-            let image = self.image.clone().unwrap();
+            let image = self.image_handler.image.clone().unwrap();
 
-            if self.image_loader.image_loaded {
+            if self.image_handler.image_loaded {
                 ui.centered_and_justified(|ui| {
                     let scaled_image_size = self.window_scaling.relative_image_size(
                         Vec2::new(image.image_size.width as f32, image.image_size.height as f32)
                     );
-    
+
+                    // TODO: umm I think we should move this to self.zoom_pan.update() 
+                    // and then move that function in here as we need `scaled_image_size`.
                     if self.zoom_pan.is_pan_out_of_bounds(scaled_image_size) {
                         self.zoom_pan.schedule_pan_reset(Duration::from_millis(300));
+
+                        // As resetting the pan will just snap us back to the center 
+                        // of the image we might as well schedule a reset for image scale too.
+                        self.zoom_pan.schedule_scale_reset(Duration::from_millis(300));
                     };
 
                     // NOTE: umm do we move this to window scaling... *probably* if we 
@@ -330,5 +288,4 @@ impl eframe::App for Roseate<'_> {
         );
 
     }
-
 }
