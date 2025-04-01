@@ -1,5 +1,6 @@
-use std::{collections::HashSet, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
+use eframe::egui::{load::BytesLoader, Context};
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
@@ -26,7 +27,8 @@ pub struct ImageHandler {
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
-    accumulated_zoom_factor_change: f32
+    accumulated_zoom_factor_change: f32,
+    forget_last_image_bytes_arc: Arc<Mutex<bool>>
 }
 
 impl ImageHandler {
@@ -42,6 +44,7 @@ impl ImageHandler {
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
+            forget_last_image_bytes_arc: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -90,6 +93,7 @@ impl ImageHandler {
 
     pub fn update(
         &mut self,
+        ctx: &Context,
         zoom_pan: &ZoomPan,
         monitor_size: &MonitorSize,
         notifier: &mut NotifierAPI,
@@ -102,6 +106,14 @@ impl ImageHandler {
         if let Ok(value) = self.image_loaded_arc.try_lock() {
             self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
             self.image_loading = false; // set that bitch back to false yeah
+        }
+
+        if self.image_loaded {
+            if *self.forget_last_image_bytes_arc.lock().unwrap() {
+                debug!("Releasing last image bytes from egui's memory...");
+                ctx.forget_all_images();
+                *self.forget_last_image_bytes_arc.lock().unwrap() = false;
+            }
         }
 
         self.dynamic_sampling_update(zoom_pan, monitor_size);
@@ -170,6 +182,7 @@ impl ImageHandler {
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
+        let forget_last_image_bytes_arc = self.forget_last_image_bytes_arc.clone();
         let mut notifier_arc = notifier.clone();
         let monitor_size_arc = monitor_size.clone();
 
@@ -183,7 +196,7 @@ impl ImageHandler {
 
             let result = match reload {
                 true => {
-                    notifier_arc.set_loading(Some("Reloading image...".into()));
+                    notifier_arc.set_loading_and_log(Some("Reloading image...".into()));
 
                     // TODO: use low level reload image method instead when that is implemented
                     let result = image.load_image(
@@ -201,7 +214,7 @@ impl ImageHandler {
                     result
                 },
                 false => {
-                    notifier_arc.set_loading(Some("Loading image...".into()));
+                    notifier_arc.set_loading_and_log(Some("Loading image...".into()));
         
                     let result = image.load_image(
                         &mut notifier_arc,
@@ -227,6 +240,8 @@ impl ImageHandler {
 
             notifier_arc.unset_loading();
             *image_loaded_arc.lock().unwrap() = true;
+
+            *forget_last_image_bytes_arc.lock().unwrap() = true;
         };
 
         if lazy_load {
@@ -234,7 +249,7 @@ impl ImageHandler {
             thread::spawn(loading_logic);
         } else {
             debug!("Loading image in main thread...");
-            loading_logic()
+            loading_logic();
         }
     }
 
@@ -289,8 +304,6 @@ impl ImageHandler {
             &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
         ) {
             let new_resolution = self.dynamic_sampling_new_resolution;
-
-            println!("{:?} -> {:?}", self.dynamic_sampling_old_resolution, self.dynamic_sampling_new_resolution);
 
             if !(new_resolution == self.dynamic_sampling_old_resolution) {
                 debug!(

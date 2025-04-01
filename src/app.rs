@@ -201,6 +201,7 @@ impl eframe::App for Roseate<'_> {
             self.info_box.update(ctx);
             self.zoom_pan.update(ctx);
             self.image_handler.update(
+                &ctx,
                 &self.zoom_pan,
                 &self.monitor_size,
                 &mut self.notifier,
