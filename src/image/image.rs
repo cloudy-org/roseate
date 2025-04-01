@@ -1,6 +1,7 @@
-use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
+use std::hash::Hash;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
 use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ImageDecoder};
@@ -33,6 +34,14 @@ pub struct Image {
     // 
     // Kind regards,
     // Goldy
+}
+
+impl Hash for Image {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if let Some(image_bytes) = self.image_bytes.lock().unwrap().as_ref() {
+            image_bytes.len().hash(state);
+        }
+    }
 }
 
 impl Image {

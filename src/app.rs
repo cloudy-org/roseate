@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::{hash::{DefaultHasher, Hash, Hasher}, time::Duration};
 
-use cirrus_theming::v1::{Colour, Theme};
+use cirrus_theming::v1::{Theme};
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
@@ -244,9 +244,12 @@ impl eframe::App for Roseate<'_> {
 
                     let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
 
+                    let mut hasher = DefaultHasher::new();
+                    image.hash(&mut hasher);
+
                     egui::Image::from_bytes(
                         format!(
-                            "bytes://{}", image.image_path.to_string_lossy()
+                            "bytes://{}", hasher.finish() // so we can indicate to egui that this is a different image when it is modified.
                         ),
                         // we can unwrap because we know the bytes exist thanks to 'self.image_loader.image_loaded'.
                         image.image_bytes.lock().unwrap().clone().unwrap()

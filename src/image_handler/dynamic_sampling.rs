@@ -8,7 +8,7 @@ use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_
 use super::ImageHandler;
 
 impl ImageHandler {
-    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize, notifier: &mut NotifierAPI, use_experimental_backend: bool) {
+    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
         if let Some(image) = &self.image {
             let is_enabled = self.has_optimization(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
@@ -30,8 +30,6 @@ impl ImageHandler {
                 return;
             }
 
-            println!("zoom factor {}", zoom_pan.zoom_factor);
-
             // TODO: we seriously need to find about setting image size universally to some type 
             // like (usize, usize), (u32, u32) or (f32, f32) because those "as" statements below is not it bro.
 
@@ -42,7 +40,7 @@ impl ImageHandler {
             if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
                 &ImageOptimizations::MonitorDownsampling(u32::default())
             ) {
-                image_size = get_monitor_downsampling_size(*marginal_allowance, image_size, monitor_size);
+                image_size = get_monitor_downsampling_size(*marginal_allowance, monitor_size);
             }
 
             let new_resolution = zoom_pan.relative_image_size(
@@ -54,26 +52,16 @@ impl ImageHandler {
             );
 
             if self.accumulated_zoom_factor_change >= change {
-                // TODO: schedule a image reload with new dimensions.
-
-                println!("change + {}", self.accumulated_zoom_factor_change);
                 self.schedule_image_dynamic_sample(
                     true,
-                    new_resolution,
-                    notifier,
-                    monitor_size,
-                    use_experimental_backend
+                    new_resolution
                 );
             }
 
             if self.accumulated_zoom_factor_change <= -change  {
-                println!("change - {}", self.accumulated_zoom_factor_change);
                 self.schedule_image_dynamic_sample(
                     false,
-                    new_resolution,
-                    notifier,
-                    monitor_size,
-                    use_experimental_backend
+                    new_resolution
                 );
             }
 
@@ -84,21 +72,8 @@ impl ImageHandler {
     pub fn schedule_image_dynamic_sample(
         &mut self,
         upsample: bool,
-        resolution: ImageSizeT,
-        notifier: &mut NotifierAPI,
-        monitor_size: &MonitorSize,
-        use_experimental_backend: bool
+        resolution: ImageSizeT
     ) {
-        // if resolution == self.dynamic_sampling_old_resolution {
-        //     debug!(
-        //         "Not scheduling dynamic image sample for '{:.0}x{:.0}' \
-        //         as that resolution has already been set or scheduled.",
-        //         resolution.0,
-        //         resolution.1
-        //     );
-        //     return;
-        // }
-
         let delay = match upsample {
             true => Duration::from_secs_f32(1.5),
             false => Duration::from_secs(5),
@@ -126,7 +101,5 @@ impl ImageHandler {
             resolution.1,
             delay.as_secs_f64()
         );
-
-        self.dynamic_sampling_old_resolution = resolution;
     }
 }

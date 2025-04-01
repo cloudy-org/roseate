@@ -1,16 +1,39 @@
-use std::{collections::HashSet, io::Cursor};
+use std::{collections::HashSet, hash::{DefaultHasher, Hasher}, io::Cursor};
 
 use image::{codecs::{gif::GifEncoder, jpeg::JpegEncoder, png::PngEncoder, webp::WebPEncoder}, DynamicImage, ExtendedColorType, ImageDecoder, ImageEncoder};
 use log::debug;
 
-use crate::{error::{Error, Result}, image::{fast_downsample::fast_downsample, image_formats::ImageFormat}, monitor_size::MonitorSize, notifier::NotifierAPI};
+use std::hash::Hash;
+use crate::{error::{Error, Result}, image::{fast_downsample::fast_downsample, image_formats::ImageFormat}, notifier::NotifierAPI};
 
 use super::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}};
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Debug)]
 pub enum ImageModifications {
     Resize(ImageSizeT)    
 }
+
+impl Hash for ImageModifications {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            ImageModifications::Resize(_) => "resize".hash(state)
+        }
+    }
+}
+
+impl PartialEq for ImageModifications {
+    fn eq(&self, other: &Self) -> bool {
+        let mut hasher = DefaultHasher::new();
+
+        if self.hash(&mut hasher) == other.hash(&mut hasher) {
+            return true;
+        }
+
+        false
+    }
+}
+
+impl Eq for ImageModifications {}
 
 pub enum ModificationProcessingMeat<'a> {
     ImageRS(&'a mut DynamicImage),
@@ -172,12 +195,6 @@ impl Image {
                     debug!("Applying '{:?}' modification to image...", &modification);
 
                     if let ImageModifications::Resize((width, height)) = modification {
-                        debug!(
-                            "Downsampling image closer to monitor resolution \
-                            ({}x{}) with Dynamic Image resize to save memory...",
-                            width, height
-                        );
-
                         *dynamic_image = dynamic_image.resize(
                             width, height, image::imageops::FilterType::Lanczos3
                         )         
@@ -190,12 +207,6 @@ impl Image {
                     debug!("Applying '{:?}' modification to image...", &modification);
 
                     if let ImageModifications::Resize((width, height)) = modification {
-                        debug!(
-                            "Downsampling image closer to monitor resolution \
-                            ({}x{}) with Roseate fast downsample to save memory...",
-                            width, height
-                        );
-
                         (*pixels, *image_size) = fast_downsample(
                             pixels,
                             &image_size,

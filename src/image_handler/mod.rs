@@ -22,11 +22,11 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    pub(super) dynamic_sample_schedule: Option<Scheduler<(ImageSizeT)>>,
-    pub(super) last_zoom_factor: f32,
+    dynamic_sample_schedule: Option<Scheduler<ImageSizeT>>,
+    last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
-    pub(super) accumulated_zoom_factor_change: f32
+    accumulated_zoom_factor_change: f32
 }
 
 impl ImageHandler {
@@ -104,12 +104,10 @@ impl ImageHandler {
             self.image_loading = false; // set that bitch back to false yeah
         }
 
-        self.dynamic_sampling_update(zoom_pan, monitor_size, notifier, use_experimental_backend);
+        self.dynamic_sampling_update(zoom_pan, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             if !zoom_pan.is_panning {
-                // TODO: maybe we should have it return the callback's return value
-                // so later we can just return the new res.
                 if let Some(new_resolution) = schedule.update() {
                     self.dynamic_sampling_new_resolution = new_resolution;
 
@@ -262,11 +260,28 @@ impl ImageHandler {
                     display monitor so monitor downsampling will be applied..."
                 );
 
-                let image_size = get_monitor_downsampling_size(
-                    *marginal_allowance, (image.image_size.width as u32, image.image_size.height as u32), monitor_size
+                let image_size = (image.image_size.width, image.image_size.height);
+
+                debug!(
+                    "Image Size: {} x {}", image_size.0, image_size.1
                 );
 
-                image_modifications.replace(ImageModifications::Resize(image_size));
+                let (monitor_width, monitor_height) = monitor_size.get();
+
+                debug!(
+                    "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
+                );
+
+                let (width, height) = get_monitor_downsampling_size(
+                    *marginal_allowance, monitor_size
+                );
+
+                debug!(
+                    "Display + Monitor Downsample Marginal Allowance ({}): {} x {}",
+                    marginal_allowance, width, height
+                );
+
+                image_modifications.replace(ImageModifications::Resize((width, height)));
             }
         }
 
@@ -275,14 +290,37 @@ impl ImageHandler {
         ) {
             let new_resolution = self.dynamic_sampling_new_resolution;
 
-            println!("---> {:?} | {:?}", new_resolution, self.dynamic_sampling_new_resolution);
+            println!("{:?} -> {:?}", self.dynamic_sampling_old_resolution, self.dynamic_sampling_new_resolution);
 
             if !(new_resolution == self.dynamic_sampling_old_resolution) {
-                image_modifications.replace(
-                    ImageModifications::Resize(new_resolution.clone())
+                debug!(
+                    "User zoomed far enough into downsampled image, \
+                    dynamic sampling will be performed ({:?} -> {:?})...",
+                    self.dynamic_sampling_old_resolution,
+                    self.dynamic_sampling_new_resolution
                 );
-                
-                self.dynamic_sampling_old_resolution = new_resolution.clone();
+
+                if !(new_resolution.0 == image.image_size.width as u32 && new_resolution.1 == image.image_size.height as u32) {
+                    image_modifications.replace(
+                        ImageModifications::Resize(new_resolution.clone())
+                    );
+
+                    self.dynamic_sampling_old_resolution = new_resolution;
+                } else {
+                    debug!(
+                        "Not applying resize mod for dynamic sampling as \
+                        dynamic sampling is requesting the full resolution already!"
+                    );
+
+                    image_modifications.remove(
+                        &ImageModifications::Resize(new_resolution.clone())
+                    );
+
+                    self.dynamic_sampling_old_resolution = (
+                        image.image_size.width as u32,
+                        image.image_size.height as u32
+                    );
+                }
             }
         }
 
