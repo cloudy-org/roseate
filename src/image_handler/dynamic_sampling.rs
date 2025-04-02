@@ -30,8 +30,8 @@ impl ImageHandler {
                 return;
             }
 
-            // TODO: we seriously need to find about setting image size universally to some type 
-            // like (usize, usize), (u32, u32) or (f32, f32) because those "as" statements below is not it bro.
+            // TODO: we seriously need to set image size universally to 
+            // be ImageSizeT because those "as" statements below is not it bro.
 
             let max_image_size = (image.image_size.width as u32, image.image_size.height as u32);
             let mut image_size = max_image_size;
@@ -75,22 +75,17 @@ impl ImageHandler {
         resolution: ImageSizeT
     ) {
         let delay = match upsample {
-            true => Duration::from_secs_f32(1.5),
+            true => Duration::from_secs(2),
             false => Duration::from_secs(5),
         };
 
-        // TODO: fix lifetime reference error here
         let schedule = Scheduler::new(
             move || resolution,
             delay
         );
 
         if self.dynamic_sample_schedule.is_some() {
-            debug!(
-                "Last scheduled dynamic image sampling ({:.0}x{:.0}) cancelled!",
-                resolution.0,
-                resolution.1
-            );
+            debug!("Last scheduled dynamic image sampling cancelled!");
         }
 
         self.dynamic_sample_schedule = Some(schedule);

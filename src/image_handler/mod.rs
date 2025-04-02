@@ -1,6 +1,6 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use eframe::egui::{load::BytesLoader, Context};
+use eframe::egui::Context;
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
@@ -110,8 +110,11 @@ impl ImageHandler {
 
         if self.image_loaded {
             if *self.forget_last_image_bytes_arc.lock().unwrap() {
+                notifier.set_loading(Some("Releasing some memory...".into()));
                 debug!("Releasing last image bytes from egui's memory...");
                 ctx.forget_all_images();
+
+                notifier.unset_loading();
                 *self.forget_last_image_bytes_arc.lock().unwrap() = false;
             }
         }
@@ -193,6 +196,7 @@ impl ImageHandler {
             };
 
             let now = Instant::now();
+            let mut hasher = DefaultHasher::new();
 
             let result = match reload {
                 true => {
@@ -207,8 +211,9 @@ impl ImageHandler {
                     );
 
                     debug!(
-                        "Image reloaded in '{}' seconds using '{}' backend.", 
-                        now.elapsed().as_secs_f32(), backend
+                        "Image reloaded in '{}' seconds using '{}' backend.",
+                        now.elapsed().as_secs_f32(),
+                        backend
                     );
 
                     result
@@ -237,6 +242,9 @@ impl ImageHandler {
                     .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
                     .duration(Some(Duration::from_secs(10)));
             }
+
+            image.hash(&mut hasher);
+            debug!("Image bytes hash: {}", hasher.finish());
 
             notifier_arc.unset_loading();
             *image_loaded_arc.lock().unwrap() = true;
@@ -304,6 +312,8 @@ impl ImageHandler {
             &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
         ) {
             let new_resolution = self.dynamic_sampling_new_resolution;
+
+            println!("{:?} -> {:?}", self.dynamic_sampling_old_resolution, self.dynamic_sampling_new_resolution);
 
             if !(new_resolution == self.dynamic_sampling_old_resolution) {
                 debug!(

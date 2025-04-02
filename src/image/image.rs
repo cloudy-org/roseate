@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use std::hash::Hash;
@@ -38,6 +38,8 @@ pub struct Image {
 
 impl Hash for Image {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (*self.image_path).hash(state);
+
         if let Some(image_bytes) = self.image_bytes.lock().unwrap().as_ref() {
             image_bytes.len().hash(state);
         }
