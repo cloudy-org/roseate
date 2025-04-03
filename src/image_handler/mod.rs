@@ -325,7 +325,7 @@ impl ImageHandler {
 
                 if !(new_resolution.0 == image.image_size.width as u32 && new_resolution.1 == image.image_size.height as u32) {
                     image_modifications.replace(
-                        ImageModifications::Resize(new_resolution.clone())
+                        ImageModifications::Resize(new_resolution)
                     );
 
                     self.dynamic_sampling_old_resolution = new_resolution;
@@ -336,7 +336,7 @@ impl ImageHandler {
                     );
 
                     image_modifications.remove(
-                        &ImageModifications::Resize(new_resolution.clone())
+                        &ImageModifications::Resize(new_resolution)
                     );
 
                     self.dynamic_sampling_old_resolution = (
