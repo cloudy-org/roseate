@@ -3,7 +3,7 @@ use std::time::Duration;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, scheduler::Scheduler, zoom_pan::ZoomPan};
 
 use super::ImageHandler;
 
@@ -17,7 +17,7 @@ impl ImageHandler {
             if zoom_pan.zoom_factor <= 1.0 || !is_enabled {
                 self.last_zoom_factor = 1.0;
                 self.accumulated_zoom_factor_change = 0.0;
-                self.dynamic_sampling_old_resolution = (0, 0);
+                // self.dynamic_sampling_old_resolution = (0, 0);
 
                 return;
             }
@@ -93,7 +93,7 @@ impl ImageHandler {
         self.dynamic_sample_schedule = Some(schedule);
 
         debug!(
-            "Dynamic image sampling has been scheduled for '{:.0}x{:.0}' in {:.2} seconds...",
+            "Dynamic image sampling has been scheduled for '{:.0} x {:.0}' in {:.2} seconds...",
             resolution.0,
             resolution.1,
             delay.as_secs_f64()
