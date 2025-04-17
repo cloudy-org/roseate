@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-pub struct Scheduler<T> {
+pub struct Scheduler<T = ()> {
     delay: Duration,
     callback: Box<dyn FnMut() -> T>,
     time_scheduled: Instant,

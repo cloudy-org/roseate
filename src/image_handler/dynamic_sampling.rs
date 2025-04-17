@@ -3,7 +3,7 @@ use std::time::Duration;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, notifier::NotifierAPI, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, scheduler::Scheduler, zoom_pan::ZoomPan};
 
 use super::ImageHandler;
 
@@ -14,10 +14,19 @@ impl ImageHandler {
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
             ).is_some();
 
-            if zoom_pan.zoom_factor <= 1.0 || !is_enabled {
+            if !is_enabled {
+                return;
+            }
+
+            if zoom_pan.zoom_factor <= 1.0 {
                 self.last_zoom_factor = 1.0;
                 self.accumulated_zoom_factor_change = 0.0;
-                return;
+                self.dynamic_sampling_new_resolution = (0, 0);
+                self.dynamic_sampling_old_resolution = (0, 0);
+
+                if zoom_pan.zoom_factor < 1.0 {
+                    return;
+                }
             }
 
             self.accumulated_zoom_factor_change += (zoom_pan.zoom_factor).log2() - (self.last_zoom_factor).log2();
@@ -52,14 +61,14 @@ impl ImageHandler {
             );
 
             if self.accumulated_zoom_factor_change >= change {
-                self.schedule_image_dynamic_sample(
+                self.set_resolution_and_schedule_dynamic_sample(
                     true,
                     new_resolution
                 );
             }
 
             if self.accumulated_zoom_factor_change <= -change  {
-                self.schedule_image_dynamic_sample(
+                self.set_resolution_and_schedule_dynamic_sample(
                     false,
                     new_resolution
                 );
@@ -69,7 +78,7 @@ impl ImageHandler {
         }
     }
 
-    pub fn schedule_image_dynamic_sample(
+    fn set_resolution_and_schedule_dynamic_sample(
         &mut self,
         upsample: bool,
         resolution: ImageSizeT
@@ -79,10 +88,20 @@ impl ImageHandler {
             false => Duration::from_secs(5),
         };
 
-        let schedule = Scheduler::new(
-            move || resolution,
-            delay
-        );
+        self.dynamic_sampling_new_resolution = resolution;
+
+        if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
+            debug!(
+                "Will not schedule this dynamic sample ({:?} -> {:?}) \
+                as it's going to sample to the same resolution!",
+                self.dynamic_sampling_old_resolution,
+                self.dynamic_sampling_new_resolution
+            );
+            return;
+        }
+
+        // this will tell the update loop in ImageHandler when it is time to downsample or upsample.
+        let schedule = Scheduler::new(|| (), delay);
 
         if self.dynamic_sample_schedule.is_some() {
             debug!("Last scheduled dynamic image sampling cancelled!");
@@ -91,7 +110,7 @@ impl ImageHandler {
         self.dynamic_sample_schedule = Some(schedule);
 
         debug!(
-            "Dynamic image sampling has been scheduled for '{:.0}x{:.0}' in {:.2} seconds...",
+            "Dynamic image sampling has been scheduled for '{:.0} x {:.0}' in {:.2} seconds...",
             resolution.0,
             resolution.1,
             delay.as_secs_f64()

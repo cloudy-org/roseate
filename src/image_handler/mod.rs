@@ -23,12 +23,12 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    dynamic_sample_schedule: Option<Scheduler<ImageSizeT>>,
+    dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
     accumulated_zoom_factor_change: f32,
-    forget_last_image_bytes_arc: Arc<Mutex<bool>>
+    forget_last_image_bytes_arc: Arc<Mutex<bool>>,
 }
 
 impl ImageHandler {
@@ -44,7 +44,7 @@ impl ImageHandler {
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
-            forget_last_image_bytes_arc: Arc::new(Mutex::new(false)),
+            forget_last_image_bytes_arc: Arc::new(Mutex::new(false))
         }
     }
 
@@ -123,8 +123,8 @@ impl ImageHandler {
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             if !zoom_pan.is_panning {
-                if let Some(new_resolution) = schedule.update() {
-                    self.dynamic_sampling_new_resolution = new_resolution;
+                if schedule.update().is_some() {
+                    //self.dynamic_sampling_new_resolution = new_resolution;
 
                     self.load_image(
                         true,
@@ -165,7 +165,7 @@ impl ImageHandler {
         );
 
         let mut image_modifications = self.get_image_modifications(
-            &image, &monitor_size
+            &monitor_size
         );
 
         // Our svg implementation is very experimental. Let's warn the user.
@@ -264,88 +264,90 @@ impl ImageHandler {
     /// Method that handles choosing which type of modifications 
     /// should be done to the image at this time. It decides that on a number of various factors, 
     /// like image optimizations applied by the user, monitor size, zoom factor and etc.
-    fn get_image_modifications(&mut self, image: &Image, monitor_size: &MonitorSize) -> HashSet<ImageModifications> {
+    fn get_image_modifications(&mut self, monitor_size: &MonitorSize) -> HashSet<ImageModifications> {
         let mut image_modifications = HashSet::new();
 
-        // the reason why we don't just loop over self.image_optimizations 
-        // is because I need to make absolute sure I'm doing these checks in this exact order.
+        let image = self.image.as_ref();
 
-        if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
-            &ImageOptimizations::MonitorDownsampling(u32::default())
-        ) {
-            let (monitor_width, monitor_height) = monitor_size.get();
+        if let Some(image) = image {
+            // the reason why we don't just loop over self.image_optimizations 
+            // is because I need to make absolute sure I'm doing these checks in this exact order.
 
-            // If the image is a lot bigger than the user's 
-            // monitor then apply monitor downsample, if not we shouldn't.
-            if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
-                debug!(
-                    "Image is significantly bigger than system's \
-                    display monitor so monitor downsampling will be applied..."
-                );
-
-                let image_size = (image.image_size.width, image.image_size.height);
-
-                debug!(
-                    "Image Size: {} x {}", image_size.0, image_size.1
-                );
-
+            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
+                &ImageOptimizations::MonitorDownsampling(u32::default())
+            ) {
                 let (monitor_width, monitor_height) = monitor_size.get();
 
-                debug!(
-                    "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
-                );
-
-                let (width, height) = get_monitor_downsampling_size(
-                    *marginal_allowance, monitor_size
-                );
-
-                debug!(
-                    "Display + Monitor Downsample Marginal Allowance ({}): {} x {}",
-                    marginal_allowance, width, height
-                );
-
-                image_modifications.replace(ImageModifications::Resize((width, height)));
-            }
-        }
-
-        if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.has_optimization(
-            &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
-        ) {
-            let new_resolution = self.dynamic_sampling_new_resolution;
-
-            println!("{:?} -> {:?}", self.dynamic_sampling_old_resolution, self.dynamic_sampling_new_resolution);
-
-            if !(new_resolution == self.dynamic_sampling_old_resolution) {
-                debug!(
-                    "User zoomed far enough into downsampled image, \
-                    dynamic sampling will be performed ({:?} -> {:?})...",
-                    self.dynamic_sampling_old_resolution,
-                    self.dynamic_sampling_new_resolution
-                );
-
-                if !(new_resolution.0 == image.image_size.width as u32 && new_resolution.1 == image.image_size.height as u32) {
-                    image_modifications.replace(
-                        ImageModifications::Resize(new_resolution)
-                    );
-
-                    self.dynamic_sampling_old_resolution = new_resolution;
-                } else {
+                // If the image is a lot bigger than the user's 
+                // monitor then apply monitor downsample, if not we shouldn't.
+                if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
                     debug!(
-                        "Not applying resize mod for dynamic sampling as \
-                        dynamic sampling is requesting the full resolution already!"
+                        "Image is significantly bigger than system's \
+                        display monitor so monitor downsampling will be applied..."
                     );
 
-                    image_modifications.remove(
-                        &ImageModifications::Resize(new_resolution)
+                    let image_size = (image.image_size.width, image.image_size.height);
+
+                    debug!(
+                        "Image Size: {} x {}", image_size.0, image_size.1
                     );
 
-                    self.dynamic_sampling_old_resolution = (
-                        image.image_size.width as u32,
-                        image.image_size.height as u32
+                    let (monitor_width, monitor_height) = monitor_size.get();
+
+                    debug!(
+                        "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
                     );
+
+                    let (width, height) = get_monitor_downsampling_size(
+                        *marginal_allowance, monitor_size
+                    );
+
+                    debug!(
+                        "Display + Monitor Downsample Marginal Allowance ({}): {} x {}",
+                        marginal_allowance, width, height
+                    );
+
+                    image_modifications.replace(ImageModifications::Resize((width, height)));
                 }
             }
-        }
+
+            if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.has_optimization(
+                &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
+            ) {
+                let new_resolution = self.dynamic_sampling_new_resolution;
+                let old_resolution = self.dynamic_sampling_old_resolution;
+
+                if !(new_resolution == old_resolution) {
+                    debug!(
+                        "User zoomed far enough into downsampled image, \
+                        dynamic sampling will be performed... \n\t({:?} -> {:?})",
+                        old_resolution, new_resolution
+                    );
+
+                    if !(new_resolution.0 == image.image_size.width as u32 && new_resolution.1 == image.image_size.height as u32) {
+                        image_modifications.replace(
+                            ImageModifications::Resize(new_resolution)
+                        );
+
+                        self.dynamic_sampling_old_resolution = new_resolution;
+                    } else {
+                        debug!(
+                            "Not applying resize mod for dynamic sampling as \
+                            dynamic sampling is requesting the full resolution already!"
+                        );
+
+                        image_modifications.remove(
+                            &ImageModifications::Resize(new_resolution)
+                        );
+
+                        self.dynamic_sampling_old_resolution = (
+                            image.image_size.width as u32,
+                            image.image_size.height as u32
+                        );
+                    }
+                }
+            }
+        };
 
         image_modifications
     }
