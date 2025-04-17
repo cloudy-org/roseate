@@ -23,7 +23,7 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    dynamic_sample_schedule: Option<Scheduler<ImageSizeT>>,
+    dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
@@ -123,8 +123,8 @@ impl ImageHandler {
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             if !zoom_pan.is_panning {
-                if let Some(new_resolution) = schedule.update() {
-                    self.dynamic_sampling_new_resolution = new_resolution;
+                if schedule.update().is_some() {
+                    //self.dynamic_sampling_new_resolution = new_resolution;
 
                     self.load_image(
                         true,
@@ -317,12 +317,10 @@ impl ImageHandler {
                 let new_resolution = self.dynamic_sampling_new_resolution;
                 let old_resolution = self.dynamic_sampling_old_resolution;
 
-                println!("{:?} -> {:?}", old_resolution, new_resolution);
-
                 if !(new_resolution == old_resolution) {
                     debug!(
                         "User zoomed far enough into downsampled image, \
-                        dynamic sampling will be performed ({:?} -> {:?})...",
+                        dynamic sampling will be performed... \n\t({:?} -> {:?})",
                         old_resolution, new_resolution
                     );
 
