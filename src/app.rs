@@ -1,6 +1,6 @@
 use std::{hash::{DefaultHasher, Hash, Hasher}, time::Duration};
 
-use cirrus_theming::v1::{Theme};
+use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
@@ -95,6 +95,8 @@ impl eframe::App for Roseate<'_> {
             // the about box is to be toggleable even without an image.
 
             if self.image_handler.image.is_none() {
+                let configured_image_optimizations = self.config.image.optimizations.get_optimizations();
+
                 // Collect dropped files.
                 ctx.input(|i| {
                     let dropped_files = &i.raw.dropped_files;
@@ -105,7 +107,10 @@ impl eframe::App for Roseate<'_> {
                             .as_ref()
                             .unwrap(); // gotta love rust ~ ananas
 
-                        let result = self.image_handler.init_image(path);
+                        let result = self.image_handler.init_image(
+                            path,
+                            configured_image_optimizations.clone()
+                        );
 
                         if let Err(error) = result {
                             self.notifier.toasts.lock().unwrap().toast_and_log(
@@ -156,7 +161,9 @@ impl eframe::App for Roseate<'_> {
                             rose_response.clone().on_hover_cursor(CursorIcon::PointingHand);
 
                             if rose_response.clicked() {
-                                let result = self.image_handler.select_image(&self.monitor_size);
+                                let result = self.image_handler.select_image(
+                                    configured_image_optimizations
+                                );
 
                                 match result {
                                     Ok(_) => {

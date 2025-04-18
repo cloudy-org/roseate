@@ -48,25 +48,16 @@ impl ImageHandler {
         }
     }
 
-    pub fn init_image(&mut self, image_path: &Path) -> Result<()> {
+    pub fn init_image(&mut self, image_path: &Path, image_optimizations: Vec<ImageOptimizations>) -> Result<()> {
         let image = Image::from_path(image_path)?;
 
-        // TODO: pass optimizations into this function instead 
-        // or have the developer manipulate image_optimizations directly.
-        // TODO: also maybe just have the image optimization set when ImageHandler is initialized.
-        self.image_optimizations = HashSet::from_iter(
-            vec![
-                ImageOptimizations::MonitorDownsampling(130),
-                ImageOptimizations::DynamicSampling(true, true)
-            ].iter().cloned()
-        );
-
+        self.image_optimizations = HashSet::from_iter(image_optimizations);
         self.image = Some(image);
 
         Ok(())
     }
 
-    pub fn select_image(&mut self, monitor_size: &MonitorSize) -> Result<()> {
+    pub fn select_image(&mut self, image_optimizations: Vec<ImageOptimizations>) -> Result<()> {
         let image_path = FileDialog::new()
             .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
             .pick_file();
@@ -83,11 +74,13 @@ impl ImageHandler {
                     )
                 }
 
-                self.init_image(&path)?;
+                self.init_image(&path, image_optimizations)?;
 
                 Ok(())
             },
-            None => Err(Error::NoFileSelected(None))
+            None => Err(
+                Error::NoFileSelected(None)
+            )
         }
     }
 

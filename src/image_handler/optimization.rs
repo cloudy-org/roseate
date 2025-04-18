@@ -4,14 +4,13 @@ use std::fmt::Display;
 pub enum ImageOptimizations {
     /// Downsamples the image roughly to the resolution of your monitor.
     /// 
-    /// Images don't always have to be displayed at their native resolution, 
-    /// especially when the image is significantly bigger than your monitor 
-    /// can even display, so to save memory we downsample the image. Downsampling 
-    /// decreases the amount of memory used by rose of the image at the cost of time wasted actually 
-    /// resizing the image. The bigger the image the more time it will take to downsample 
-    /// but we think memory savings are more valuable. You can enable or disable downsampling
-    /// in the config if you do not wish for such memory savings. Setting the overall optimization
-    /// mode to speed ("s") will automatically disable this.
+    /// Images don't always have to be displayed at their full native resolution, especially when 
+    /// the image is significantly bigger than your monitor can even display, so to save memory 
+    /// we downsample the image. Downsampling decreases the amount of memory eaten up by the image 
+    /// at the cost of CPU time wasted actually resizing the image. The bigger the image the more time 
+    /// it will take to downsample but we think memory savings are more valuable in this circumstance. 
+    /// You can enable or disable downsampling in the config if you do not wish for such memory savings. 
+    /// Setting the overall optimization mode to speed ("s") will automatically disable this.
     /// 
     /// NOTE: "The image's aspect ratio is preserved. The image is scaled to the maximum 
     /// possible size that fits within the bounds specified by the width and height." ~ Image Crate

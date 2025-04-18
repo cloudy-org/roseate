@@ -126,7 +126,8 @@ fn main() -> eframe::Result {
                 error.into(), ToastLevel::Error
             ).duration(Some(Duration::from_secs(10)));
         } else {
-            let result = image_handler.init_image(path);
+            let configured_image_optimizations = config.image.optimizations.get_optimizations();
+            let result = image_handler.init_image(path, configured_image_optimizations);
 
             if let Err(error) = result {
                 notifier.toasts.lock().unwrap().toast_and_log(
