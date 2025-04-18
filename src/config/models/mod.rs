@@ -8,7 +8,7 @@ pub fn true_default() -> bool {
 }
 
 pub fn false_default() -> bool {
-    true
+    false
 }
 
 pub fn none_default<T>() -> Option<T> {

@@ -71,5 +71,12 @@ ui_controls.toggle = "C"
 # Disable this if the image looks weird.
 use_fast_roseate_backend = false
 
-[misc.experimental.optimizations]
-dynamic_sampling = {enabled = false, also_downsample = true}
+# Setting this to true will enable the new but extremely experimental 
+# dynamic sampling feature that upsamples your image when you zoom into it 
+# to bring back the detail lost from monitor downsampling.
+# 
+# If this feature was more complete it would live under "[image.optimizations]"
+# as "dynamic_sampling = {enabled = false, also_downsample = true}".
+# 
+# Again, this is VERY experimental and incomplete! Expect a very broken implementation.
+use_dynamic_sampling_optimization = false

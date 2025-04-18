@@ -4,7 +4,7 @@ use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -95,7 +95,14 @@ impl eframe::App for Roseate<'_> {
             // the about box is to be toggleable even without an image.
 
             if self.image_handler.image.is_none() {
-                let configured_image_optimizations = self.config.image.optimizations.get_optimizations();
+                let mut configured_image_optimizations = self.config.image.optimizations.get_optimizations();
+
+                // TODO: remove this once we move DS to image.optimizations.
+                if self.config.misc.experimental.use_dynamic_sampling_optimization {
+                    configured_image_optimizations.push(
+                        ImageOptimizations::DynamicSampling(true, true)
+                    );
+                }
 
                 // Collect dropped files.
                 ctx.input(|i| {

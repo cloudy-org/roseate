@@ -4,7 +4,7 @@ use std::{env, path::Path, time::Duration};
 
 use cirrus_egui::v1::styling::Styling;
 use config::config::Config;
-use image_handler::ImageHandler;
+use image_handler::{optimization::ImageOptimizations, ImageHandler};
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
@@ -126,7 +126,15 @@ fn main() -> eframe::Result {
                 error.into(), ToastLevel::Error
             ).duration(Some(Duration::from_secs(10)));
         } else {
-            let configured_image_optimizations = config.image.optimizations.get_optimizations();
+            let mut configured_image_optimizations = config.image.optimizations.get_optimizations();
+
+            // TODO: remove this once we move DS to image.optimizations.
+            if config.misc.experimental.use_dynamic_sampling_optimization {
+                configured_image_optimizations.push(
+                    ImageOptimizations::DynamicSampling(true, true)
+                );
+            }
+
             let result = image_handler.init_image(path, configured_image_optimizations);
 
             if let Err(error) = result {
