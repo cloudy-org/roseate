@@ -101,7 +101,7 @@ impl ImageHandler {
         }
 
         // this will tell the update loop in ImageHandler when it is time to downsample or upsample.
-        let schedule = Scheduler::new(|| (), delay);
+        let schedule = Scheduler::new(move || upsample, delay);
 
         if self.dynamic_sample_schedule.is_some() {
             debug!("Last scheduled dynamic image sampling cancelled!");

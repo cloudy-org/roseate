@@ -23,7 +23,7 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    dynamic_sample_schedule: Option<Scheduler>,
+    dynamic_sample_schedule: Option<Scheduler<bool>>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
@@ -116,12 +116,12 @@ impl ImageHandler {
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             if !zoom_pan.is_panning {
-                if schedule.update().is_some() {
-                    //self.dynamic_sampling_new_resolution = new_resolution;
+                if let Some(upsample) = schedule.update() {
+                    let should_reload = !upsample;
 
                     self.load_image(
                         true,
-                        true,
+                        should_reload,
                         notifier,
                         monitor_size,
                         use_experimental_backend
@@ -195,10 +195,8 @@ impl ImageHandler {
                 true => {
                     notifier_arc.set_loading_and_log(Some("Reloading image...".into()));
 
-                    // TODO: use low level reload image method instead when that is implemented
-                    let result = image.load_image(
+                    let result = image.reload_image(
                         &mut notifier_arc,
-                        &monitor_size_arc,
                         image_modifications,
                         &backend
                     );
@@ -213,7 +211,7 @@ impl ImageHandler {
                 },
                 false => {
                     notifier_arc.set_loading_and_log(Some("Loading image...".into()));
-        
+
                     let result = image.load_image(
                         &mut notifier_arc,
                         &monitor_size_arc,

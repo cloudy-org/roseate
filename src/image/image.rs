@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use std::hash::Hash;
@@ -117,29 +117,64 @@ impl Image {
         )
     }
 
-    // pub fn reload_image(
-    //     &mut self,
-    //     optimizations_to_apply: &[ImageOptimization],
-    //     notifier: &mut NotifierAPI,
-    //     image_processing_backend: &ImageProcessingBackend
-    // ) -> Result<()> {
-    //     if self.optimizations.is_empty() && optimizations_to_apply.is_empty() {
-    //         return Ok(());
-    //     }
+    /// Reloads image by only using image_bytes in memory.
+    /// This method WILL fail if you do some funky shit like tell it 
+    /// to resize an image upwards as "image_bytes" will not always store 
+    /// the full image to be able to perform such an operation. 
+    /// 
+    /// It will also fail and return an error if anything along the encoding and decoding line blows up.
+    pub fn reload_image(
+        &mut self,
+        notifier: &mut NotifierAPI,
+        modifications: HashSet<ImageModifications>,
+        image_processing_backend: &ImageProcessingBackend
+    ) -> Result<()> {
+        if modifications.is_empty() {
+            debug!(
+                "No modifications were set so there's no \
+                reason to reload this image hence we're are skipping..."
+            );
 
-    //     notifier.set_loading_and_log(Some("Gathering required optimizations...".into()));
+            return Ok(());
+        }
 
-    //     // what optimizations actually require to be applied / aren't applied already.
-    //     let required_optimizations = self.required_optimizations(optimizations_to_apply);
+        notifier.set_loading_and_log(
+            Some("Preparing image to be reloaded...".into())
+        );
 
-    //     // TODO: we need to somehow figure out if we need to 
-    //     // read image bytes from the file again or not judging by the required optimizations.
-    //     // 
-    //     // E.g. If we are upsampling we will need the complete set of images bytes hence a re-read.
-    //     // If we are downsampling we can reuse the images bytes currently loaded in memory.
+        let image_bytes = self.image_bytes.lock().unwrap()
+            .as_ref()
+            .expect(
+                "Image has no image_bytes loaded in memory so we \
+                cannot reload the image! This is a logic error, report this!"
+            )
+            .clone();
 
-    //     Ok(())
-    // }
+        let image_buf_reader = BufReader::new(
+            Cursor::new(image_bytes)
+        );
+
+        notifier.set_loading(Some("Passing image to image decoder...".into()));
+        debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
+
+        let image_decoder = self.get_image_decoder(image_buf_reader);
+
+        let mut modified_image_buffer: Vec<u8> = Vec::new();
+
+        notifier.set_loading(Some("Decoding image...".into()));
+
+        self.modify_and_decode_image_to_buffer(
+            image_processing_backend,
+            image_decoder,
+            modifications,
+            &mut modified_image_buffer,
+            notifier
+        )?;
+
+        *self.image_bytes.lock().unwrap() = Some(Arc::from(modified_image_buffer));
+
+        Ok(())
+    }
 
     pub fn load_image(
         &mut self,
@@ -151,9 +186,9 @@ impl Image {
         if modifications.is_empty() {
             debug!("No modifications were set so we're loading with fs::read instead...");
 
-            let mut image_bytes_lock = self.image_bytes.lock().unwrap();
+            notifier.set_loading(Some("Opening image file and reading it...".into()));
 
-            notifier.set_loading(Some("Opening file...".into()));
+            let mut image_bytes_lock = self.image_bytes.lock().unwrap();
 
             // TODO: return Error instead of panic.
             *image_bytes_lock = Some(
@@ -173,7 +208,7 @@ impl Image {
         // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
 
         notifier.set_loading(Some("Passing image to image decoder...".into()));
-        debug!("Loading image buf reader into image decoder so optimizations can be applied to pixels...");
+        debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
 
         let image_decoder = self.get_image_decoder(image_buf_reader);
 
@@ -192,14 +227,17 @@ impl Image {
         if let Err(image_error) = image_result {
             let error = Error::FailedToApplyOptimizations(
                 Some(image_error.to_string()),
-                "Failed to decode and load image to apply optimizations!".to_string()
+                "Failed to decode and load image to apply modifications!".to_string()
             );
 
-            // warn the user that optimizations failed to apply.
+            // warn the user that modifications failed to apply.
             notifier.toasts.lock().unwrap()
                 .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
 
-            // load image without optimizations
+            // load image without modifications
+            // TODO: this needs to go when we move to "image_pixels" with 
+            // #57 (https://github.com/cloudy-org/roseate/issues/57) and also 
+            // when #58 (https://github.com/cloudy-org/roseate/issues/58) is completed.
             let result = self.load_image(
                 notifier,
                 monitor_size,
@@ -219,7 +257,10 @@ impl Image {
         Ok(())
     }
 
-    fn get_image_decoder(&self, image_buf_reader: BufReader<File>) -> Box<dyn ImageDecoder> {
+    fn get_image_decoder<'a, R: Read + Seek>(&self, image_buf_reader: BufReader<R>) -> Box<dyn ImageDecoder + 'a>
+    where
+        R: Read + Seek + 'a,
+    {
         match self.image_format {
             ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
             ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),

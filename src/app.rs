@@ -97,7 +97,7 @@ impl eframe::App for Roseate<'_> {
             if self.image_handler.image.is_none() {
                 let mut configured_image_optimizations = self.config.image.optimizations.get_optimizations();
 
-                // TODO: remove this once we move DS to image.optimizations.
+                // TODO: remove this once we move DS to "[image.optimizations]".
                 if self.config.misc.experimental.use_dynamic_sampling_optimization {
                     configured_image_optimizations.push(
                         ImageOptimizations::DynamicSampling(true, true)
