@@ -1,33 +1,9 @@
+use log::debug;
+use std::{fs, path::PathBuf};
+
 use eframe::egui::{self, ImageSource};
-use rfd::FileDialog;
 
-use crate::error::Error;
-use crate::image::image::Image;
-
-pub fn select_image() -> Result<Image, Error> {
-    let image_path = FileDialog::new()
-        .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
-        .pick_file();
-
-    let image_or_error = match image_path {
-        Some(path) => {
-            if !path.exists() {
-                Err(
-                    Error::FileNotFound(
-                        None,
-                        path,
-                        "The file picked in the file selector does not exist!".to_string()
-                    )
-                )
-            } else {
-                Image::from_path(&path)
-            }
-        },
-        None => Err(Error::NoFileSelected(None))
-    };
-
-    image_or_error
-}
+use crate::error::{Error, Result};
 
 pub fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     if cfg!(target_os = "windows") {
@@ -37,4 +13,43 @@ pub fn get_platform_rose_image<'a>() -> ImageSource<'a> {
     }
 
     return egui::include_image!("../assets/rose_emojis/google_noto.png");
+}
+
+// TODO: move get path functionality to cirrus.
+
+// TODO: make this return result and also handle creating path if it doesn't exist
+pub fn get_local_config_path() -> Option<PathBuf> {
+    debug!("Finding operating system's configuration local directory...");
+
+    match dirs::config_local_dir() {
+        Some(local_config_dir) => Some(
+            local_config_dir.join("cloudy").join("roseate")
+        ),
+        None => None
+    }
+}
+
+pub fn get_cache_path() -> Result<PathBuf> {
+    debug!("Finding operating system's cache directory...");
+
+    let cache_dir = match dirs::cache_dir() {
+        Some(cache_dir) => cache_dir.join("cloudy").join("roseate"),
+        None => {
+            return Err(Error::OSDirNotFound(None, "cache".into()))
+        }
+    };
+
+    if !cache_dir.exists() {
+        debug!("Creating cache directory for roseate at '{}'...", cache_dir.to_string_lossy());
+
+        if let Err(error) = fs::create_dir_all(&cache_dir) {
+            return Err(
+                Error::FailedToCreatePath(Some(error.to_string()), cache_dir)
+            );
+        };
+
+        debug!("Cache directory created ({})!", cache_dir.to_string_lossy());
+    }
+
+    Ok(cache_dir)
 }

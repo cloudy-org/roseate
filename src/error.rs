@@ -1,6 +1,7 @@
-use std::{fmt::{self, Display, Formatter}, path::PathBuf};
+use std::{fmt::{self, Display, Formatter}, path::PathBuf, result::Result as StdResult};
 
 type ActualError = Option<String>;
+pub type Result<T, E = Error> = StdResult<T, E>;
 
 #[derive(Debug, Clone)]
 pub enum Error {
@@ -10,6 +11,14 @@ pub enum Error {
     FailedToInitImage(ActualError, PathBuf, String),
     FailedToLoadImage(ActualError, String),
     ImageFormatNotSupported(ActualError, String),
+    MonitorNotFound(ActualError),
+    ImageFailedToEncode(ActualError, String),
+    ImageFailedToDecode(ActualError, String),
+    OSDirNotFound(ActualError, String),
+    /// PathBuf: the path that failed to be created
+    FailedToCreatePath(ActualError, PathBuf),
+    /// PathBuf: the path to the file that failed to open
+    FailedToOpenFile(ActualError, PathBuf)
 }
 
 impl Error {
@@ -56,6 +65,35 @@ impl Display for Error {
             Error::ImageFormatNotSupported(_, image_format) => write!(
                 f, "The image format '{}' is not supported!", image_format
             ),
+            Error::MonitorNotFound(_) => write!(
+                f, "For some reason we couldn't detect your monitor.",
+            ),
+            Error::ImageFailedToEncode(_, technical_reason) => write!(
+                f,
+                "Image failed to encode! \n\nTechnical Reason: {}",
+                technical_reason
+            ),
+            Error::ImageFailedToDecode(_, technical_reason) => write!(
+                f,
+                "Image failed to decode! \n\nTechnical Reason: {}",
+                technical_reason
+            ),
+            Error::OSDirNotFound(_, directory_name) => write!(
+                f,
+                "No '{}' directory was found for your Operating System!? \
+                    This should not happen, please report this!",
+                directory_name
+            ),
+            Error::FailedToCreatePath(_, path) => write!(
+                f,
+                "Failed to create path at '{}'!",
+                path.to_string_lossy()
+            ),
+            Error::FailedToOpenFile(_, path) => write!(
+                f,
+                "Failed to open file at '{}'!",
+                path.to_string_lossy()
+            )
         }
     }
 }

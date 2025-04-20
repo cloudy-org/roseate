@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock};
+use std::{sync::{Arc, Mutex, RwLock}, time::Duration};
 
 use eframe::egui::Context;
 use egui_notify::{Toast, ToastLevel, Toasts};
@@ -30,10 +30,16 @@ impl ToastsManager {
     pub fn toast(&mut self, message: StringOrError, level: ToastLevel) -> &mut Toast {
         let message = self.string_or_error_to_string(message);
 
-        let toast = Toast::custom(
-            textwrap::wrap(message.as_str(), 75).join("\n"),
-            level
+        let mut toast = Toast::custom(
+            textwrap::wrap(message.as_str(), 65).join("\n"),
+            level.clone()
         );
+
+        if level == ToastLevel::Error {
+            toast.duration(
+                Some(Duration::from_secs(8))
+            );
+        }
 
         self.toasts.add(toast)
     }
@@ -74,6 +80,12 @@ impl ToastsManager {
                     Error::FailedToInitImage(actual_error, _, _) => actual_error.unwrap_or_default(),
                     Error::ImageFormatNotSupported(actual_error, _) => actual_error.unwrap_or_default(),
                     Error::FailedToLoadImage(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::MonitorNotFound(actual_error) => actual_error.unwrap_or_default(),
+                    Error::ImageFailedToEncode(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::ImageFailedToDecode(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::OSDirNotFound(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToCreatePath(actual_error, _) => actual_error.unwrap_or_default(),
+                    Error::FailedToOpenFile(actual_error, _) => actual_error.unwrap_or_default(),
                 }
             },
             StringOrError::String(string) => string,

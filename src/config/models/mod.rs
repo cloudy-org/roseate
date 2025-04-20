@@ -8,8 +8,9 @@ pub fn true_default() -> bool {
 }
 
 pub fn false_default() -> bool {
-    true
+    false
 }
 
-// This file is so unreadable :sob: ~ Ananas
-// I HATE IT! ~ Goldy
+pub fn none_default<T>() -> Option<T> {
+    None
+}

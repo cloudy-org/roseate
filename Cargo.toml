@@ -27,16 +27,19 @@ re_format = "0.20.0"
 cap = "0.1.2"
 clap = {version = "4.5.21", features = ["derive"]}
 rand = "0.8.5"
-display-info = "0.5.2"
 egui-notify = "0.17.0"
 svg_metadata = "0.5.1"
 textwrap = "0.16.1"
 dirs = "5.0.1"
 rayon = "1.10.0"
 serde_derive = "1.0.215"
+serde_json = "1.0"
+fs2 = "0.4.3"
+
 toml = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 
+# NOTE: Workspace deps will be removed here when we soon update to the latest commit of cirrus.
 [workspace.dependencies]
 cirrus_egui = { path = "./cirrus/egui" }
 cirrus_theming = { path = "./cirrus/theming" }
