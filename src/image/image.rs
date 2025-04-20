@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::{self, File}, io::{BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use log::debug;
 use std::hash::Hash;
@@ -34,6 +34,7 @@ pub struct Image {
     // 
     // Kind regards,
     // Goldy
+    current_modifications: HashSet<ImageModifications>
 }
 
 impl Hash for Image {
@@ -113,6 +114,7 @@ impl Image {
                 image_format,
                 image_path: Arc::new(path.to_owned()),
                 image_bytes: Arc::new(Mutex::new(None)),
+                current_modifications: HashSet::new()
             }
         )
     }
@@ -129,14 +131,18 @@ impl Image {
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if modifications.is_empty() {
+        println!("{:?} - {:?}", &modifications, &self.current_modifications);
+
+        if self.are_modifications_the_same(&modifications, &self.current_modifications) {
             debug!(
-                "No modifications were set so there's no \
+                "Modifications were the same so there's no \
                 reason to reload this image hence we're are skipping..."
             );
 
             return Ok(());
         }
+
+        self.current_modifications = modifications.clone();
 
         notifier.set_loading_and_log(
             Some("Preparing image to be reloaded...".into())
@@ -198,6 +204,8 @@ impl Image {
             return Ok(()); // I avoid image crate here as loading the bytes with fs::read is 
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
+
+        self.current_modifications = modifications.clone();
 
         notifier.set_loading(Some("Opening file...".into()));
         debug!("Opening file into buf reader for image crate to read...");
@@ -290,51 +298,34 @@ impl Image {
         }
     }
 
-    // fn required_optimizations(&self, optimizations: &[ImageOptimization]) -> Vec<ImageOptimization> {
-    //     let optimizations_wanted = optimizations.to_owned();
+    /// Check if modifications in both hash sets are the same by deep comparing them.
+    fn are_modifications_the_same(
+        &self,
+        a: &HashSet<ImageModifications>,
+        b: &HashSet<ImageModifications>
+    ) -> bool {
+        if a.len() != b.len() {
+            return false;
+        }
 
-    //     let mut optimizations_necessary: Vec<ImageOptimization> = Vec::new();
+        fn hash_modification(m: &ImageModifications) -> u64 {
+            let mut hasher = DefaultHasher::new();
 
-    //     for optimization in optimizations_wanted {
-    //         if let Some(old_optimization) = self.has_optimization(&optimization) {
+            match m {
+                ImageModifications::Resize((width, height)) => {
+                    width.hash(&mut hasher);
+                    height.hash(&mut hasher);
+                },
+            }
 
-    //             // NOTE: ignore the warning.
-    //             // TODO: We might need to introduce "ImageOptimization::Upsample".
-    //             if let (
-    //                 ImageOptimization::Downsample(width, height),
-    //                 ImageOptimization::Downsample(old_width, old_height)
-    //             ) = (&optimization, old_optimization) {
-    //                 // We don't want to apply a downsample optimization if the change 
-    //                 // in resolution isn't that big but we do want to upsample no matter what.
+            hasher.finish()
+        }
 
-    //                 // the scale difference between the old downsample and new.
-    //                 let scale_width = *width as f32 / *old_width as f32;
-    //                 let scale_height = *height as f32 / *old_height as f32;
+        let a_hashes: HashSet<u64> = a.iter().map(hash_modification).collect();
+        let b_hashes: HashSet<u64> = b.iter().map(hash_modification).collect();
 
-    //                 let is_upsample = scale_width > 1.0 || scale_height > 1.0;
-
-    //                 match is_upsample {
-    //                     false => {
-    //                         // downsample difference must be 
-    //                         // greater than this to allow the optimization.
-    //                         let allowed_downsample_diff: f32 = 1.2;
-
-    //                         if scale_width > allowed_downsample_diff && scale_height > allowed_downsample_diff {
-    //                             optimizations_necessary.push(optimization);
-    //                         }
-    //                     },
-    //                     true => {
-    //                         optimizations_necessary.push(optimization);
-    //                         continue;
-    //                     },
-    //                 }
-    //             }
-
-    //         }
-    //     }
-
-    //     optimizations_necessary
-    // }
+        a_hashes == b_hashes
+    }
 
 }
 

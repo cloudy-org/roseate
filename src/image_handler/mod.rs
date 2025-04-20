@@ -115,6 +115,8 @@ impl ImageHandler {
         self.dynamic_sampling_update(zoom_pan, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
+            // TODO: if we are still panning once we have stopped 
+            // defer some addition seconds to the dynamic_sample_schedule.
             if !zoom_pan.is_panning {
                 if let Some(upsample) = schedule.update() {
                     let should_reload = !upsample;

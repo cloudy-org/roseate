@@ -8,7 +8,7 @@ use crate::{error::{Error, Result}, image::{fast_downsample::fast_downsample, im
 
 use super::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ImageModifications {
     Resize(ImageSizeT)    
 }

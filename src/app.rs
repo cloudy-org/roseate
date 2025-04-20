@@ -223,7 +223,7 @@ impl eframe::App for Roseate<'_> {
             );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
-            let image = self.image_handler.image.clone().unwrap();
+            let image = self.image_handler.image.as_ref().unwrap();
 
             if self.image_handler.image_loaded {
                 ui.centered_and_justified(|ui| {
