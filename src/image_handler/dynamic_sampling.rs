@@ -84,7 +84,7 @@ impl ImageHandler {
         resolution: ImageSizeT
     ) {
         let delay = match upsample {
-            true => Duration::from_secs(3),
+            true => Duration::from_secs_f32(2.5),
             false => Duration::from_secs(5),
         };
 
