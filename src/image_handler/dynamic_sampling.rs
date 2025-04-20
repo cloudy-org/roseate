@@ -21,8 +21,8 @@ impl ImageHandler {
             if zoom_pan.zoom_factor <= 1.0 {
                 self.last_zoom_factor = 1.0;
                 self.accumulated_zoom_factor_change = 0.0;
-                self.dynamic_sampling_new_resolution = (0, 0);
-                self.dynamic_sampling_old_resolution = (0, 0);
+                // self.dynamic_sampling_new_resolution = (0, 0);
+                // self.dynamic_sampling_old_resolution = (0, 0);
 
                 if zoom_pan.zoom_factor < 1.0 {
                     return;

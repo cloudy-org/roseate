@@ -123,20 +123,14 @@ impl Image {
         )
     }
 
-    /// Reloads image by only using image_bytes in memory.
-    /// This method WILL fail if you do some funky shit like tell it 
-    /// to resize an image upwards as "image_bytes" will not always store 
-    /// the full image to be able to perform such an operation. 
-    /// 
-    /// It will also fail and return an error if anything along the encoding and decoding line blows up.
+    /// Reloads image pretty fast by using image_bytes in memory when possible.
+    /// Falls back to disk if the modifications make it impossible to load from memory.
     pub fn reload_image(
         &mut self,
         notifier: &mut NotifierAPI,
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        println!("{:?} - {:?}", &modifications, &self.current_modifications.lock().unwrap());
-
         if self.are_modifications_the_same(&modifications, &self.current_modifications.lock().unwrap()) {
             debug!(
                 "Modifications were the same so there's no \
