@@ -25,7 +25,6 @@ impl<'a> Roseate<'a> {
         if image_handler.image.is_some() {
             image_handler.load_image(
                 config.image.loading.initial.lazy_loading,
-                false,
                 &mut notifier,
                 &monitor_size,
                 config.misc.experimental.use_fast_roseate_backend
@@ -128,7 +127,6 @@ impl eframe::App for Roseate<'_> {
 
                         self.image_handler.load_image(
                             true, 
-                            false,
                             &mut self.notifier,
                             &self.monitor_size,
                             self.config.misc.experimental.use_fast_roseate_backend
@@ -176,7 +174,6 @@ impl eframe::App for Roseate<'_> {
                                     Ok(_) => {
                                         self.image_handler.load_image(
                                             self.config.image.loading.gui.lazy_loading,
-                                            false,
                                             &mut self.notifier,
                                             &self.monitor_size,
                                             self.config.misc.experimental.use_fast_roseate_backend
@@ -267,7 +264,9 @@ impl eframe::App for Roseate<'_> {
                             "bytes://{}", hasher.finish() // so we can indicate to egui that this is a different image when it is modified.
                         ),
                         // we can unwrap because we know the bytes exist thanks to 'self.image_loader.image_loaded'.
-                        image.image_bytes.lock().unwrap().clone().unwrap()
+                        image.image_bytes.lock().unwrap().clone().expect(
+                            "Image bytes went 'None' when image was still in loaded state in the image handler."
+                        )
                     ).rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
 

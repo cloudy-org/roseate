@@ -84,24 +84,15 @@ impl ImageHandler {
         resolution: ImageSizeT
     ) {
         let delay = match upsample {
-            true => Duration::from_secs(2),
+            true => Duration::from_secs(3),
             false => Duration::from_secs(5),
         };
 
         self.dynamic_sampling_new_resolution = resolution;
 
-        if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
-            debug!(
-                "Will not schedule this dynamic sample ({:?} -> {:?}) \
-                as it's going to sample to the same resolution!",
-                self.dynamic_sampling_old_resolution,
-                self.dynamic_sampling_new_resolution
-            );
-            return;
-        }
 
         // this will tell the update loop in ImageHandler when it is time to downsample or upsample.
-        let schedule = Scheduler::new(move || upsample, delay);
+        let schedule = Scheduler::new(|| {}, delay);
 
         if self.dynamic_sample_schedule.is_some() {
             debug!("Last scheduled dynamic image sampling cancelled!");

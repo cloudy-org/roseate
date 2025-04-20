@@ -23,7 +23,7 @@ pub struct ImageHandler {
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
     pub image_optimizations: HashSet<ImageOptimizations>,
-    dynamic_sample_schedule: Option<Scheduler<bool>>,
+    dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
@@ -118,12 +118,19 @@ impl ImageHandler {
             // TODO: if we are still panning once we have stopped 
             // defer some addition seconds to the dynamic_sample_schedule.
             if !zoom_pan.is_panning {
-                if let Some(upsample) = schedule.update() {
-                    let should_reload = !upsample;
+                if schedule.update().is_some() {
+                    if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
+                        debug!(
+                            "Will not schedule this dynamic sample ({:?} -> {:?}) \
+                            as it's going to sample to the same resolution!",
+                            self.dynamic_sampling_old_resolution,
+                            self.dynamic_sampling_new_resolution
+                        );
+                        return;
+                    }
 
                     self.load_image(
                         true,
-                        should_reload,
                         notifier,
                         monitor_size,
                         use_experimental_backend
@@ -139,7 +146,7 @@ impl ImageHandler {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, reload: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -193,7 +200,7 @@ impl ImageHandler {
             let now = Instant::now();
             let mut hasher = DefaultHasher::new();
 
-            let result = match reload {
+            let result = match *image_loaded_arc.lock().unwrap() {
                 true => {
                     notifier_arc.set_loading_and_log(Some("Reloading image...".into()));
 

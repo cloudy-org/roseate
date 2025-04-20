@@ -12,6 +12,10 @@ use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, modifi
 
 pub type ImageSizeT = (u32, u32);
 
+trait ReadAndSeek: Read + Seek {}
+// not to be confused with hide and seek.
+impl<T: Read + Seek> ReadAndSeek for T {}
+
 #[derive(Clone)]
 pub struct Image {
     pub image_size: ImageSize, // TODO: change this to ImageSizeT
@@ -34,7 +38,7 @@ pub struct Image {
     // 
     // Kind regards,
     // Goldy
-    current_modifications: HashSet<ImageModifications>
+    current_modifications: Arc<Mutex<HashSet<ImageModifications>>>
 }
 
 impl Hash for Image {
@@ -114,7 +118,7 @@ impl Image {
                 image_format,
                 image_path: Arc::new(path.to_owned()),
                 image_bytes: Arc::new(Mutex::new(None)),
-                current_modifications: HashSet::new()
+                current_modifications: Arc::new(Mutex::new(HashSet::new()))
             }
         )
     }
@@ -131,9 +135,9 @@ impl Image {
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        println!("{:?} - {:?}", &modifications, &self.current_modifications);
+        println!("{:?} - {:?}", &modifications, &self.current_modifications.lock().unwrap());
 
-        if self.are_modifications_the_same(&modifications, &self.current_modifications) {
+        if self.are_modifications_the_same(&modifications, &self.current_modifications.lock().unwrap()) {
             debug!(
                 "Modifications were the same so there's no \
                 reason to reload this image hence we're are skipping..."
@@ -142,23 +146,37 @@ impl Image {
             return Ok(());
         }
 
-        self.current_modifications = modifications.clone();
+        let load_from_disk = self.are_modifications_outside_memory_bounds(&modifications);
 
         notifier.set_loading_and_log(
             Some("Preparing image to be reloaded...".into())
         );
 
-        let image_bytes = self.image_bytes.lock().unwrap()
-            .as_ref()
-            .expect(
-                "Image has no image_bytes loaded in memory so we \
-                cannot reload the image! This is a logic error, report this!"
-            )
-            .clone();
+        let buffer: Box<dyn ReadAndSeek> = match load_from_disk {
+            false => {
+                debug!("Reloading image from memory...");
 
-        let image_buf_reader = BufReader::new(
-            Cursor::new(image_bytes)
-        );
+                let image_bytes = self.image_bytes.lock().unwrap()
+                    .as_ref()
+                    .expect(
+                        "Image has no image_bytes loaded in memory so we \
+                        cannot reload the image! This is a logic error, report this!"
+                    )
+                    .clone();
+
+                Box::new(Cursor::new(image_bytes))
+            },
+            true => {
+                debug!("Reloading image from disk...");
+
+                // clear memory as we aren't going to use that any more.
+                // *self.image_bytes.lock().unwrap() = None;
+
+                Box::new(self.get_image_file()?)
+            },
+        };
+
+        let image_buf_reader = BufReader::new(buffer);
 
         notifier.set_loading(Some("Passing image to image decoder...".into()));
         debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
@@ -168,6 +186,8 @@ impl Image {
         let mut modified_image_buffer: Vec<u8> = Vec::new();
 
         notifier.set_loading(Some("Decoding image...".into()));
+
+        *self.current_modifications.lock().unwrap() = modifications.clone();
 
         self.modify_and_decode_image_to_buffer(
             image_processing_backend,
@@ -205,8 +225,6 @@ impl Image {
             // A LOT faster and no optimizations need to be done so we don't need image crate.
         }
 
-        self.current_modifications = modifications.clone();
-
         notifier.set_loading(Some("Opening file...".into()));
         debug!("Opening file into buf reader for image crate to read...");
 
@@ -223,6 +241,8 @@ impl Image {
         let mut modified_image_buffer: Vec<u8> = Vec::new();
 
         notifier.set_loading(Some("Decoding image...".into()));
+
+        *self.current_modifications.lock().unwrap() = modifications.clone();
 
         let image_result = self.modify_and_decode_image_to_buffer(
             image_processing_backend,
@@ -299,11 +319,7 @@ impl Image {
     }
 
     /// Check if modifications in both hash sets are the same by deep comparing them.
-    fn are_modifications_the_same(
-        &self,
-        a: &HashSet<ImageModifications>,
-        b: &HashSet<ImageModifications>
-    ) -> bool {
+    fn are_modifications_the_same(&self, a: &HashSet<ImageModifications>, b: &HashSet<ImageModifications>) -> bool {
         if a.len() != b.len() {
             return false;
         }
@@ -325,6 +341,32 @@ impl Image {
         let b_hashes: HashSet<u64> = b.iter().map(hash_modification).collect();
 
         a_hashes == b_hashes
+    }
+
+    fn are_modifications_outside_memory_bounds(&self, modifications_to_apply: &HashSet<ImageModifications>) -> bool {
+        let current_modifications = self.current_modifications.lock().unwrap();
+
+        for current_modification in current_modifications.iter() {
+            match (modifications_to_apply.get(&current_modification), current_modification) {
+                (
+                    Some(ImageModifications::Resize((width, height))),
+                    ImageModifications::Resize((current_width, current_height))
+                ) => {
+                    // If this "if" statement evaluates to true this 
+                    // means we are being asked to resize the image upwards 
+                    // to data we do not have in memory, hence we cannot use what's 
+                    // in memory / these modifications are outside the memory bounds.
+                    if (width > current_width) | (height > current_height) {
+                        return true;
+                    }
+                },
+                (None, ImageModifications::Resize(_)) => {
+                    return true;
+                },
+            }
+        }
+
+        return false;
     }
 
 }
