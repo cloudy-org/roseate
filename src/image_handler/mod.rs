@@ -277,11 +277,13 @@ impl ImageHandler {
             if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
                 &ImageOptimizations::MonitorDownsampling(u32::default())
             ) {
-                let (monitor_width, monitor_height) = monitor_size.get();
+                let (width, height) = get_monitor_downsampling_size(
+                    *marginal_allowance, monitor_size
+                );
 
                 // If the image is a lot bigger than the user's 
                 // monitor then apply monitor downsample, if not we shouldn't.
-                if image.image_size.width as u32 > monitor_width as u32 && image.image_size.height as u32 > monitor_height as u32 {
+                if image.image_size.width as u32 > width as u32 && image.image_size.height as u32 > height as u32 {
                     debug!(
                         "Image is significantly bigger than system's \
                         display monitor so monitor downsampling will be applied..."
@@ -297,10 +299,6 @@ impl ImageHandler {
 
                     debug!(
                         "Display (Monitor) Size: {} x {}", monitor_width, monitor_height
-                    );
-
-                    let (width, height) = get_monitor_downsampling_size(
-                        *marginal_allowance, monitor_size
                     );
 
                     debug!(
