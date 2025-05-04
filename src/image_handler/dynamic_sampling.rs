@@ -11,11 +11,11 @@ use super::ImageHandler;
 impl ImageHandler {
     pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
         if let Some(image) = &self.image {
-            let is_enabled = self.has_optimization(
+            let is_enabled = self.image_optimizations.contains(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
-            ).is_some();
+            );
 
-            if !is_enabled {
+            if !is_enabled || !self.monitor_downsampling_required {
                 return;
             }
 
@@ -47,10 +47,10 @@ impl ImageHandler {
             let mut image_size = max_image_size;
 
             // TODO: (28/03/2025) check if we even need this now
-            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
+            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
                 &ImageOptimizations::MonitorDownsampling(u32::default())
             ) {
-                image_size = get_monitor_downsampling_size(*marginal_allowance, monitor_size);
+                image_size = get_monitor_downsampling_size(&marginal_allowance, monitor_size);
             }
 
             let new_resolution = zoom_pan.relative_image_size(

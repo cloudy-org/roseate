@@ -30,6 +30,7 @@ pub struct ImageHandler {
     dynamic_sampling_old_resolution: ImageSizeT,
     accumulated_zoom_factor_change: f32,
     forget_last_image_bytes_arc: Arc<Mutex<bool>>,
+    monitor_downsampling_required: bool,
 }
 
 impl ImageHandler {
@@ -45,7 +46,8 @@ impl ImageHandler {
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
-            forget_last_image_bytes_arc: Arc::new(Mutex::new(false))
+            forget_last_image_bytes_arc: Arc::new(Mutex::new(false)),
+            monitor_downsampling_required: false
         }
     }
 
@@ -274,12 +276,14 @@ impl ImageHandler {
             // the reason why we don't just loop over self.image_optimizations 
             // is because I need to make absolute sure I'm doing these checks in this exact order.
 
-            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
+            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
                 &ImageOptimizations::MonitorDownsampling(u32::default())
             ) {
                 let (width, height) = get_monitor_downsampling_size(
-                    *marginal_allowance, monitor_size
+                    marginal_allowance, monitor_size
                 );
+
+                self.monitor_downsampling_required = true;
 
                 // If the image is a lot bigger than the user's 
                 // monitor then apply monitor downsample, if not we shouldn't.
@@ -310,7 +314,7 @@ impl ImageHandler {
                 }
             }
 
-            if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.has_optimization(
+            if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.image_optimizations.get(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
             ) {
                 let new_resolution = self.dynamic_sampling_new_resolution;
@@ -349,17 +353,5 @@ impl ImageHandler {
         };
 
         image_modifications
-    }
-
-    /// Checks if the image has this TYPE of optimization applied, not the exact 
-    /// optimization itself. Then it returns a reference to the exact optimization found.
-    pub fn has_optimization(&self, optimization: &ImageOptimizations) -> Option<&ImageOptimizations> {
-        for applied_optimization in self.image_optimizations.iter() {
-            if applied_optimization.id() == optimization.id() {
-                return Some(applied_optimization);
-            }
-        }
-
-        return None;
     }
 }
