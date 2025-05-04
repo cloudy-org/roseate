@@ -1,9 +1,10 @@
 use std::time::Duration;
 
+use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, zoom_pan::ZoomPan};
 
 use super::ImageHandler;
 
@@ -89,7 +90,6 @@ impl ImageHandler {
         };
 
         self.dynamic_sampling_new_resolution = resolution;
-
 
         // this will tell the update loop in ImageHandler when it is time to downsample or upsample.
         let schedule = Scheduler::new(|| {}, delay);
