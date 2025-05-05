@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, hash::{DefaultHasher, Hasher, Hash}};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum ImageOptimizations {
     /// Downsamples the image roughly to the resolution of your monitor.
     /// 
@@ -23,6 +23,29 @@ pub enum ImageOptimizations {
     /// The opposite happens when the full detail is no longer required to save your memory.
     DynamicSampling(bool, bool)
 }
+
+impl Hash for ImageOptimizations {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            ImageOptimizations::DynamicSampling(..) => "dynamic-sampling".hash(state),
+            ImageOptimizations::MonitorDownsampling(_) => "monitor-downsampling".hash(state)
+        }
+    }
+}
+
+impl PartialEq for ImageOptimizations {
+    fn eq(&self, other: &Self) -> bool {
+        let mut hasher = DefaultHasher::new();
+
+        if self.hash(&mut hasher) == other.hash(&mut hasher) {
+            return true;
+        }
+
+        false
+    }
+}
+
+impl Eq for ImageOptimizations {}
 
 impl ImageOptimizations {
     // TODO: remove this when has_optimization is also removed.

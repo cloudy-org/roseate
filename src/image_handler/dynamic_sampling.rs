@@ -1,20 +1,21 @@
 use std::time::Duration;
 
+use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, scheduler::Scheduler, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, zoom_pan::ZoomPan};
 
 use super::ImageHandler;
 
 impl ImageHandler {
     pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
         if let Some(image) = &self.image {
-            let is_enabled = self.has_optimization(
+            let is_enabled = self.image_optimizations.contains(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
-            ).is_some();
+            );
 
-            if !is_enabled {
+            if !is_enabled || !self.monitor_downsampling_required {
                 return;
             }
 
@@ -46,10 +47,10 @@ impl ImageHandler {
             let mut image_size = max_image_size;
 
             // TODO: (28/03/2025) check if we even need this now
-            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.has_optimization(
+            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
                 &ImageOptimizations::MonitorDownsampling(u32::default())
             ) {
-                image_size = get_monitor_downsampling_size(*marginal_allowance, monitor_size);
+                image_size = get_monitor_downsampling_size(&marginal_allowance, monitor_size);
             }
 
             let new_resolution = zoom_pan.relative_image_size(
@@ -89,7 +90,6 @@ impl ImageHandler {
         };
 
         self.dynamic_sampling_new_resolution = resolution;
-
 
         // this will tell the update loop in ImageHandler when it is time to downsample or upsample.
         let schedule = Scheduler::new(|| {}, delay);
