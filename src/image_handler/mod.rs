@@ -2,12 +2,13 @@ use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path,
 
 use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Context;
+use egui::{TextureHandle, TextureOptions};
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
 
 mod dynamic_sampling;
 
@@ -23,6 +24,7 @@ pub struct ImageHandler {
     pub image_loaded: bool,
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
+    egui_image_texture: Option<TextureHandle>,
     pub image_optimizations: HashSet<ImageOptimizations>,
     dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
@@ -42,6 +44,7 @@ impl ImageHandler {
             image_loading: false,
             image_optimizations: HashSet::new(),
             dynamic_sample_schedule: None,
+            egui_image_texture: None,
             last_zoom_factor: 1.0,
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
@@ -240,19 +243,23 @@ impl ImageHandler {
                 }
             };
 
-            if let Err(error) = result {
-                notifier_arc.toasts.lock().unwrap()
-                    .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
-                    .duration(Some(Duration::from_secs(10)));
+            match result {
+                Ok(()) => {
+                    *image_loaded_arc.lock().unwrap() = true;
+
+                    *forget_last_image_bytes_arc.lock().unwrap() = true;
+
+                    image.hash(&mut hasher);
+                    debug!("Image bytes hash: {}", hasher.finish());
+                },
+                Err(error) => {
+                    notifier_arc.toasts.lock().unwrap()
+                        .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
+                        .duration(Some(Duration::from_secs(10)));
+                },
             }
 
-            image.hash(&mut hasher);
-            debug!("Image bytes hash: {}", hasher.finish());
-
             notifier_arc.unset_loading();
-            *image_loaded_arc.lock().unwrap() = true;
-
-            *forget_last_image_bytes_arc.lock().unwrap() = true;
         };
 
         if lazy_load {
@@ -261,6 +268,73 @@ impl ImageHandler {
         } else {
             debug!("Loading image in main thread...");
             loading_logic();
+        }
+    }
+
+    pub fn get_egui_image(&mut self, ctx: &egui::Context) -> egui::Image {
+        assert!(
+            self.image_loaded,
+            "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is true!"
+        );
+
+        let image = self.image.as_ref().unwrap();
+
+        let mut hasher = DefaultHasher::new();
+        image.hash(&mut hasher);
+
+        let image_hash = hasher.finish();
+
+        // we can unwrap Option<T> here as if 
+        // "self.image_handler.image_loaded" is true image data should exist.
+        match image.image_data.lock().unwrap().as_ref()
+            .expect("Image data was not present! This is a logic error on our side, please report it.") {
+            ImageData::Pixels((pixels, (width, height), image_colour_type)) => {
+                let texture = match &self.egui_image_texture {
+                    Some(texture) => texture,
+                    None => {
+                        self.egui_image_texture = Some(
+                            ctx.load_texture(
+                                "image",
+                                match image_colour_type {
+                                    ImageColourType::Grey | ImageColourType::GreyAlpha => {
+                                        debug!("Rendering image as grey scale egui texture...");
+                                        egui::ColorImage::from_gray(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                    ImageColourType::RGB => {
+                                        debug!("Rendering image as rgb egui texture...");
+                                        egui::ColorImage::from_rgb(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                    ImageColourType::RGBA => {
+                                        debug!("Rendering image as rgba egui texture...");
+                                        egui::ColorImage::from_rgba_unmultiplied(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                },
+                                TextureOptions::default()
+                            )
+                        );
+
+                        &self.egui_image_texture.as_ref().unwrap()
+                    },
+                };
+
+                egui::Image::from_texture(texture)
+            },
+            ImageData::StaticBytes(bytes) => {
+                egui::Image::from_bytes(
+                    format!("bytes://{}", image_hash),
+                    bytes.to_vec() // TODO: I think this duplicates memory so 
+                    // this will need to be analysed and changed.
+                )
+            },
         }
     }
 

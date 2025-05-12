@@ -38,6 +38,7 @@ toml = "0.8.22"
 serde_json = "1.0"
 serde_derive = "1.0"
 serde = {version = "1.0", features = ["derive"]}
+zune-image = "0.4.15"
 
 # I've now disabled compiling release builds of dependices to speed up dev compile time.
 # 

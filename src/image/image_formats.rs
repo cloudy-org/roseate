@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use imagesize::ImageType;
 
 use crate::error::Error;
@@ -9,6 +11,18 @@ pub enum ImageFormat {
     Svg,
     Gif,
     Webp
+}
+
+impl Display for ImageFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageFormat::Png => write!(f, "png"),
+            ImageFormat::Jpeg => write!(f, "jpeg"),
+            ImageFormat::Svg => write!(f, "svg"),
+            ImageFormat::Gif => write!(f, "gif"),
+            ImageFormat::Webp => write!(f, "webp"),
+        }
+    }
 }
 
 impl TryFrom<image::ImageFormat> for ImageFormat {

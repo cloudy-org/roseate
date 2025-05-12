@@ -1,27 +1,45 @@
-use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufRead, BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}, time::Instant};
 
+use egui_notify::ToastLevel;
 use log::debug;
 use std::hash::Hash;
 use imagesize::ImageSize;
 use svg_metadata::Metadata;
-use image::{codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ImageDecoder};
+use zune_image::{codecs::qoi::zune_core::options::DecoderOptions, image::Image as ZuneImage};
+use image::{buffer::ConvertBuffer, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ColorType, GrayAlphaImage, GrayImage, ImageDecoder, RgbImage, RgbaImage};
 
 use crate::{error::{Error, Result}, monitor_size::MonitorSize, notifier::NotifierAPI};
 
-use super::{backends::ImageProcessingBackend, image_formats::ImageFormat, modifications::ImageModifications};
+use super::{backends::{ImageDecodePipelineKind, ImageProcessingBackend}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications};
 
 pub type ImageSizeT = (u32, u32);
 
-trait ReadAndSeek: Read + Seek {}
+// trait ReadAndSeek: Read + Seek {}
 // not to be confused with hide and seek.
-impl<T: Read + Seek> ReadAndSeek for T {}
+// impl<T: Read + Seek> ReadAndSeek for T {}
+
+pub enum ImageRSImage {
+    RGB(RgbImage),
+    RGBA(RgbaImage),
+    /// Luma
+    Grey(GrayImage),
+    /// LumaA
+    GreyAlpha(GrayAlphaImage),
+}
+
+pub enum DecodedImage {
+    ImageRS(ImageRSImage),
+    ZuneImage(ZuneImage),
+    /// Let egui decode the image.
+    Egui
+}
 
 #[derive(Clone)]
 pub struct Image {
     pub image_size: ImageSize, // TODO: change this to ImageSizeT
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
-    pub image_bytes: Arc<Mutex<Option<Arc<[u8]>>>>,
+    pub image_data: Arc<Mutex<Option<ImageData>>>,
     // Look! I know you see that type above me but just  
     // so you know, I'm NOT crazy... well not yet at least...
     // 
@@ -45,8 +63,11 @@ impl Hash for Image {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         (*self.image_path).hash(state);
 
-        if let Some(image_bytes) = self.image_bytes.lock().unwrap().as_ref() {
-            image_bytes.len().hash(state);
+        if let Some(image_data) = self.image_data.lock().unwrap().as_ref() {
+            match image_data {
+                ImageData::Pixels(pixels_data) => pixels_data.0.len().hash(state),
+                ImageData::StaticBytes(image_bytes) => image_bytes.len().hash(state),
+            }
         }
     }
 }
@@ -117,7 +138,7 @@ impl Image {
                 image_size,
                 image_format,
                 image_path: Arc::new(path.to_owned()),
-                image_bytes: Arc::new(Mutex::new(None)),
+                image_data: Arc::new(Mutex::new(None)),
                 current_modifications: Arc::new(Mutex::new(HashSet::new()))
             }
         )
@@ -134,7 +155,7 @@ impl Image {
         if self.are_modifications_the_same(&modifications, &self.current_modifications.lock().unwrap()) {
             debug!(
                 "Modifications were the same so there's no \
-                reason to reload this image hence we're are skipping..."
+                reason to reload this image hence we are skipping..."
             );
 
             return Ok(());
@@ -146,19 +167,32 @@ impl Image {
             Some("Preparing image to be reloaded...".into())
         );
 
-        let buffer: Box<dyn ReadAndSeek> = match load_from_disk {
-            false => {
-                debug!("Reloading image from memory...");
+        let current_modifications = modifications.clone();
 
-                let image_bytes = self.image_bytes.lock().unwrap()
+        let arc_pixels: (Arc<Vec<u8>>, ImageSizeT, ImageColourType) = match load_from_disk {
+            false => {
+                debug!("Reloading image from memory... at the spweed of a spwinting c-cat meow :3 (wait WTF!?!?)...");
+
+                let image_data_mutex = self.image_data.lock().unwrap();
+
+                let image_data = image_data_mutex
                     .as_ref()
                     .expect(
-                        "Image has no image_bytes loaded in memory so we \
+                        "Image has no image data loaded in memory so we \
                         cannot reload the image! This is a logic error, report this!"
-                    )
-                    .clone();
+                    );
 
-                Box::new(Cursor::new(image_bytes))
+                match image_data {
+                    ImageData::Pixels(pixels) => pixels.clone(),
+                    // images loaded into memory as bytes will never be called to reload as they will never have modifications.
+                    ImageData::StaticBytes(_) => {
+                        debug!(
+                            "Image got reloaded but there's no reason to reload this image as it \
+                                is a static type (StaticBytes) hence we will skip this image reload."
+                        );
+                        return Ok(());
+                    },
+                }
             },
             true => {
                 debug!("Reloading image from disk...");
@@ -166,32 +200,34 @@ impl Image {
                 // clear memory as we aren't going to use that any more.
                 // *self.image_bytes.lock().unwrap() = None;
 
-                Box::new(self.get_image_file()?)
+                let image_file = self.get_image_file()?;
+
+                let mut decoded_image = self.decode_image(
+                    image_processing_backend,
+                    BufReader::new(
+                        image_file
+                    ),
+                    notifier
+                )?;
+
+                if !modifications.is_empty() {
+                    decoded_image = self.modify_decoded_image(
+                        modifications,
+                        decoded_image,
+                        notifier
+                    )?;
+                }
+
+                let (pixels, image_size, image_colour_type) = self.decoded_image_to_pixels(
+                    decoded_image
+                )?;
+
+                (Arc::new(pixels), image_size, image_colour_type)
             },
         };
 
-        let image_buf_reader = BufReader::new(buffer);
-
-        notifier.set_loading(Some("Passing image to image decoder...".into()));
-        debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
-
-        let image_decoder = self.get_image_decoder(image_buf_reader);
-
-        let mut modified_image_buffer: Vec<u8> = Vec::new();
-
-        notifier.set_loading(Some("Decoding image...".into()));
-
-        *self.current_modifications.lock().unwrap() = modifications.clone();
-
-        self.modify_and_decode_image_to_buffer(
-            image_processing_backend,
-            image_decoder,
-            modifications,
-            &mut modified_image_buffer,
-            notifier
-        )?;
-
-        *self.image_bytes.lock().unwrap() = Some(Arc::from(modified_image_buffer));
+        *self.current_modifications.lock().unwrap() = current_modifications;
+        *self.image_data.lock().unwrap() = Some(ImageData::Pixels(arc_pixels));
 
         Ok(())
     }
@@ -203,22 +239,6 @@ impl Image {
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
-        if modifications.is_empty() {
-            debug!("No modifications were set so we're loading with fs::read instead...");
-
-            notifier.set_loading(Some("Opening image file and reading it...".into()));
-
-            let mut image_bytes_lock = self.image_bytes.lock().unwrap();
-
-            // TODO: return Error instead of panic.
-            *image_bytes_lock = Some(
-                Arc::from(fs::read(self.image_path.as_ref()).expect("Failed to read image with fs::read!"))
-            );
-
-            return Ok(()); // I avoid image crate here as loading the bytes with fs::read is 
-            // A LOT faster and no optimizations need to be done so we don't need image crate.
-        }
-
         notifier.set_loading(Some("Opening file...".into()));
         debug!("Opening file into buf reader for image crate to read...");
 
@@ -230,68 +250,148 @@ impl Image {
         notifier.set_loading(Some("Passing image to image decoder...".into()));
         debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
 
-        let image_decoder = self.get_image_decoder(image_buf_reader);
-
-        let mut modified_image_buffer: Vec<u8> = Vec::new();
-
         notifier.set_loading(Some("Decoding image...".into()));
 
-        *self.current_modifications.lock().unwrap() = modifications.clone();
+        let mut decoded_image = self.decode_image(
+            image_processing_backend, image_buf_reader, notifier
+        )?;
 
-        let image_result = self.modify_and_decode_image_to_buffer(
-            image_processing_backend,
-            image_decoder,
-            modifications,
-            &mut modified_image_buffer,
-            notifier
-        );
+        let current_modifications = modifications.clone();
 
-        if let Err(image_error) = image_result {
-            let error = Error::FailedToApplyOptimizations(
-                Some(image_error.to_string()),
-                "Failed to decode and load image to apply modifications!".to_string()
-            );
-
-            // warn the user that modifications failed to apply.
-            notifier.toasts.lock().unwrap()
-                .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
-
-            // load image without modifications
-            // TODO: this needs to go when we move to "image_pixels" with 
-            // #57 (https://github.com/cloudy-org/roseate/issues/57) and also 
-            // when #58 (https://github.com/cloudy-org/roseate/issues/58) is completed.
-            let result = self.load_image(
-                notifier,
-                monitor_size,
-                HashSet::new(),
-                image_processing_backend
-            );
-
-            match result {
-                Ok(_) => return Ok(()),
-                Err(error) => return Err(error),
-            }
+        if !modifications.is_empty() {
+            decoded_image = self.modify_decoded_image(
+                modifications,
+                decoded_image,
+                notifier
+            )?;
         }
 
-        // NOTE: At this point "modified_image_buffer" should definitely have the image.
-        *self.image_bytes.lock().unwrap() = Some(Arc::from(modified_image_buffer));
+        let image_pixels_result = self.decoded_image_to_pixels(decoded_image);
 
-        Ok(())
+        match image_pixels_result {
+            Ok((image_pixels, image_size, image_colour_type)) => {
+                *self.current_modifications.lock().unwrap() = current_modifications;
+
+                *self.image_data.lock().unwrap() = Some(
+                    ImageData::Pixels((Arc::from(image_pixels), image_size, image_colour_type))
+                );
+
+                Ok(())
+            },
+            Err(error) => {
+                let error = Error::FailedToApplyOptimizations(
+                    Some(error.to_string()),
+                    "Failed to decode and load image to apply modifications!".to_string()
+                );
+
+                // warn the user that modifications failed to apply.
+                notifier.toasts.lock().unwrap()
+                    .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
+    
+                // load image without modifications
+                // TODO: this needs to go when we move to "image_pixels" with 
+                // #57 (https://github.com/cloudy-org/roseate/issues/57) and also 
+                // when #58 (https://github.com/cloudy-org/roseate/issues/58) is completed.
+                self.load_image(
+                    notifier,
+                    monitor_size,
+                    HashSet::new(),
+                    image_processing_backend
+                )
+            },
+        }
     }
 
-    fn get_image_decoder<'a, R: Read + Seek>(&self, image_buf_reader: BufReader<R>) -> Box<dyn ImageDecoder + 'a>
-    where
-        R: Read + Seek + 'a,
-    {
-        match self.image_format {
-            ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
-            ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
-            // NOTE: is this being handled somewhere else? 
-            // I forgot... I recall adding a check somewhere 
-            // to avoid us getting to this panic in the first place.
-            ImageFormat::Svg => panic!("SVGs cannot be loaded with optimizations at the moment!"),
-            ImageFormat::Gif => Box::new(GifDecoder::new(image_buf_reader).unwrap()),
-            ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
+    pub(super) fn decode_image<'a, R: Read + Seek + 'a>(
+        &self,
+        image_processing_backend: &ImageProcessingBackend,
+        mut image_buf_reader: BufReader<R>,
+        notifier: &mut NotifierAPI
+    ) -> Result<DecodedImage> {
+        match image_processing_backend.get_decode_pipeline() {
+            ImageDecodePipelineKind::ImageRS => {
+                let image_decoder: Box<dyn ImageDecoder + 'a> = match self.image_format {
+                    ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
+                    ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
+                    ImageFormat::Svg => return Ok(DecodedImage::Egui),
+                    ImageFormat::Gif => Box::new(GifDecoder::new(image_buf_reader).unwrap()),
+                    ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
+                };
+
+                let (width, height) = image_decoder.dimensions();
+                let image_colour_type = image_decoder.color_type();
+
+                debug!("Decoding image using image-rs decoder...");
+
+                let mut image_buffer = vec![0; image_decoder.total_bytes() as usize];
+                // TODO: handle error result
+                image_decoder.read_image(&mut image_buffer);
+
+                // NOTE: roseate won't support 8-bit+ (or HDR) images for now, will look into it in the future 
+                let image_rs_image = match image_colour_type {
+                    ColorType::L8 => ImageRSImage::Grey(GrayImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::La8 => ImageRSImage::GreyAlpha(GrayAlphaImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgb8 => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgba8 => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::L16 => ImageRSImage::Grey(GrayImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::La16 => ImageRSImage::GreyAlpha(GrayAlphaImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgb16 => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgba16 => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgb32F => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
+                    ColorType::Rgba32F => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
+                    _ => ImageRSImage::RGBA(
+                        RgbaImage::from_raw(width, height, image_buffer).ok_or_else(
+                            || Error::FailedToDecodeImage(
+                                None,
+                                "image-rs backend failed to get colour space of image \
+                                so we had to guess, but it the guess was incorrect! Image is maybe corrupted!".to_string()
+                            )
+                        )?
+                    ),
+                };
+
+                Ok(DecodedImage::ImageRS(image_rs_image))
+            },
+            ImageDecodePipelineKind::ZuneImage => {
+                let result = match &self.image_format {
+                    // ZumeImage at the moment only supports decoding from our png and jpeg formats.
+                    ImageFormat::Png | ImageFormat::Jpeg => {
+                        debug!("Decoding image using zune-image decoder...");
+
+                        let mut buffer = Vec::new();
+                        // TODO: handle error
+                        image_buf_reader.read_to_end(&mut buffer).unwrap();
+
+                        ZuneImage::read(buffer, DecoderOptions::new_fast())
+                    },
+                    unsupported_image_format => {
+                        notifier.toasts.lock().unwrap().toast_and_log(
+                            format!(
+                                "The zune-image backend does not support decoding the image \
+                                    format '{:#}' so we've fallen back to something that works.",
+                                unsupported_image_format
+                            ).into(),
+                            ToastLevel::Warning
+                        );
+
+                        return self.decode_image(&ImageProcessingBackend::ImageRS, image_buf_reader, notifier);
+                    }
+                };
+
+                match result {
+                    Ok(zune_image) => Ok(
+                        DecodedImage::ZuneImage(zune_image)
+                    ),
+                    Err(error) => {
+                        Err(
+                            Error::FailedToDecodeImage(
+                                Some(error.to_string()),
+                                "Failed to decode image using zune-image backend!".to_string()
+                            )
+                        )
+                    }
+                }
+            }
         }
     }
 
