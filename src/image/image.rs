@@ -202,13 +202,25 @@ impl Image {
 
                 let image_file = self.get_image_file()?;
 
+                let mut image_buf_reader = BufReader::new(image_file);
+
                 let mut decoded_image = self.decode_image(
                     image_processing_backend,
-                    BufReader::new(
-                        image_file
-                    ),
+                    &mut image_buf_reader,
                     notifier
                 )?;
+
+                if let DecodedImage::Egui = decoded_image {
+                    let mut buffer = Vec::new();
+                    // TODO: handle error
+                    image_buf_reader.read_to_end(&mut buffer).unwrap();
+
+                    *self.image_data.lock().unwrap() = Some(
+                        ImageData::StaticBytes(Arc::new(buffer))
+                    );
+        
+                    return Ok(());
+                }
 
                 if !modifications.is_empty() {
                     decoded_image = self.modify_decoded_image(
@@ -240,21 +252,30 @@ impl Image {
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
         notifier.set_loading(Some("Opening file...".into()));
-        debug!("Opening file into buf reader for image crate to read...");
+        debug!("Opening file into buf reader to prepare for reading...");
 
         let image_file = self.get_image_file()?;
 
-        let image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
+        let mut image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
         // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
-
-        notifier.set_loading(Some("Passing image to image decoder...".into()));
-        debug!("Loading image buf reader into image decoder so modifications can be applied to pixels...");
 
         notifier.set_loading(Some("Decoding image...".into()));
 
         let mut decoded_image = self.decode_image(
-            image_processing_backend, image_buf_reader, notifier
+            image_processing_backend, &mut image_buf_reader, notifier
         )?;
+
+        if let DecodedImage::Egui = decoded_image {
+            let mut buffer = Vec::new();
+            // TODO: handle error
+            image_buf_reader.read_to_end(&mut buffer).unwrap();
+
+            *self.image_data.lock().unwrap() = Some(
+                ImageData::StaticBytes(Arc::new(buffer))
+            );
+
+            return Ok(());
+        }
 
         let current_modifications = modifications.clone();
 
@@ -305,7 +326,7 @@ impl Image {
     pub(super) fn decode_image<'a, R: Read + Seek + 'a>(
         &self,
         image_processing_backend: &ImageProcessingBackend,
-        mut image_buf_reader: BufReader<R>,
+        image_buf_reader: &'a mut BufReader<R>,
         notifier: &mut NotifierAPI
     ) -> Result<DecodedImage> {
         match image_processing_backend.get_decode_pipeline() {
@@ -314,7 +335,7 @@ impl Image {
                     ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
                     ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
                     ImageFormat::Svg => return Ok(DecodedImage::Egui),
-                    ImageFormat::Gif => Box::new(GifDecoder::new(image_buf_reader).unwrap()),
+                    ImageFormat::Gif => return Ok(DecodedImage::Egui),
                     ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
                 };
 

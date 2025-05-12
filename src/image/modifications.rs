@@ -76,6 +76,7 @@ impl Image {
         }
     }
 
+    /// Will panic is decoded image is of Egui type.
     pub(super) fn modify_decoded_image(
         &self,
         modifications: HashSet<ImageModifications>,

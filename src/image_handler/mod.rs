@@ -8,7 +8,7 @@ use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
 
 mod dynamic_sampling;
 
@@ -186,9 +186,11 @@ impl ImageHandler {
                 egui_notify::ToastLevel::Warning
                 )
                 .duration(Some(Duration::from_secs(8)));
+        }
 
-            // SVGs cannot be loaded with modifications at 
-            // the moment or else image.load_image() will panic.
+        if let ImageFormat::Svg | ImageFormat::Gif = image.image_format {
+            // SVGs and GIFs cannot be loaded with modifications 
+            // at the moment or else image.load_image() will panic.
             image_modifications.clear();
         }
 
@@ -330,7 +332,7 @@ impl ImageHandler {
             },
             ImageData::StaticBytes(bytes) => {
                 egui::Image::from_bytes(
-                    format!("bytes://{}", image_hash),
+                    format!("bytes://{}.{:#}", image_hash, image.image_format),
                     bytes.to_vec() // TODO: I think this duplicates memory so 
                     // this will need to be analysed and changed.
                 )
