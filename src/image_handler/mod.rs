@@ -172,26 +172,20 @@ impl ImageHandler {
             Some("Gathering necessary image modifications...".into())
         );
 
-        let mut image_modifications = self.get_image_modifications(
+        let image_modifications = self.get_image_modifications(
             &monitor_size
         );
 
         // Our svg implementation is very experimental. Let's warn the user.
-        if image.image_path.extension().unwrap_or_default() == "svg" {
+        if ImageFormat::Svg == image.image_format {
             // TODO: Allow svg enum in image.image_format.
             notifier.toasts.lock().unwrap()
                 .toast_and_log(
                     "SVG files are experimental! \
-                    Expect many bugs, inconstancies and performance issues.".into(),
+                    Expect many bugs, inconstancies and performance / memory issues.".into(),
                 egui_notify::ToastLevel::Warning
                 )
                 .duration(Some(Duration::from_secs(8)));
-        }
-
-        if let ImageFormat::Svg | ImageFormat::Gif = image.image_format {
-            // SVGs and GIFs cannot be loaded with modifications 
-            // at the moment or else image.load_image() will panic.
-            image_modifications.clear();
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
@@ -349,6 +343,11 @@ impl ImageHandler {
         let image = self.image.as_ref();
 
         if let Some(image) = image {
+            // SVG and GIFs should not get image modifications.
+            if let ImageFormat::Svg | ImageFormat::Gif = image.image_format {
+                return image_modifications;
+            }
+
             // the reason why we don't just loop over self.image_optimizations 
             // is because I need to make absolute sure I'm doing these checks in this exact order.
 
@@ -359,11 +358,11 @@ impl ImageHandler {
                     marginal_allowance, monitor_size
                 );
 
-                self.monitor_downsampling_required = true;
-
                 // If the image is a lot bigger than the user's 
                 // monitor then apply monitor downsample, if not we shouldn't.
                 if image.image_size.width as u32 > width as u32 && image.image_size.height as u32 > height as u32 {
+                    self.monitor_downsampling_required = true;
+
                     debug!(
                         "Image is significantly bigger than system's \
                         display monitor so monitor downsampling will be applied..."
