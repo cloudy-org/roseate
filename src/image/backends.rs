@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use image::{DynamicImage, ImageBuffer, Rgb};
-
 use super::image::{ImageRSImage, ImageSizeT};
 
 pub enum ImageProcessingBackend {
@@ -22,9 +20,9 @@ pub enum ImageDecodePipelineKind {
     ZuneImage
 }
 
-pub enum ImageDecodePipeline<'a> {
-    ImageRS(&'a [u8]),
-}
+// pub enum ImageDecodePipeline<'a> {
+//     ImageRS(&'a [u8]),
+// }
 
 pub enum ModificationProcessingMeatKind {
     ImageRS,

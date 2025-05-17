@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 
+use crate::image::backends::ImageProcessingBackend;
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Misc {
     #[serde(default = "super::none_default")]
@@ -11,8 +13,8 @@ pub struct Misc {
 
 #[derive(Serialize, Deserialize)]
 pub struct Experimental {
-    #[serde(default = "super::false_default")]
-    pub use_fast_roseate_backend: bool,
+    #[serde(default = "super::none_default")]
+    image_processing_backend: Option<String>,
     #[serde(default = "super::false_default")]
     pub use_dynamic_sampling_optimization: bool
 }
@@ -20,8 +22,24 @@ pub struct Experimental {
 impl Default for Experimental {
     fn default() -> Self {
         Self {
-            use_fast_roseate_backend: false,
+            image_processing_backend: None,
             use_dynamic_sampling_optimization: false
+        }
+    }
+}
+
+impl Experimental {
+    pub fn get_image_processing_backend(&self) -> ImageProcessingBackend {
+        match &self.image_processing_backend {
+            Some(backend_id) => {
+                match backend_id.as_str() {
+                    "image-rs" => ImageProcessingBackend::ImageRS,
+                    "zune-image" => ImageProcessingBackend::ZuneImage,
+                    "roseate" => ImageProcessingBackend::Roseate,
+                    _ => ImageProcessingBackend::ImageRS
+                }
+            },
+            None => ImageProcessingBackend::ImageRS,
         }
     }
 }

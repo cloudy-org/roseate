@@ -66,10 +66,12 @@ ui_controls.toggle = "C"
 # 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
 
-# Setting this to true will enable the experimental lanczos roseate image processing backend
-# which is faster than the image-rs backend but may result in buggy/blocky images. 
-# Disable this if the image looks weird.
-use_fast_roseate_backend = false
+# Setting this to "zune-image" will use zune-image to decode images and will 
+# enable the experimental lanczos Roseate image processing backend for downsampling 
+# which is faster than the image-rs backend but may result in buggy / blocky images.
+# 
+# Set this back to it's default, "image-rs" if the image looks weird.
+image_processing_backend = "image-rs"
 
 # Setting this to true will enable the new but extremely experimental 
 # dynamic sampling feature that upsamples your image when you zoom into it 

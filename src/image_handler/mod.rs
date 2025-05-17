@@ -96,7 +96,7 @@ impl ImageHandler {
         zoom_pan: &ZoomPan,
         monitor_size: &MonitorSize,
         notifier: &mut NotifierAPI,
-        use_experimental_backend: bool
+        backend: ImageProcessingBackend
     ) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
@@ -114,6 +114,7 @@ impl ImageHandler {
                 ctx.forget_all_images();
 
                 notifier.unset_loading();
+                self.egui_image_texture = None;
                 *self.forget_last_image_bytes_arc.lock().unwrap() = false;
             }
         }
@@ -139,20 +140,18 @@ impl ImageHandler {
                         true,
                         notifier,
                         monitor_size,
-                        use_experimental_backend
+                        backend
                     );
                 }
             }
         }
     }
 
-    // TODO: (28/03/2025) ImageHandler::load_image should decide whether we image.reload or image.load.
-
     /// Handles loading the image in a background thread or on the main thread. 
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -178,7 +177,6 @@ impl ImageHandler {
 
         // Our svg implementation is very experimental. Let's warn the user.
         if ImageFormat::Svg == image.image_format {
-            // TODO: Allow svg enum in image.image_format.
             notifier.toasts.lock().unwrap()
                 .toast_and_log(
                     "SVG files are experimental! \
@@ -194,11 +192,6 @@ impl ImageHandler {
         let monitor_size_arc = monitor_size.clone();
 
         let loading_logic = move || {
-            let backend = match use_experimental_backend {
-                true => ImageProcessingBackend::Roseate,
-                false => ImageProcessingBackend::ImageRS
-            };
-
             let now = Instant::now();
             let mut hasher = DefaultHasher::new();
 

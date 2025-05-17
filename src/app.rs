@@ -1,11 +1,10 @@
-use std::{hash::{DefaultHasher, Hash, Hasher}, time::Duration};
+use std::time::Duration;
 
 use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
-use egui::{load::Bytes, TextureOptions};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image::image_data::{ImageColourType, ImageData}, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
 
 pub struct Roseate<'a> {
     theme: Theme,
@@ -28,7 +27,7 @@ impl<'a> Roseate<'a> {
                 config.image.loading.initial.lazy_loading,
                 &mut notifier,
                 &monitor_size,
-                config.misc.experimental.use_fast_roseate_backend
+                config.misc.experimental.get_image_processing_backend()
             );
         }
 
@@ -130,7 +129,7 @@ impl eframe::App for Roseate<'_> {
                             true, 
                             &mut self.notifier,
                             &self.monitor_size,
-                            self.config.misc.experimental.use_fast_roseate_backend
+                            self.config.misc.experimental.get_image_processing_backend()
                         );
                     }
                 });
@@ -177,7 +176,7 @@ impl eframe::App for Roseate<'_> {
                                             self.config.image.loading.gui.lazy_loading,
                                             &mut self.notifier,
                                             &self.monitor_size,
-                                            self.config.misc.experimental.use_fast_roseate_backend
+                                            self.config.misc.experimental.get_image_processing_backend()
                                         );
                                     },
                                     Err(error) => {
@@ -217,7 +216,7 @@ impl eframe::App for Roseate<'_> {
                 &self.zoom_pan,
                 &self.monitor_size,
                 &mut self.notifier,
-                self.config.misc.experimental.use_fast_roseate_backend
+                self.config.misc.experimental.get_image_processing_backend()
             );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
