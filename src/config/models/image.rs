@@ -87,32 +87,32 @@ impl Default for ImageOptimizations {
 impl ImageOptimizations {
     /// Returns the optimizations the user has configured in config.toml.
     pub fn get_optimizations(&self) -> Vec<ImageOptimizationsEnum> {
-        let mut optimizations_enums = Vec::new();
-
-        match &self.mode {
+        let optimizations_enums: Vec<ImageOptimizationsEnum> = match &self.mode {
             Some(mode) => {
                 match mode.to_lowercase().as_str() {
-                    "d" | "default" | &_ => {
-                        let mut default_optimizations = vec![
-                            ImageOptimizationsEnum::MonitorDownsampling(
-                                (MonitorDownsampling::default().strength * 100.0) as u32
-                            ),
-                            // TODO: when dynamic sampling is ready to move away from misc.experimental add it here.
-                        ];
-
-                        optimizations_enums.append(&mut default_optimizations);
-                    },
+                    "s" | "speed" => Vec::new(),
+                    "d" | "default" | &_ => vec![
+                        ImageOptimizationsEnum::MonitorDownsampling(
+                            (MonitorDownsampling::default().strength * 100.0) as u32
+                        ),
+                        // TODO: when dynamic sampling is ready to move away from misc.experimental add it here.
+                    ],
                 }
             },
             None => {
+                let mut optimizations = Vec::new();
+
                 if self.monitor_downsampling.enabled {
-                    optimizations_enums.push(
+                    optimizations.push(
                         ImageOptimizationsEnum::MonitorDownsampling(
                             (self.monitor_downsampling.strength * 100.0) as u32
-                        ),
-                        // TODO: when dynamic sampling is ready to move away from misc.experimental add it here.
+                        )
                     );
                 }
+
+                // TODO: when dynamic sampling is ready to move away from misc.experimental add it here.
+
+                optimizations
             }
         };
 

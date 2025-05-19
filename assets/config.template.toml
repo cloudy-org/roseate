@@ -17,7 +17,8 @@ dynamic.lazy_loading = true
 
 [image.optimizations]
 # Comment this out if you would like to customize the optimization settings below.
-# The optimizations that are defaulted to in "mode" will always take priority.
+# MOTE: The optimizations that are defaulted to in "mode" will always take priority over 
+# the optimizations specified below.
 mode = "default"
 
 # Downsamples the image roughly to the resolution of your monitor.
@@ -66,11 +67,11 @@ ui_controls.toggle = "C"
 # 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
 
-# Setting this to "zune-image" will use zune-image to decode images and will 
-# enable the experimental lanczos Roseate image processing backend for downsampling 
+# Setting this to "zune-image" will use zune-image to decode images WHICH IS VERY EXPERIMENTAL 
+# and will enable the experimental lanczos Roseate image processing backend for downsampling 
 # which is faster than the image-rs backend but may result in buggy / blocky images.
 # 
-# Set this back to it's default, "image-rs" if the image looks weird.
+# Set this back to it's default, "image-rs" if the image looks weird or you want stability.
 image_processing_backend = "image-rs"
 
 # Setting this to true will enable the new but extremely experimental 
