@@ -1,4 +1,4 @@
-use std::{hash::{DefaultHasher, Hash, Hasher}, time::Duration};
+use std::time::Duration;
 
 use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
@@ -27,7 +27,7 @@ impl<'a> Roseate<'a> {
                 config.image.loading.initial.lazy_loading,
                 &mut notifier,
                 &monitor_size,
-                config.misc.experimental.use_fast_roseate_backend
+                config.misc.experimental.get_image_processing_backend()
             );
         }
 
@@ -129,7 +129,7 @@ impl eframe::App for Roseate<'_> {
                             true, 
                             &mut self.notifier,
                             &self.monitor_size,
-                            self.config.misc.experimental.use_fast_roseate_backend
+                            self.config.misc.experimental.get_image_processing_backend()
                         );
                     }
                 });
@@ -176,7 +176,7 @@ impl eframe::App for Roseate<'_> {
                                             self.config.image.loading.gui.lazy_loading,
                                             &mut self.notifier,
                                             &self.monitor_size,
-                                            self.config.misc.experimental.use_fast_roseate_backend
+                                            self.config.misc.experimental.get_image_processing_backend()
                                         );
                                     },
                                     Err(error) => {
@@ -216,16 +216,16 @@ impl eframe::App for Roseate<'_> {
                 &self.zoom_pan,
                 &self.monitor_size,
                 &mut self.notifier,
-                self.config.misc.experimental.use_fast_roseate_backend
+                self.config.misc.experimental.get_image_processing_backend()
             );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
-            let image = self.image_handler.image.as_ref().unwrap();
+            let image_size = self.image_handler.image.as_ref().unwrap().image_size;
 
             if self.image_handler.image_loaded {
                 ui.centered_and_justified(|ui| {
                     let scaled_image_size = self.window_scaling.relative_image_size(
-                        Vec2::new(image.image_size.width as f32, image.image_size.height as f32)
+                        Vec2::new(image_size.width as f32, image_size.height as f32)
                     );
 
                     // TODO: umm I think we should move this to self.zoom_pan.update() 
@@ -256,18 +256,10 @@ impl eframe::App for Roseate<'_> {
 
                     let response = ui.allocate_rect(zoom_pan_rect, egui::Sense::hover());
 
-                    let mut hasher = DefaultHasher::new();
-                    image.hash(&mut hasher);
+                    let egui_image = self.image_handler.get_egui_image(ctx);
 
-                    egui::Image::from_bytes(
-                        format!(
-                            "bytes://{}", hasher.finish() // so we can indicate to egui that this is a different image when it is modified.
-                        ),
-                        // we can unwrap because we know the bytes exist thanks to 'self.image_loader.image_loaded'.
-                        image.image_bytes.lock().unwrap().clone().expect(
-                            "Image bytes went 'None' when image was still in loaded state in the image handler."
-                        )
-                    ).rounding(10.0)
+                    egui_image
+                        .rounding(10.0)
                         .paint_at(ui, zoom_pan_rect);
 
                     self.zoom_pan.handle_pan_input(ctx, &response);
@@ -276,7 +268,7 @@ impl eframe::App for Roseate<'_> {
 
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation on image show.
-                self.window_scaling.update(&window_rect, &image.image_size);
+                self.window_scaling.update(&window_rect, &image_size);
 
                 ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
                 // just in case one doesn't happen when the window is resized in a certain circumstance 

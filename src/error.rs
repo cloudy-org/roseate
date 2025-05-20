@@ -9,11 +9,14 @@ pub enum Error {
     NoFileSelected(ActualError),
     FailedToApplyOptimizations(ActualError, String),
     FailedToInitImage(ActualError, PathBuf, String),
+    /// String: user friendly reason why image didn't load
     FailedToLoadImage(ActualError, String),
+    /// String: technical reason to why the image failed to convert to pixels.
+    FailedToConvertImageToPixels(ActualError, String),
     ImageFormatNotSupported(ActualError, String),
     MonitorNotFound(ActualError),
-    ImageFailedToEncode(ActualError, String),
-    ImageFailedToDecode(ActualError, String),
+    FailedToEncodeImage(ActualError, String),
+    FailedToDecodeImage(ActualError, String),
     OSDirNotFound(ActualError, String),
     /// PathBuf: the path that failed to be created
     FailedToCreatePath(ActualError, PathBuf),
@@ -62,18 +65,23 @@ impl Display for Error {
                 "Failed to load that image! The image might be corrupted. Reason: {}",
                 reason
             ),
+            Error::FailedToConvertImageToPixels(_, technical_reason) => write!(
+                f,
+                "Failed to transform image to pixels! The image may be corrupted. Technical Reason: {}",
+                technical_reason
+            ),
             Error::ImageFormatNotSupported(_, image_format) => write!(
                 f, "The image format '{}' is not supported!", image_format
             ),
             Error::MonitorNotFound(_) => write!(
                 f, "For some reason we couldn't detect your monitor.",
             ),
-            Error::ImageFailedToEncode(_, technical_reason) => write!(
+            Error::FailedToEncodeImage(_, technical_reason) => write!(
                 f,
                 "Image failed to encode! \n\nTechnical Reason: {}",
                 technical_reason
             ),
-            Error::ImageFailedToDecode(_, technical_reason) => write!(
+            Error::FailedToDecodeImage(_, technical_reason) => write!(
                 f,
                 "Image failed to decode! \n\nTechnical Reason: {}",
                 technical_reason

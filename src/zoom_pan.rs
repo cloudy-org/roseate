@@ -187,7 +187,7 @@ impl ZoomPan {
                 ResetManager {
                     timer: Instant::now(),
                     delay: delay,
-                    animation_id: rand::thread_rng().gen::<u32>(),
+                    animation_id: rand::rng().random::<u32>(),
                     in_animation: false
                 }
             );
@@ -206,7 +206,7 @@ impl ZoomPan {
                 ResetManager {
                     timer: Instant::now(),
                     delay: delay,
-                    animation_id: rand::thread_rng().gen::<u32>(),
+                    animation_id: rand::rng().random::<u32>(),
                     in_animation: false
                 }
             );

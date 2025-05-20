@@ -53,27 +53,33 @@ pub(super) fn fast_downsample(
 
     let kernel_lookup = precomputed_lanczos(window_size, scale_factor);
 
-    let downsampled_pixels_buffer = Arc::new(
-        Mutex::new(
-            vec![0u8; (new_width * new_height * 3) as usize]
-        )
-    );
-
-    let index_times = match has_alpha {
+    let index_times: u32 = match has_alpha {
         true => 4,
         false => 3,
     };
 
+    let downsampled_pixels_buffer = Arc::new(
+        Mutex::new(
+            vec![0u8; (new_width * new_height * index_times) as usize]
+        )
+    );
+
+    let rgb_index_range: Vec<usize> = (0..index_times as usize).collect();
+
+    // TODO: do not use every single thread and have thread count configurable.
+
     // '(0..new_height).into_par_iter()' allocates each vertical line to a CPU thread.
     (0..new_height).into_par_iter().for_each(|y| {
         let original_vertical_pos = y as f32 * scale_factor;
-        let mut local_downsampled_pixels_buffer = vec![0u8; (new_width * 3) as usize];
+        let mut local_downsampled_pixels_buffer = vec![0u8; (new_width * index_times) as usize];
 
         for x in 0..new_width {
             let original_horizontal_pos = x as f32 * scale_factor;
 
             let mut sum = 0.0;
-            let mut rgb_sum = [0.0; 3]; // basically --> "R, G, B"
+
+            // basically --> "R,G,B", "R,G,B,A", etc etc
+            let mut rgb_sum = vec![0.0; index_times as usize];
 
             let lanczos_window = window_size.ceil() as isize;
 
@@ -98,30 +104,32 @@ pub(super) fn fast_downsample(
                     let weight = kernel_lookup[relative_horizontal_distance] * kernel_lookup[relative_vertical_distance];
                     let index = (
                         relative_vertical_pos as usize * image_size.0 as usize + relative_horizontal_pos as usize
-                    ) * index_times;
+                    ) * index_times as usize;
 
-                    rgb_sum[0] += pixels[index] as f32 * weight; // red owo
-                    rgb_sum[1] += pixels[index + 1] as f32 * weight; // green owo
-                    rgb_sum[2] += pixels[index + 2] as f32 * weight; // blue owo
+                    for rgb_index in &rgb_index_range {
+                        rgb_sum[*rgb_index] += pixels[index + rgb_index] as f32 * weight;
+                    }
+
                     sum += weight;
                     // this has made me go insane!
                 }
             }
-            
-            // work out the index of where the new pixels will lie (destination index).
-            let destination_index: usize = (x * 3) as usize;
 
-            local_downsampled_pixels_buffer[destination_index..destination_index + 3].copy_from_slice(&[
-                (rgb_sum[0] / sum) as u8,
-                (rgb_sum[1] / sum) as u8,
-                (rgb_sum[2] / sum) as u8,
-            ]);
+            // work out the index of where the new pixels will lie (destination index).
+            let destination_index: usize = (x * index_times) as usize;
+
+            local_downsampled_pixels_buffer[destination_index..destination_index + index_times as usize].copy_from_slice(
+                rgb_index_range.iter()
+                    .map(|rgb_index| (rgb_sum[*rgb_index] / sum) as u8)
+                    .collect::<Vec<u8>>()
+                    .as_slice()
+            );
         }
 
         // Copy thread-local downsampled pixels buffer into the global downsampled pixels buffer.
-        let global_destination_index = (y * new_width * 3) as usize;
+        let global_destination_index = (y * new_width * index_times) as usize;
 
-        downsampled_pixels_buffer.lock().unwrap()[global_destination_index..global_destination_index + (new_width * 3) as usize]
+        downsampled_pixels_buffer.lock().unwrap()[global_destination_index..global_destination_index + (new_width * index_times) as usize]
             .copy_from_slice(&local_downsampled_pixels_buffer);
     });
 

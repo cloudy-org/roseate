@@ -2,12 +2,13 @@ use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path,
 
 use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Context;
+use egui::{TextureHandle, TextureOptions};
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
 
 mod dynamic_sampling;
 
@@ -23,6 +24,7 @@ pub struct ImageHandler {
     pub image_loaded: bool,
     image_loading: bool,
     image_loaded_arc: Arc<Mutex<bool>>,
+    egui_image_texture: Option<TextureHandle>,
     pub image_optimizations: HashSet<ImageOptimizations>,
     dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
@@ -42,6 +44,7 @@ impl ImageHandler {
             image_loading: false,
             image_optimizations: HashSet::new(),
             dynamic_sample_schedule: None,
+            egui_image_texture: None,
             last_zoom_factor: 1.0,
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
@@ -93,7 +96,7 @@ impl ImageHandler {
         zoom_pan: &ZoomPan,
         monitor_size: &MonitorSize,
         notifier: &mut NotifierAPI,
-        use_experimental_backend: bool
+        backend: ImageProcessingBackend
     ) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
@@ -111,6 +114,7 @@ impl ImageHandler {
                 ctx.forget_all_images();
 
                 notifier.unset_loading();
+                self.egui_image_texture = None;
                 *self.forget_last_image_bytes_arc.lock().unwrap() = false;
             }
         }
@@ -136,20 +140,18 @@ impl ImageHandler {
                         true,
                         notifier,
                         monitor_size,
-                        use_experimental_backend
+                        backend
                     );
                 }
             }
         }
     }
 
-    // TODO: (28/03/2025) ImageHandler::load_image should decide whether we image.reload or image.load.
-
     /// Handles loading the image in a background thread or on the main thread. 
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, use_experimental_backend: bool) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -169,24 +171,19 @@ impl ImageHandler {
             Some("Gathering necessary image modifications...".into())
         );
 
-        let mut image_modifications = self.get_image_modifications(
+        let image_modifications = self.get_image_modifications(
             &monitor_size
         );
 
         // Our svg implementation is very experimental. Let's warn the user.
-        if image.image_path.extension().unwrap_or_default() == "svg" {
-            // TODO: Allow svg enum in image.image_format.
+        if ImageFormat::Svg == image.image_format {
             notifier.toasts.lock().unwrap()
                 .toast_and_log(
                     "SVG files are experimental! \
-                    Expect many bugs, inconstancies and performance issues.".into(),
+                    Expect many bugs, inconstancies and performance / memory issues.".into(),
                 egui_notify::ToastLevel::Warning
                 )
                 .duration(Some(Duration::from_secs(8)));
-
-            // SVGs cannot be loaded with modifications at 
-            // the moment or else image.load_image() will panic.
-            image_modifications.clear();
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
@@ -195,11 +192,6 @@ impl ImageHandler {
         let monitor_size_arc = monitor_size.clone();
 
         let loading_logic = move || {
-            let backend = match use_experimental_backend {
-                true => ImageProcessingBackend::Roseate,
-                false => ImageProcessingBackend::ImageRS
-            };
-
             let now = Instant::now();
             let mut hasher = DefaultHasher::new();
 
@@ -240,19 +232,23 @@ impl ImageHandler {
                 }
             };
 
-            if let Err(error) = result {
-                notifier_arc.toasts.lock().unwrap()
-                    .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
-                    .duration(Some(Duration::from_secs(10)));
+            match result {
+                Ok(()) => {
+                    *image_loaded_arc.lock().unwrap() = true;
+
+                    *forget_last_image_bytes_arc.lock().unwrap() = true;
+
+                    image.hash(&mut hasher);
+                    debug!("Image bytes hash: {}", hasher.finish());
+                },
+                Err(error) => {
+                    notifier_arc.toasts.lock().unwrap()
+                        .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
+                        .duration(Some(Duration::from_secs(10)));
+                },
             }
 
-            image.hash(&mut hasher);
-            debug!("Image bytes hash: {}", hasher.finish());
-
             notifier_arc.unset_loading();
-            *image_loaded_arc.lock().unwrap() = true;
-
-            *forget_last_image_bytes_arc.lock().unwrap() = true;
         };
 
         if lazy_load {
@@ -261,6 +257,73 @@ impl ImageHandler {
         } else {
             debug!("Loading image in main thread...");
             loading_logic();
+        }
+    }
+
+    pub fn get_egui_image(&mut self, ctx: &egui::Context) -> egui::Image {
+        assert!(
+            self.image_loaded,
+            "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is true!"
+        );
+
+        let image = self.image.as_ref().unwrap();
+
+        let mut hasher = DefaultHasher::new();
+        image.hash(&mut hasher);
+
+        let image_hash = hasher.finish();
+
+        // we can unwrap Option<T> here as if 
+        // "self.image_handler.image_loaded" is true image data should exist.
+        match image.image_data.lock().unwrap().as_ref()
+            .expect("Image data was not present! This is a logic error on our side, please report it.") {
+            ImageData::Pixels((pixels, (width, height), image_colour_type)) => {
+                let texture = match &self.egui_image_texture {
+                    Some(texture) => texture,
+                    None => {
+                        self.egui_image_texture = Some(
+                            ctx.load_texture(
+                                "image",
+                                match image_colour_type {
+                                    ImageColourType::Grey | ImageColourType::GreyAlpha => {
+                                        debug!("Rendering image as grey scale egui texture...");
+                                        egui::ColorImage::from_gray(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                    ImageColourType::RGB => {
+                                        debug!("Rendering image as rgb egui texture...");
+                                        egui::ColorImage::from_rgb(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                    ImageColourType::RGBA => {
+                                        debug!("Rendering image as rgba egui texture...");
+                                        egui::ColorImage::from_rgba_unmultiplied(
+                                            [*width as usize, *height as usize],
+                                            pixels.as_slice()
+                                        )
+                                    },
+                                },
+                                TextureOptions::default()
+                            )
+                        );
+
+                        &self.egui_image_texture.as_ref().unwrap()
+                    },
+                };
+
+                egui::Image::from_texture(texture)
+            },
+            ImageData::StaticBytes(bytes) => {
+                egui::Image::from_bytes(
+                    format!("bytes://{}.{:#}", image_hash, image.image_format),
+                    bytes.to_vec() // TODO: I think this duplicates memory so 
+                    // this will need to be analysed and changed.
+                )
+            },
         }
     }
 
@@ -273,6 +336,11 @@ impl ImageHandler {
         let image = self.image.as_ref();
 
         if let Some(image) = image {
+            // SVG and GIFs should not get image modifications.
+            if let ImageFormat::Svg | ImageFormat::Gif = image.image_format {
+                return image_modifications;
+            }
+
             // the reason why we don't just loop over self.image_optimizations 
             // is because I need to make absolute sure I'm doing these checks in this exact order.
 
@@ -283,11 +351,11 @@ impl ImageHandler {
                     marginal_allowance, monitor_size
                 );
 
-                self.monitor_downsampling_required = true;
-
                 // If the image is a lot bigger than the user's 
                 // monitor then apply monitor downsample, if not we shouldn't.
                 if image.image_size.width as u32 > width as u32 && image.image_size.height as u32 > height as u32 {
+                    self.monitor_downsampling_required = true;
+
                     debug!(
                         "Image is significantly bigger than system's \
                         display monitor so monitor downsampling will be applied..."
@@ -314,6 +382,9 @@ impl ImageHandler {
                 }
             }
 
+            // TODO: handle up and down dyn sampling options.
+            // NOTE: I think I might just add "down" as a bool tbh, you'll never want 
+            // upsampling to be disabled if you choose to enable dyn sampling in the first place.
             if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.image_optimizations.get(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
             ) {
