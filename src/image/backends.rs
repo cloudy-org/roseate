@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
-use super::image::{ImageRSImage, ImageSizeT};
+use super::{decode::ImageRSImage, image::ImageSizeT};
 
 pub enum ImageProcessingBackend {
     /// Uses the image-rs rust crate for decoding and image manipulation.
     /// This is by far the most stable backend.
     ImageRS,
     /// Uses zune-image rust crate for decoding but roseate's 
-    /// custom methods for image manipulation.
+    /// custom fast methods for image manipulation like resizing (this may change).
     ZuneImage,
     /// Uses Roseate's custom backend for image processing and manipulation.
     /// The Roseate backend is very fast for downsampling images but is VERY EXPERIMENTAL 
@@ -43,6 +43,7 @@ impl ImageProcessingBackend {
         }
     }
 
+    // NOTE: we might not need this at all actually...
     pub fn get_modification_processing_meat(&self) -> ModificationProcessingMeatKind {
         match self {
             ImageProcessingBackend::ImageRS => ModificationProcessingMeatKind::ImageRS,

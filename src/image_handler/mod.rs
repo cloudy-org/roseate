@@ -382,6 +382,9 @@ impl ImageHandler {
                 }
             }
 
+            // TODO: handle up and down dyn sampling options.
+            // NOTE: I think I might just add "down" as a bool tbh, you'll never want 
+            // upsampling to be disabled if you choose to enable dyn sampling in the first place.
             if let Some(ImageOptimizations::DynamicSampling(up, down)) = self.image_optimizations.get(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
             ) {

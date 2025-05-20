@@ -7,7 +7,7 @@ use std::hash::Hash;
 use crate::{error::{Error, Result}, image::{backends::ModificationProcessingMeat, fast_downsample::fast_downsample}, notifier::NotifierAPI};
 use zune_image::image::Image as ZuneImage;
 
-use super::{image::{DecodedImage, Image, ImageRSImage, ImageSizeT}, image_data::{self, ImageColourType}};
+use super::{decode::{DecodedImage, ImageRSImage}, image::{Image, ImageSizeT}};
 
 #[derive(Debug, Clone)]
 pub enum ImageModifications {
@@ -37,52 +37,15 @@ impl PartialEq for ImageModifications {
 impl Eq for ImageModifications {}
 
 impl Image {
-    // NOTE: renamed to pixels
-    pub(super) fn decoded_image_to_pixels(&self, decoded_image: DecodedImage) -> Result<(Vec<u8>, ImageSizeT, ImageColourType)> {
-        match decoded_image {
-            DecodedImage::Egui => unreachable!(),
-            DecodedImage::ZuneImage(zune_image) => {
-                let pixels = zune_image.flatten_to_u8().into_iter().next()
-                    .ok_or_else(|| Error::FailedToConvertImageToPixels(
-                            None,
-                            "zune-image backend failed to get image data. This image may be corrupted!".to_string()
-                        )
-                    )?;
-
-                let dimensions = zune_image.dimensions();
-
-                Ok((pixels, (dimensions.0 as u32, dimensions.1 as u32), zune_image.colorspace().try_into()?))
-            },
-            DecodedImage::ImageRS(image_rs_image) => {
-                match image_rs_image {
-                    ImageRSImage::RGB(image_buffer) => {
-                        let dimensions = image_buffer.dimensions();
-                        Ok((image_buffer.into_raw(), (dimensions.0, dimensions.1), ImageColourType::RGB))
-                    },
-                    ImageRSImage::RGBA(image_buffer) => {
-                        let dimensions = image_buffer.dimensions();
-                        Ok((image_buffer.into_raw(), (dimensions.0, dimensions.1), ImageColourType::RGBA))
-                    },
-                    ImageRSImage::Grey(image_buffer) => {
-                        let dimensions = image_buffer.dimensions();
-                        Ok((image_buffer.into_raw(), (dimensions.0, dimensions.1), ImageColourType::Grey))
-                    },
-                    ImageRSImage::GreyAlpha(image_buffer) => {
-                        let dimensions = image_buffer.dimensions();
-                        Ok((image_buffer.into_raw(), (dimensions.0, dimensions.1), ImageColourType::GreyAlpha))
-                    },
-                }
-            }
-        }
-    }
-
-    /// Will panic is decoded image is of Egui type.
+    /// Will panic if decoded image is of Egui type.
     pub(super) fn modify_decoded_image(
         &self,
         modifications: HashSet<ImageModifications>,
         decoded_image: DecodedImage,
         notifier: &mut NotifierAPI,
     ) -> Result<DecodedImage> {
+        notifier.set_loading_and_log(Some("Modifying decoded image...".to_string()));
+
         //let image_colour_type = image_decoder.color_type();
 
         // mutable width and height because some optimizations 

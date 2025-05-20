@@ -70,6 +70,7 @@ ui_controls.toggle = "C"
 # Setting this to "zune-image" will use zune-image to decode images WHICH IS VERY EXPERIMENTAL 
 # and will enable the experimental lanczos Roseate image processing backend for downsampling 
 # which is faster than the image-rs backend but may result in buggy / blocky images.
+# The zune-image backend also sometimes results in lower memory usage.
 # 
 # Set this back to it's default, "image-rs" if the image looks weird or you want stability.
 image_processing_backend = "image-rs"

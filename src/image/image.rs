@@ -1,38 +1,19 @@
-use std::{collections::HashSet, fs::{self, File}, hash::{DefaultHasher, Hasher}, io::{BufRead, BufReader, Cursor, Read, Seek}, path::{Path, PathBuf}, sync::{Arc, Mutex}, time::Instant};
+use std::{collections::HashSet, fs::File, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
-use egui_notify::ToastLevel;
-use log::debug;
 use std::hash::Hash;
 use imagesize::ImageSize;
+use log::debug;
 use svg_metadata::Metadata;
-use zune_image::{codecs::qoi::zune_core::options::DecoderOptions, image::Image as ZuneImage};
-use image::{buffer::ConvertBuffer, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ColorType, GrayAlphaImage, GrayImage, ImageDecoder, RgbImage, RgbaImage};
 
-use crate::{error::{Error, Result}, monitor_size::MonitorSize, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, image::decode::DecodedImage, monitor_size::MonitorSize, notifier::NotifierAPI};
 
-use super::{backends::{ImageDecodePipelineKind, ImageProcessingBackend}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications};
+use super::{backends::ImageProcessingBackend, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications};
 
 pub type ImageSizeT = (u32, u32);
 
 // trait ReadAndSeek: Read + Seek {}
 // not to be confused with hide and seek.
 // impl<T: Read + Seek> ReadAndSeek for T {}
-
-pub enum ImageRSImage {
-    RGB(RgbImage),
-    RGBA(RgbaImage),
-    /// Luma
-    Grey(GrayImage),
-    /// LumaA
-    GreyAlpha(GrayAlphaImage),
-}
-
-pub enum DecodedImage {
-    ImageRS(ImageRSImage),
-    ZuneImage(ZuneImage),
-    /// Let egui decode the image.
-    Egui
-}
 
 #[derive(Clone)]
 pub struct Image {
@@ -320,99 +301,6 @@ impl Image {
                     image_processing_backend
                 )
             },
-        }
-    }
-
-    pub(super) fn decode_image<'a, R: Read + Seek + 'a>(
-        &self,
-        image_processing_backend: &ImageProcessingBackend,
-        image_buf_reader: &'a mut BufReader<R>,
-        notifier: &mut NotifierAPI
-    ) -> Result<DecodedImage> {
-        match image_processing_backend.get_decode_pipeline() {
-            ImageDecodePipelineKind::ImageRS => {
-                let image_decoder: Box<dyn ImageDecoder + 'a> = match self.image_format {
-                    ImageFormat::Png => Box::new(PngDecoder::new(image_buf_reader).unwrap()),
-                    ImageFormat::Jpeg => Box::new(JpegDecoder::new(image_buf_reader).unwrap()),
-                    ImageFormat::Svg => return Ok(DecodedImage::Egui),
-                    ImageFormat::Gif => return Ok(DecodedImage::Egui),
-                    ImageFormat::Webp => Box::new(WebPDecoder::new(image_buf_reader).unwrap()),
-                };
-
-                let (width, height) = image_decoder.dimensions();
-                let image_colour_type = image_decoder.color_type();
-
-                debug!("Decoding image using image-rs decoder...");
-
-                let mut image_buffer = vec![0; image_decoder.total_bytes() as usize];
-                // TODO: handle error result
-                image_decoder.read_image(&mut image_buffer);
-
-                // NOTE: roseate won't support 8-bit+ (or HDR) images for now, will look into it in the future 
-                let image_rs_image = match image_colour_type {
-                    ColorType::L8 => ImageRSImage::Grey(GrayImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::La8 => ImageRSImage::GreyAlpha(GrayAlphaImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgb8 => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgba8 => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::L16 => ImageRSImage::Grey(GrayImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::La16 => ImageRSImage::GreyAlpha(GrayAlphaImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgb16 => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgba16 => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgb32F => ImageRSImage::RGB(RgbImage::from_raw(width, height, image_buffer).unwrap()),
-                    ColorType::Rgba32F => ImageRSImage::RGBA(RgbaImage::from_raw(width, height, image_buffer).unwrap()),
-                    _ => ImageRSImage::RGBA(
-                        RgbaImage::from_raw(width, height, image_buffer).ok_or_else(
-                            || Error::FailedToDecodeImage(
-                                None,
-                                "image-rs backend failed to get colour space of image \
-                                so we had to guess, but it the guess was incorrect! Image is maybe corrupted!".to_string()
-                            )
-                        )?
-                    ),
-                };
-
-                Ok(DecodedImage::ImageRS(image_rs_image))
-            },
-            ImageDecodePipelineKind::ZuneImage => {
-                let result = match &self.image_format {
-                    // ZumeImage at the moment only supports decoding from our png and jpeg formats.
-                    ImageFormat::Png | ImageFormat::Jpeg => {
-                        debug!("Decoding image using zune-image decoder...");
-
-                        let mut buffer = Vec::new();
-                        // TODO: handle error
-                        image_buf_reader.read_to_end(&mut buffer).unwrap();
-
-                        ZuneImage::read(buffer, DecoderOptions::new_fast())
-                    },
-                    unsupported_image_format => {
-                        notifier.toasts.lock().unwrap().toast_and_log(
-                            format!(
-                                "The zune-image backend does not support decoding the image \
-                                    format '{:#}' so we've fallen back to something that works.",
-                                unsupported_image_format
-                            ).into(),
-                            ToastLevel::Warning
-                        );
-
-                        return self.decode_image(&ImageProcessingBackend::ImageRS, image_buf_reader, notifier);
-                    }
-                };
-
-                match result {
-                    Ok(zune_image) => Ok(
-                        DecodedImage::ZuneImage(zune_image)
-                    ),
-                    Err(error) => {
-                        Err(
-                            Error::FailedToDecodeImage(
-                                Some(error.to_string()),
-                                "Failed to decode image using zune-image backend!".to_string()
-                            )
-                        )
-                    }
-                }
-            }
         }
     }
 

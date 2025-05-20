@@ -18,6 +18,7 @@ pub fn get_platform_rose_image<'a>() -> ImageSource<'a> {
 // TODO: move get path functionality to cirrus.
 
 // TODO: make this return result and also handle creating path if it doesn't exist
+// just like the function below basically.
 pub fn get_local_config_path() -> Option<PathBuf> {
     debug!("Finding operating system's configuration local directory...");
 
