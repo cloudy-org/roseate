@@ -40,6 +40,9 @@ serde_derive = "1.0"
 serde = {version = "1.0", features = ["derive"]}
 zune-image = "0.4.15"
 
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
 # I've now disabled compiling release builds of dependices to speed up dev compile time.
 # 
 # THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
