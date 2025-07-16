@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
+use egui::epaint::MarginF32;
 use egui_notify::ToastLevel;
 
 use crate::{config::config::Config, files, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
@@ -144,7 +145,7 @@ impl eframe::App for Roseate<'_> {
                         .outer_margin(
                             // I adjust the margin as it's the only way I know to 
                             // narrow down the interactive part (clickable part) of the rose image.
-                            Margin::symmetric(
+                            MarginF32::symmetric(
                                 // NOTE: width and height of rose are the same.
                                 (window_rect.width() / 2.0) - rose_width / 2.0, 
                                 (window_rect.height() / 2.0) - rose_width / 2.0
@@ -283,7 +284,7 @@ impl eframe::App for Roseate<'_> {
             .show_separator_line(false)
             .frame(
                 Frame::none()
-                    .outer_margin(Margin {left: 10.0, bottom: 7.0, ..Default::default()})
+                    .outer_margin(Margin {left: 10, bottom: 7, ..Default::default()})
             ).show(ctx, |ui| {
                 if let Ok(loading_status) = self.notifier.loading_status.try_read() {
                     if let Some(loading) = loading_status.as_ref() {
