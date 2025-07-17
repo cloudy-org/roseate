@@ -1,10 +1,10 @@
 use std::time::{Duration, Instant};
 
 use eframe::egui::{Rect, Vec2};
-use imagesize::ImageSize;
+
 use log::debug;
 
-use crate::config::config::Config;
+use crate::{config::config::Config, image::image::ImageSizeT};
 
 /// Struct that handles the image auto resizing with window size.
 pub struct WindowScaling {
@@ -29,7 +29,7 @@ impl WindowScaling {
         self.resize_to_window_timer = Some(Instant::now());
     }
 
-    pub fn update(&mut self, window_rect: &Rect, actual_image_size: &ImageSize) {
+    pub fn update(&mut self, window_rect: &Rect, actual_image_size: &ImageSizeT) {
         if let Some(timer) = self.resize_to_window_timer {
             // If the timer has expired (no new resize events)
             if timer.elapsed() >= Duration::from_millis(300) {
@@ -39,8 +39,8 @@ impl WindowScaling {
                 let actual_padding = 1.00 - (self.padding.clamp(0.0, 50.0) / 100.0);
 
                 // padding between the image and the edge of the window.
-                let scale_x = window_rect.width() / actual_image_size.width as f32 * actual_padding;
-                let scale_y = window_rect.height() / actual_image_size.height as f32 * actual_padding;
+                let scale_x = window_rect.width() / actual_image_size.0 as f32 * actual_padding;
+                let scale_y = window_rect.height() / actual_image_size.1 as f32 * actual_padding;
 
                 let scale_factor = scale_x.min(scale_y); // Scale uniformly.
 

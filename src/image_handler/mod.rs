@@ -175,11 +175,13 @@ impl ImageHandler {
             &monitor_size
         );
 
-        // Our svg implementation is very experimental. Let's warn the user.
+        // Our svg implementation is very experimental. 
+        // Also broken! https://github.com/cloudy-org/roseate/issues/66 
+        // Let's warn the user.
         if ImageFormat::Svg == image.image_format {
             notifier.toasts.lock().unwrap()
                 .toast_and_log(
-                    "SVG files are experimental! \
+                    "SVG files are experimental and broken! \
                     Expect many bugs, inconstancies and performance / memory issues.".into(),
                 egui_notify::ToastLevel::Warning
                 )
@@ -353,7 +355,7 @@ impl ImageHandler {
 
                 // If the image is a lot bigger than the user's 
                 // monitor then apply monitor downsample, if not we shouldn't.
-                if image.image_size.width as u32 > width as u32 && image.image_size.height as u32 > height as u32 {
+                if image.image_size.0 > width && image.image_size.1 > height {
                     self.monitor_downsampling_required = true;
 
                     debug!(
@@ -361,7 +363,7 @@ impl ImageHandler {
                         display monitor so monitor downsampling will be applied..."
                     );
 
-                    let image_size = (image.image_size.width, image.image_size.height);
+                    let image_size = (image.image_size.0, image.image_size.1);
 
                     debug!(
                         "Image Size: {} x {}", image_size.0, image_size.1
@@ -398,7 +400,7 @@ impl ImageHandler {
                         old_resolution, new_resolution
                     );
 
-                    if !(new_resolution.0 == image.image_size.width as u32 && new_resolution.1 == image.image_size.height as u32) {
+                    if !(new_resolution.0 == image.image_size.0 && new_resolution.1 == image.image_size.1) {
                         image_modifications.replace(
                             ImageModifications::Resize(new_resolution)
                         );
@@ -415,8 +417,8 @@ impl ImageHandler {
                         );
 
                         self.dynamic_sampling_old_resolution = (
-                            image.image_size.width as u32,
-                            image.image_size.height as u32
+                            image.image_size.0,
+                            image.image_size.1
                         );
                     }
                 }

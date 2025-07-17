@@ -40,11 +40,8 @@ impl ImageHandler {
                 return;
             }
 
-            // TODO: we seriously need to set image size universally to 
-            // be ImageSizeT because those "as" statements below is not it bro.
-
-            let max_image_size = (image.image_size.width as u32, image.image_size.height as u32);
-            let mut image_size = max_image_size;
+            let max_image_size = image.image_size;
+            let mut image_size = image.image_size;
 
             // TODO: (28/03/2025) check if we even need this now
             if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(

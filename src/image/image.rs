@@ -1,7 +1,6 @@
 use std::{collections::HashSet, fs::File, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use std::hash::Hash;
-use imagesize::ImageSize;
 use log::debug;
 use svg_metadata::Metadata;
 
@@ -17,7 +16,7 @@ pub type ImageSizeT = (u32, u32);
 
 #[derive(Clone)]
 pub struct Image {
-    pub image_size: ImageSize, // TODO: change this to ImageSizeT
+    pub image_size: ImageSizeT, // TODO: change this to ImageSizeT
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
     pub image_data: Arc<Mutex<Option<ImageData>>>,
@@ -111,7 +110,7 @@ impl Image {
                 },
             };
 
-            (image_size, image_format)
+            ((image_size.width as u32, image_size.height as u32), image_format)
         };
 
         Ok(
@@ -374,7 +373,7 @@ impl Image {
 
 }
 
-fn get_svg_image_size(path: &Path) -> ImageSize {
+fn get_svg_image_size(path: &Path) -> ImageSizeT {
     let metadata = Metadata::parse_file(path).expect(
         "Failed to parse metadata of the svg file!"
     );
@@ -397,8 +396,5 @@ fn get_svg_image_size(path: &Path) -> ImageSize {
     // Sadly this means svg images now will be even broken and worse image quality.
     // too bad... deal with it... *for now*
 
-    ImageSize {
-        width: width as usize,
-        height: height as usize
-    }
+    (width as u32, height as u32)
 }

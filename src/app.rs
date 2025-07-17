@@ -225,7 +225,7 @@ impl eframe::App for Roseate<'_> {
             if self.image_handler.image_loaded {
                 ui.centered_and_justified(|ui| {
                     let scaled_image_size = self.window_scaling.relative_image_size(
-                        Vec2::new(image_size.width as f32, image_size.height as f32)
+                        Vec2::new(image_size.0 as f32, image_size.1 as f32)
                     );
 
                     // TODO: umm I think we should move this to self.zoom_pan.update() 

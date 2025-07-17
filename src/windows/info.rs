@@ -89,7 +89,7 @@ impl InfoWindow {
                                     ui.label("Dimensions: ");
                                     ui.label(
                                         format!(
-                                            "{}x{}", image.image_size.width, image.image_size.height
+                                            "{}x{}", image.image_size.0, image.image_size.1
                                         )
                                     );
                                     ui.end_row();

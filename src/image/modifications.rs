@@ -50,9 +50,7 @@ impl Image {
 
         // mutable width and height because some optimizations 
         // modify the image size hence we need to keep track of that.
-        let mut actual_image_size = (
-            self.image_size.width as u32, self.image_size.height as u32
-        );
+        let mut actual_image_size = self.image_size;
 
         match decoded_image {
             DecodedImage::Egui => unreachable!(),
