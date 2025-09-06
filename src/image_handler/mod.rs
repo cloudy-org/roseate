@@ -241,7 +241,7 @@ impl ImageHandler {
                     *forget_last_image_bytes_arc.lock().unwrap() = true;
 
                     image.hash(&mut hasher);
-                    debug!("Image bytes hash: {}", hasher.finish());
+                    debug!("Image data hash: {}", hasher.finish());
                 },
                 Err(error) => {
                     notifier_arc.toasts.lock().unwrap()
