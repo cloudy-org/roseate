@@ -49,6 +49,7 @@ impl Default for InitialSettings {
     }
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct ImageOptimizations {
     #[serde(default = "super::none_default")]
