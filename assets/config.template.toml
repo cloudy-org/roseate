@@ -11,10 +11,6 @@ initial.lazy_loading = false
 # For example: Picking an image from the file picker or dropping an image into the window.
 gui.lazy_loading = true
 
-# Setting this to "false" will make dynamic sampling reload images on the main thread. It's not 
-# recommended to set this to "false" as it will lead to the GUI freezing each time you try to zoom in/out.
-dynamic.lazy_loading = true
-
 [image.optimizations]
 # Comment this out if you would like to customize the optimization settings below.
 # MOTE: The optimizations that are defaulted to in "mode" will always take priority over 
