@@ -16,7 +16,7 @@ pub type ImageSizeT = (u32, u32);
 
 #[derive(Clone)]
 pub struct Image {
-    pub image_size: ImageSizeT, // TODO: change this to ImageSizeT
+    pub image_size: ImageSizeT,
     pub image_format: ImageFormat,
     pub image_path: Arc<PathBuf>,
     pub image_data: Arc<Mutex<Option<ImageData>>>,

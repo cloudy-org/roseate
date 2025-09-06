@@ -175,6 +175,8 @@ impl ImageHandler {
             &monitor_size
         );
 
+        let image_modifications_display = format!("{:?}", image_modifications);
+
         // Our svg implementation is very experimental. 
         // Also broken! https://github.com/cloudy-org/roseate/issues/66 
         // Let's warn the user.
@@ -242,6 +244,7 @@ impl ImageHandler {
 
                     image.hash(&mut hasher);
                     debug!("Image data hash: {}", hasher.finish());
+                    debug!("Image current modifications: {}", image_modifications_display);
                 },
                 Err(error) => {
                     notifier_arc.toasts.lock().unwrap()
