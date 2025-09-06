@@ -40,7 +40,7 @@ serde_derive = "1.0"
 serde = {version = "1.0", features = ["derive"]}
 zune-image = "0.4.15"
 
-# I've now disabled compiling release builds of dependices to speed up dev compile time.
+# I've now disabled compiling release builds of dependencies to speed up dev compile time.
 # 
 # THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
 # SLOWER ON DEV BUILDS COMPARED TO RELEASE BUILDS
