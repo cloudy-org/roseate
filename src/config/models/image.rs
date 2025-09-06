@@ -17,8 +17,6 @@ pub struct ImageLoading {
     pub gui: LoadingGUISettings,
     #[serde(default)]
     pub initial: InitialSettings,
-    #[serde(default)]
-    pub dynamic: DynamicSettings,
 }
 
 
@@ -47,21 +45,6 @@ impl Default for InitialSettings {
     fn default() -> Self {
         Self {
             lazy_loading: false
-        }
-    }
-}
-
-
-#[derive(Serialize, Deserialize)]
-pub struct DynamicSettings {
-    #[serde(default = "super::true_default")]
-    pub lazy_loading: bool,
-}
-
-impl Default for DynamicSettings {
-    fn default() -> Self {
-        Self {
-            lazy_loading: true
         }
     }
 }
