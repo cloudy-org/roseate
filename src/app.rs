@@ -48,7 +48,7 @@ impl<'a> Roseate<'a> {
             info_box,
             about_box,
             magnification_panel,
-            window_scaling: WindowScaling::new(&config),
+            window_scaling: WindowScaling::new(),
             last_window_rect: Rect::NOTHING,
             monitor_size,
             image_handler,
@@ -109,7 +109,10 @@ impl eframe::App for Roseate<'_> {
                         Section::new(
                             config_key_path!(config.ui.viewport.padding),
                             &mut config.ui.viewport.padding,
-                            SectionOverrides::default(),
+                            SectionOverrides {
+                                int_range: Some(0.0..=50.0),
+                                ..Default::default()
+                            },
                             SectionDisplayInfo {
                                 name: Some("Viewport padding".into()),
                                 ..Default::default()
@@ -339,7 +342,7 @@ impl eframe::App for Roseate<'_> {
 
                 // We must update the WindowScaling with the window size AFTER
                 // the image has loaded to maintain that smooth scaling animation on image show.
-                self.window_scaling.update(&window_rect, &image_size);
+                self.window_scaling.update(&window_rect, &image_size, config.ui.viewport.padding);
 
                 ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
                 // just in case one doesn't happen when the window is resized in a certain circumstance 

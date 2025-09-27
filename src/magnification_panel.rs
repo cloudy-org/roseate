@@ -10,8 +10,6 @@ pub struct MagnificationPanel {
 }
 
 impl MagnificationPanel {
-    // TODO: When this branch is merged into main 
-    // remove "image" from the initialization of this struct.
     pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
             Some(key) => key,
