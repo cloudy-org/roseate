@@ -95,6 +95,23 @@ impl eframe::App for Roseate<'_> {
                 let config = &mut self.config_manager.config;
 
                 Settings::new(TEMPLATE_CONFIG_TOML_STRING, &ui)
+                    // .add_section(
+                    //     Section::new(
+                    //         config_key_path!(config.image.optimizations.mode),
+                    //         &mut config.image.optimizations.mode,
+                    //         SectionOverrides {
+                    //             choices: Some([
+                    //                 Some("default"),
+                    //                 Some("speed"),
+                    //             ]),
+                    //             ..Default::default()
+                    //         },
+                    //         SectionDisplayInfo {
+                    //             name: Some("Image optimization mode".into()),
+                    //             ..Default::default()
+                    //         }
+                    //     )
+                    // )
                     .add_section(
                         Section::new(
                             config_key_path!(config.ui.magnification_panel.enabled_default),
@@ -105,7 +122,8 @@ impl eframe::App for Roseate<'_> {
                                 ..Default::default()
                             }
                         )
-                    ).add_section(
+                    )
+                    .add_section(
                         Section::new(
                             config_key_path!(config.ui.viewport.padding),
                             &mut config.ui.viewport.padding,
@@ -118,23 +136,25 @@ impl eframe::App for Roseate<'_> {
                                 ..Default::default()
                             }
                         )
-                    ).add_section(
+                    )
+                    .add_section(
                         Section::new(
                             config_key_path!(config.image.loading.initial.lazy_loading),
                             &mut config.image.loading.initial.lazy_loading,
                             SectionOverrides::default(),
                             SectionDisplayInfo {
-                                name: Some("Image initial lazy loading".into()),
+                                name: Some("Lazy load image initially".into()),
                                 ..Default::default()
                             }
                         )
-                    ).add_section(
+                    )
+                    .add_section(
                         Section::new(
                             config_key_path!(config.image.loading.gui.lazy_loading),
                             &mut config.image.loading.gui.lazy_loading,
                             SectionOverrides::default(),
                             SectionDisplayInfo {
-                                name: Some("Image GUI lazy loading".into()),
+                                name: Some("Lazy load Image in GUI".into()),
                                 ..Default::default()
                             }
                         )

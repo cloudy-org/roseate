@@ -53,9 +53,9 @@ impl Default for InitialSettings {
 #[derive(Serialize, Deserialize, Hash)]
 pub struct ImageOptimizations {
     #[serde(default = "super::none_default")]
-    mode: Option<String>,
+    pub mode: Option<String>,
     #[serde(default, deserialize_with = "deserialize_monitor_downsampling")]
-    monitor_downsampling: MonitorDownsampling
+    pub monitor_downsampling: MonitorDownsampling
 }
 
 impl Default for ImageOptimizations {
@@ -107,9 +107,9 @@ impl ImageOptimizations {
 #[derive(Serialize, Deserialize)]
 pub struct MonitorDownsampling {
     #[serde(default = "super::true_default")]
-    enabled: bool,
+    pub enabled: bool,
     #[serde(default = "monitor_downsampling_strength")]
-    strength: f32
+    pub strength: f32
 }
 
 impl Default for MonitorDownsampling {
