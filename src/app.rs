@@ -1,27 +1,32 @@
 use std::time::Duration;
 
+use cirrus_config::config_key_path;
+use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::{section::{Section, SectionDisplayInfo, SectionOverrides}, Settings}};
 use cirrus_theming::v1::Theme;
 use eframe::egui::{self, Align, Color32, Context, CursorIcon, Frame, Layout, Margin, Rect, Stroke, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, files, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, notifier::NotifierAPI, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan};
+use crate::{config::config::Config, files, image_handler::{optimization::ImageOptimizations, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, window_scaling::WindowScaling, windows::{about::AboutWindow, info::InfoWindow}, zoom_pan::ZoomPan, TEMPLATE_CONFIG_TOML_STRING};
 
 pub struct Roseate<'a> {
     theme: Theme,
     zoom_pan: ZoomPan,
     info_box: InfoWindow,
     about_box: AboutWindow<'a>,
-    notifier: NotifierAPI,
+    notifier: Notifier,
     magnification_panel: MagnificationPanel,
     window_scaling: WindowScaling,
     last_window_rect: Rect,
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
-    config: Config,
+    config_manager: ConfigManager<Config>,
+    show_settings: bool
 }
 
 impl<'a> Roseate<'a> {
-    pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: NotifierAPI, theme: Theme, config: Config) -> Self {
+    pub fn new(mut image_handler: ImageHandler, monitor_size: MonitorSize, mut notifier: Notifier, theme: Theme, config_manager: ConfigManager<Config>) -> Self {
+        let config = &config_manager.config;
+
         if image_handler.image.is_some() {
             image_handler.load_image(
                 config.image.loading.initial.lazy_loading,
@@ -31,10 +36,10 @@ impl<'a> Roseate<'a> {
             );
         }
 
-        let zoom_pan = ZoomPan::new(&config, &mut notifier);
-        let info_box = InfoWindow::new(&config, &mut notifier);
-        let about_box = AboutWindow::new(&config, &mut notifier);
-        let magnification_panel = MagnificationPanel::new(&config, &mut notifier);
+        let zoom_pan = ZoomPan::new(config, &mut notifier);
+        let info_box = InfoWindow::new(config, &mut notifier);
+        let about_box = AboutWindow::new(config, &mut notifier);
+        let magnification_panel = MagnificationPanel::new(config, &mut notifier);
 
         Self {
             theme,
@@ -47,24 +52,9 @@ impl<'a> Roseate<'a> {
             last_window_rect: Rect::NOTHING,
             monitor_size,
             image_handler,
-            config,
+            config_manager,
+            show_settings: false
         }
-    }
-
-    fn draw_dotted_line(&self, ui: &egui::Painter, pos: &[egui::Pos2]) {
-        ui.add(
-            egui::Shape::dashed_line(
-                pos, 
-                Stroke {
-                    width: 2.0,
-                    color: Color32::from_hex(
-                        &self.theme.accent_colour.hex_code
-                    ).unwrap()
-                },
-                10.0, 
-                10.0
-            )
-        );
     }
 }
 
@@ -77,6 +67,10 @@ impl eframe::App for Roseate<'_> {
         self.zoom_pan.handle_reset_input(ctx);
         self.magnification_panel.handle_input(ctx);
         self.about_box.handle_input(ctx);
+
+        Settings::handle_input(
+            &ctx, &mut self.config_manager, &mut self.notifier, &mut self.show_settings
+        );
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_rect = ctx.input(|i: &egui::InputState| i.screen_rect());
@@ -91,13 +85,68 @@ impl eframe::App for Roseate<'_> {
             self.notifier.update(ctx);
             self.monitor_size.update(ctx, &mut self.notifier);
             self.about_box.update(ctx); // we update this box here because we want 
-            // the about box is to be toggleable even without an image.
+            // the about box is to be toggle-able even without an image.
+
+            if self.show_settings {
+                // we only want to run the config manager's 
+                // update loop when were are in the settings menu
+                self.config_manager.update(ctx, &mut self.notifier);
+
+                let config = &mut self.config_manager.config;
+
+                Settings::new(TEMPLATE_CONFIG_TOML_STRING, &ui)
+                    .add_section(
+                        Section::new(
+                            config_key_path!(config.ui.magnification_panel.enabled_default),
+                            &mut config.ui.magnification_panel.enabled_default,
+                            SectionOverrides::default(),
+                            SectionDisplayInfo {
+                                name: Some("Enable Magnification Panel".into()),
+                                ..Default::default()
+                            }
+                        )
+                    ).add_section(
+                        Section::new(
+                            config_key_path!(config.ui.viewport.padding),
+                            &mut config.ui.viewport.padding,
+                            SectionOverrides::default(),
+                            SectionDisplayInfo {
+                                name: Some("Viewport padding".into()),
+                                ..Default::default()
+                            }
+                        )
+                    ).add_section(
+                        Section::new(
+                            config_key_path!(config.image.loading.initial.lazy_loading),
+                            &mut config.image.loading.initial.lazy_loading,
+                            SectionOverrides::default(),
+                            SectionDisplayInfo {
+                                name: Some("Image initial lazy loading".into()),
+                                ..Default::default()
+                            }
+                        )
+                    ).add_section(
+                        Section::new(
+                            config_key_path!(config.image.loading.gui.lazy_loading),
+                            &mut config.image.loading.gui.lazy_loading,
+                            SectionOverrides::default(),
+                            SectionDisplayInfo {
+                                name: Some("Image GUI lazy loading".into()),
+                                ..Default::default()
+                            }
+                        )
+                    ).show_ui(ui, &self.theme);
+
+                return;
+            }
+
+            let config = &self.config_manager.config;
 
             if self.image_handler.image.is_none() {
-                let mut configured_image_optimizations = self.config.image.optimizations.get_optimizations();
+                let mut configured_image_optimizations = config.image.optimizations.get_optimizations();
 
                 // TODO: remove this once we move DS to "[image.optimizations]".
-                if self.config.misc.experimental.use_dynamic_sampling_optimization {
+                if config.misc.experimental.use_dynamic_sampling_optimization {
                     configured_image_optimizations.push(
                         ImageOptimizations::DynamicSampling(true, true)
                     );
@@ -119,8 +168,10 @@ impl eframe::App for Roseate<'_> {
                         );
 
                         if let Err(error) = result {
-                            self.notifier.toasts.lock().unwrap().toast_and_log(
-                                error.into(), ToastLevel::Error
+                            self.notifier.toast(
+                                Box::new(error),
+                                ToastLevel::Error,
+                                |_| {}
                             );
                             return;
                         }
@@ -129,7 +180,7 @@ impl eframe::App for Roseate<'_> {
                             true, 
                             &mut self.notifier,
                             &self.monitor_size,
-                            self.config.misc.experimental.get_image_processing_backend()
+                            config.misc.experimental.get_image_processing_backend()
                         );
                     }
                 });
@@ -173,15 +224,20 @@ impl eframe::App for Roseate<'_> {
                                 match result {
                                     Ok(_) => {
                                         self.image_handler.load_image(
-                                            self.config.image.loading.gui.lazy_loading,
+                                            config.image.loading.gui.lazy_loading,
                                             &mut self.notifier,
                                             &self.monitor_size,
-                                            self.config.misc.experimental.get_image_processing_backend()
+                                            config.misc.experimental.get_image_processing_backend()
                                         );
                                     },
                                     Err(error) => {
-                                        self.notifier.toasts.lock().unwrap().toast_and_log(error.into(), ToastLevel::Error)
-                                            .duration(Some(Duration::from_secs(5)));
+                                        self.notifier.toast(
+                                            Box::new(error),
+                                            ToastLevel::Error,
+                                            |toast| {
+                                                toast.duration(Some(Duration::from_secs(5)));
+                                            }
+                                        );
                                     },
                                 }
                             }
@@ -194,15 +250,30 @@ impl eframe::App for Roseate<'_> {
                         );
                         let painter = ui.painter();
 
-                        let top_right = rect.right_top();
-                        let top_left = rect.left_top();
-                        let bottom_right = rect.right_bottom();
-                        let bottom_left = rect.left_bottom();
+                        // Draw dotted lines to indicate file being dropped.
+                        for index in 0..4 {
+                            let pos = match index {
+                                0 => &[rect.left_top(), rect.right_top()],
+                                1 => &[rect.right_top(), rect.right_bottom()],
+                                2 => &[rect.right_bottom(), rect.left_bottom()],
+                                3 => &[rect.left_bottom(), rect.left_top()],
+                                _ => unreachable!()
+                            };
 
-                        self.draw_dotted_line(painter, &[top_left, top_right]);
-                        self.draw_dotted_line(painter, &[top_right, bottom_right]);
-                        self.draw_dotted_line(painter, &[bottom_right, bottom_left]);
-                        self.draw_dotted_line(painter, &[bottom_left, top_left]);
+                            painter.add(
+                                egui::Shape::dashed_line(
+                                    pos,
+                                    Stroke {
+                                        width: 2.0,
+                                        color: Color32::from_hex(
+                                            &self.theme.accent_colour.hex_code
+                                        ).unwrap()
+                                    },
+                                    11.0,
+                                    10.0
+                                )
+                            );
+                        }
                     }
                 });
 
@@ -216,7 +287,7 @@ impl eframe::App for Roseate<'_> {
                 &self.zoom_pan,
                 &self.monitor_size,
                 &mut self.notifier,
-                self.config.misc.experimental.get_image_processing_backend()
+                config.misc.experimental.get_image_processing_backend()
             );
             self.magnification_panel.update(ctx, &mut self.zoom_pan);
 
@@ -285,23 +356,20 @@ impl eframe::App for Roseate<'_> {
                 Frame::none()
                     .outer_margin(Margin {left: 10.0, bottom: 7.0, ..Default::default()})
             ).show(ctx, |ui| {
-                if let Ok(loading_status) = self.notifier.loading_status.try_read() {
-                    if let Some(loading) = loading_status.as_ref() {
-                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                            ui.add(
-                                egui::Spinner::new()
-                                    .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
-                                    .size(20.0)
-                            );
+                if let Some(loading) = &self.notifier.loading {
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                        ui.add(
+                            egui::Spinner::new()
+                                .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
+                                .size(20.0)
+                        );
 
-                            if let Some(message) = &loading.message {
-                                ui.label(message);
-                            }
-                        });
-                    }
+                        if let Some(message) = &loading.message {
+                            ui.label(message);
+                        }
+                    });
                 }
             }
         );
-
     }
 }

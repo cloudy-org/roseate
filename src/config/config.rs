@@ -1,3 +1,4 @@
+use cirrus_config::v1::config::CConfig;
 use log::debug;
 use std::{error::Error, fs};
 use eframe::egui::TextBuffer;
@@ -5,7 +6,7 @@ use serde::{Serialize, Deserialize};
 
 use super::models::{image::Image, key_binds::KeyBinds, misc::Misc, ui::UI};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Hash)]
 pub struct Config {
     #[serde(default)]
     pub version: i8,
@@ -18,6 +19,8 @@ pub struct Config {
     #[serde(default)]
     pub misc: Misc,
 }
+
+impl CConfig for Config {}
 
 impl Config {
     pub fn new() -> Result<Self, Box<dyn Error>> {

@@ -1,10 +1,11 @@
 use std::alloc;
 
 use cap::Cap;
+use cirrus_egui::v1::notifier::Notifier;
 use egui_notify::ToastLevel;
 use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::{config::config::Config, image::image::Image, notifier::NotifierAPI};
+use crate::{config::config::Config, image::image::Image};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -17,13 +18,14 @@ pub struct InfoWindow {
 }
 
 impl InfoWindow {
-    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
+    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let config_key = match Key::from_name(&config.key_binds.info_box.toggle) {
             Some(key) => key,
             None => {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.".into(), 
-                    ToastLevel::Error
+                notifier.toast(
+                    "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.", 
+                    ToastLevel::Error,
+                    |_| {}
                 );
 
                 Key::I

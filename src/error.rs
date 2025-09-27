@@ -1,5 +1,7 @@
 use std::{fmt::{self, Display, Formatter}, path::PathBuf, result::Result as StdResult};
 
+use cirrus_error::v1::error::CError;
+
 type ActualError = Option<String>;
 pub type Result<T, E = Error> = StdResult<T, E>;
 
@@ -24,11 +26,28 @@ pub enum Error {
     FailedToOpenFile(ActualError, PathBuf)
 }
 
-impl Error {
-    /// Returns the a human readable message about the error.
-    /// It's exactly what fmt::Display returns.
-    pub fn message(&self) -> String {
+impl CError for Error {
+    fn human_message(&self) -> String {
+        // the display implementation code was there way before CError in cirrus became a thing.
         format!("{}", self)
+    }
+
+    fn actual_error(&self) -> Option<String> {
+        match self {
+            Error::FileNotFound(actual_error, _, _) => actual_error,
+            Error::NoFileSelected(actual_error) => actual_error,
+            Error::FailedToApplyOptimizations(actual_error, _) => actual_error,
+            Error::FailedToInitImage(actual_error, _, _) => actual_error,
+            Error::FailedToLoadImage(actual_error, _) => actual_error,
+            Error::FailedToConvertImageToPixels(actual_error, _) => actual_error,
+            Error::ImageFormatNotSupported(actual_error, _) => actual_error,
+            Error::MonitorNotFound(actual_error) => actual_error,
+            Error::FailedToEncodeImage(actual_error, _) => actual_error,
+            Error::FailedToDecodeImage(actual_error, _) => actual_error,
+            Error::OSDirNotFound(actual_error, _) => actual_error,
+            Error::FailedToCreatePath(actual_error, _) => actual_error,
+            Error::FailedToOpenFile(actual_error, _) => actual_error,
+        }.to_owned()
     }
 }
 
