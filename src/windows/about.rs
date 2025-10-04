@@ -1,8 +1,8 @@
 use egui_notify::ToastLevel;
-use cirrus_egui::v1::widgets::about::{authors_toml_to_about_authors, About, AboutApplicationInfo};
+use cirrus_egui::v1::{notifier::Notifier, widgets::about::{authors_toml_to_about_authors, About, AboutApplicationInfo}};
 use eframe::egui::{self, Key, Response, Vec2};
 
-use crate::{config::config::Config, files, notifier::NotifierAPI};
+use crate::{config::config::Config, files};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const AUTHORS: &str = include_str!("../../authors.toml");
@@ -15,13 +15,14 @@ pub struct AboutWindow<'a> {
 }
 
 impl<'a> AboutWindow<'a> {
-    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
+    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let config_key = match Key::from_name(&config.key_binds.about_box.toggle) {
             Some(key) => key,
             None => {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    "The key bind set for 'about_box.toggle' is invalid! Defaulting to `A`.".into(), 
-                    ToastLevel::Error
+                notifier.toast(
+                    "The key bind set for 'about_box.toggle' is invalid! Defaulting to `A`.", 
+                    ToastLevel::Error,
+                    |_| {}
                 );
 
                 Key::A

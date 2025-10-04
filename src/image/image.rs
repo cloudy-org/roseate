@@ -1,10 +1,12 @@
 use std::{collections::HashSet, fs::File, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
 use std::hash::Hash;
+use cirrus_egui::v1::notifier::Notifier;
+use cirrus_error::v1::error::CError;
 use log::debug;
 use svg_metadata::Metadata;
 
-use crate::{error::{Error, Result}, image::decode::DecodedImage, monitor_size::MonitorSize, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, image::decode::DecodedImage, monitor_size::MonitorSize};
 
 use super::{backends::ImageProcessingBackend, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications};
 
@@ -80,7 +82,7 @@ impl Image {
                         Err(error) => {
                             return Err(
                                 Error::FailedToInitImage(
-                                    Some(error.message()), path.to_path_buf(), error.message()
+                                    Some(error.human_message()), path.to_path_buf(), error.human_message()
                                 )
                             )
                         },
@@ -128,7 +130,7 @@ impl Image {
     /// Falls back to disk if the modifications make it impossible to load from memory.
     pub fn reload_image(
         &mut self,
-        notifier: &mut NotifierAPI,
+        notifier: &mut Notifier,
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
     ) -> Result<()> {
@@ -143,7 +145,7 @@ impl Image {
 
         let load_from_disk = self.are_modifications_outside_memory_bounds(&modifications);
 
-        notifier.set_loading_and_log(
+        notifier.set_loading(
             Some("Preparing image to be reloaded...".into())
         );
 
@@ -226,7 +228,7 @@ impl Image {
 
     pub fn load_image(
         &mut self,
-        notifier: &mut NotifierAPI,
+        notifier: &mut Notifier,
         monitor_size: &MonitorSize,
         modifications: HashSet<ImageModifications>,
         image_processing_backend: &ImageProcessingBackend
@@ -286,8 +288,11 @@ impl Image {
                 );
 
                 // warn the user that modifications failed to apply.
-                notifier.toasts.lock().unwrap()
-                    .toast_and_log(error.into(), egui_notify::ToastLevel::Error);
+                notifier.toast(
+                    Box::new(error),
+                    egui_notify::ToastLevel::Error,
+                    |_| {}
+                );
     
                 // load image without modifications
                 // TODO: this needs to go when we move to "image_pixels" with 

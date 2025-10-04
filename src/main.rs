@@ -2,7 +2,7 @@
 
 use std::{env, path::Path, time::Duration};
 
-use cirrus_egui::v1::styling::Styling;
+use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use config::config::Config;
 use image_handler::{optimization::ImageOptimizations, ImageHandler};
 use log::debug;
@@ -14,7 +14,6 @@ use clap::{arg, command, Parser};
 use error::Error;
 use app::Roseate;
 use monitor_size::MonitorSize;
-use notifier::NotifierAPI;
 
 mod app;
 mod utils;
@@ -22,13 +21,15 @@ mod files;
 mod image;
 mod error;
 mod config;
-mod notifier;
 mod windows;
 mod zoom_pan;
 mod image_handler;
 mod window_scaling;
 mod magnification_panel;
 mod monitor_size;
+
+static APP_NAME: &str = "roseate";
+static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
 
 /// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
 #[derive(Parser, Debug)]
@@ -54,23 +55,27 @@ fn main() -> eframe::Result {
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
-    let notifier = NotifierAPI::new();
+    let notifier = Notifier::new();
 
-    let config = match Config::new() {
-        Ok(config) => config,
+    let config_manager: ConfigManager<Config> = match ConfigManager::new(APP_NAME, TEMPLATE_CONFIG_TOML_STRING) {
+        Ok(config_manager) => config_manager,
         Err(error) => {
-
-            notifier.toasts.lock().unwrap().toast_and_log(
+            notifier.toast(
                 format!(
-                    "Error occurred getting roseate's config file! \
-                    Defaulting to default config. Error: {}", error.to_string().as_str()
-                ).into(), 
-                ToastLevel::Error
-            ).duration(Some(Duration::from_secs(10)));
+                    "Error occurred initializing roseate's config file! \
+                    Falling back to default config! Error: {}", error.human_message()
+                ),
+                ToastLevel::Error,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(10)));
+                }
+            );
 
-            Config::default()
+            ConfigManager::default()
         }
     };
+
+    let config = &config_manager.config;
 
     // TODO: fill monitor size params with values from config
     let mut monitor_size = MonitorSize::new(
@@ -86,13 +91,15 @@ fn main() -> eframe::Result {
     if !monitor_size.exists() {
         // we should be 100% safe to unwrap here 
         // as we're the first ones to access notifier.toasts at this point.
-        notifier.toasts.lock().unwrap()
-            .toast_and_log(
-                "The monitor size was not cached yet so the \
-                image MAY appear a little blurry or over sharpened at first. Roseate will \
-                clear this up and this should never happen again the next time you launch Roseate.".into(),
-                ToastLevel::Warning
-            ).duration(Some(Duration::from_secs(10)));
+        notifier.toast(
+            "The monitor size was not cached yet so the \
+            image MAY appear a little blurry or over sharpened at first. Roseate will \
+            clear this up and this should never happen again the next time you launch Roseate.",
+            ToastLevel::Warning,
+            |toast| {
+                toast.duration(Some(Duration::from_secs(10)));
+            }
+        )
     }
 
     let options = eframe::NativeOptions {
@@ -123,9 +130,13 @@ fn main() -> eframe::Result {
                 "That file doesn't exist!".to_string()
             );
 
-            notifier.toasts.lock().unwrap().toast_and_log(
-                error.into(), ToastLevel::Error
-            ).duration(Some(Duration::from_secs(10)));
+            notifier.toast(
+                Box::new(error),
+                ToastLevel::Error,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(10)));
+                }
+            )
         } else {
             let mut configured_image_optimizations = config.image.optimizations.get_optimizations();
 
@@ -139,8 +150,10 @@ fn main() -> eframe::Result {
             let result = image_handler.init_image(path, configured_image_optimizations);
 
             if let Err(error) = result {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    error.into(), ToastLevel::Error
+                notifier.toast(
+                    Box::new(error),
+                    ToastLevel::Error,
+                    |_| {}
                 );
             }
         }
@@ -193,7 +206,7 @@ fn main() -> eframe::Result {
                 .set_all()
                 .apply(&cc.egui_ctx);
 
-            Ok(Box::new(Roseate::new(image_handler, monitor_size, notifier, theme, config)))
+            Ok(Box::new(Roseate::new(image_handler, monitor_size, notifier, theme, config_manager)))
         }),
     )
 }

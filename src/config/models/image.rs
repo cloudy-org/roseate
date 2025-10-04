@@ -1,8 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use crate::image_handler::optimization::ImageOptimizations as ImageOptimizationsEnum;
+use std::hash::Hash;
 
-
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Hash)]
 pub struct Image {
     #[serde(default)]
     pub loading: ImageLoading,
@@ -11,7 +11,7 @@ pub struct Image {
 }
 
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Hash)]
 pub struct ImageLoading {
     #[serde(default)]
     pub gui: LoadingGUISettings,
@@ -20,7 +20,7 @@ pub struct ImageLoading {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct LoadingGUISettings {
     #[serde(default = "super::true_default")]
     pub lazy_loading: bool,
@@ -35,7 +35,7 @@ impl Default for LoadingGUISettings {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct InitialSettings {
     #[serde(default = "super::false_default")]
     pub lazy_loading: bool,
@@ -50,12 +50,12 @@ impl Default for InitialSettings {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct ImageOptimizations {
     #[serde(default = "super::none_default")]
-    mode: Option<String>,
+    pub mode: Option<String>,
     #[serde(default, deserialize_with = "deserialize_monitor_downsampling")]
-    monitor_downsampling: MonitorDownsampling
+    pub monitor_downsampling: MonitorDownsampling
 }
 
 impl Default for ImageOptimizations {
@@ -107,9 +107,9 @@ impl ImageOptimizations {
 #[derive(Serialize, Deserialize)]
 pub struct MonitorDownsampling {
     #[serde(default = "super::true_default")]
-    enabled: bool,
+    pub enabled: bool,
     #[serde(default = "monitor_downsampling_strength")]
-    strength: f32
+    pub strength: f32
 }
 
 impl Default for MonitorDownsampling {
@@ -118,6 +118,20 @@ impl Default for MonitorDownsampling {
             enabled: true,
             strength: 1.3
         }
+    }
+}
+
+impl Hash for MonitorDownsampling {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.enabled.hash(state);
+
+        // rust does not support hashing floats, there is 
+        // a work around via the crate "ordered-float" but 
+        // that's over engineered for my needs here.
+        // 
+        // I just need to show change to the hasher.
+        let strength_as_u32 = (self.strength * 100.0) as u32;
+        strength_as_u32.hash(state);
     }
 }
 

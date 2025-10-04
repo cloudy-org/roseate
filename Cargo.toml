@@ -12,6 +12,8 @@ rust-version = "1.80"
 
 [dependencies]
 cirrus_egui = { path = "./cirrus/egui" }
+cirrus_error = { path = "./cirrus/error" }
+cirrus_config = { path = "./cirrus/config" }
 cirrus_theming = { path = "./cirrus/theming" }
 
 egui = "0.29.1"

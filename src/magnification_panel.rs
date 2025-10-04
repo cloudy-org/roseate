@@ -1,7 +1,8 @@
+use cirrus_egui::v1::notifier::Notifier;
 use eframe::egui::{self, Key, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{config::config::Config, zoom_pan::ZoomPan};
 
 pub struct MagnificationPanel {
     pub show: bool,
@@ -9,15 +10,14 @@ pub struct MagnificationPanel {
 }
 
 impl MagnificationPanel {
-    // TODO: When this branch is merged into main 
-    // remove "image" from the initialization of this struct.
-    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
+    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
             Some(key) => key,
             None => {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.".into(), 
-                    ToastLevel::Error
+                notifier.toast(
+                    "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.", 
+                    ToastLevel::Error,
+                    |_| {}
                 );
 
                 Key::C

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use cirrus_egui::v1::scheduler::Scheduler;
+use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use eframe::egui::Context;
 use egui::{TextureHandle, TextureOptions};
 use rfd::FileDialog;
@@ -8,7 +8,7 @@ use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, zoom_pan::ZoomPan};
 
 mod dynamic_sampling;
 
@@ -95,7 +95,7 @@ impl ImageHandler {
         ctx: &Context,
         zoom_pan: &ZoomPan,
         monitor_size: &MonitorSize,
-        notifier: &mut NotifierAPI,
+        notifier: &mut Notifier,
         backend: ImageProcessingBackend
     ) {
         // I use an update function to keep the public 
@@ -151,7 +151,7 @@ impl ImageHandler {
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut Notifier, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -159,7 +159,7 @@ impl ImageHandler {
 
         self.image_loading = true;
 
-        notifier.set_loading_and_log(
+        notifier.set_loading(
             Some("Preparing to load image...".into())
         );
 
@@ -167,7 +167,7 @@ impl ImageHandler {
             "You must run 'ImageHandler.init_image()' before using 'ImageHandler.load_image()'!"
         );
 
-        notifier.set_loading_and_log(
+        notifier.set_loading(
             Some("Gathering necessary image modifications...".into())
         );
 
@@ -181,13 +181,14 @@ impl ImageHandler {
         // Also broken! https://github.com/cloudy-org/roseate/issues/66 
         // Let's warn the user.
         if ImageFormat::Svg == image.image_format {
-            notifier.toasts.lock().unwrap()
-                .toast_and_log(
-                    "SVG files are experimental and broken! \
-                    Expect many bugs, inconstancies and performance / memory issues.".into(),
-                egui_notify::ToastLevel::Warning
-                )
-                .duration(Some(Duration::from_secs(8)));
+            notifier.toast(
+                "SVG files are experimental and broken! \
+                Expect many bugs, inconstancies and performance / memory issues.",
+                egui_notify::ToastLevel::Warning,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(8)));
+                }
+            );
         }
 
         let image_loaded_arc = self.image_loaded_arc.clone();
@@ -201,7 +202,7 @@ impl ImageHandler {
 
             let result = match *image_loaded_arc.lock().unwrap() {
                 true => {
-                    notifier_arc.set_loading_and_log(Some("Reloading image...".into()));
+                    notifier_arc.set_loading(Some("Reloading image...".into()));
 
                     let result = image.reload_image(
                         &mut notifier_arc,
@@ -218,7 +219,7 @@ impl ImageHandler {
                     result
                 },
                 false => {
-                    notifier_arc.set_loading_and_log(Some("Loading image...".into()));
+                    notifier_arc.set_loading(Some("Loading image...".into()));
 
                     let result = image.load_image(
                         &mut notifier_arc,
@@ -247,9 +248,13 @@ impl ImageHandler {
                     debug!("Image current modifications: {}", image_modifications_display);
                 },
                 Err(error) => {
-                    notifier_arc.toasts.lock().unwrap()
-                        .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
-                        .duration(Some(Duration::from_secs(10)));
+                    notifier_arc.toast(
+                        Box::new(error),
+                        egui_notify::ToastLevel::Error,
+                        |toast| {
+                            toast.duration(Some(Duration::from_secs(10)));
+                        }
+                    );
                 },
             }
 

@@ -1,12 +1,13 @@
 use super::{image::{Image, ImageSizeT}, image_data::ImageColourType};
 
+use cirrus_egui::v1::notifier::Notifier;
 use log::debug;
 use egui_notify::ToastLevel;
 use image::{codecs::{jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, ColorType, ImageDecoder, GrayAlphaImage, GrayImage, RgbImage, RgbaImage};
 use zune_image::{codecs::qoi::zune_core::options::DecoderOptions, image::Image as ZuneImage};
 use std::{io::{BufReader, Read, Seek}};
 
-use crate::{error::{Error, Result}, notifier::NotifierAPI};
+use crate::{error::{Error, Result}};
 
 use super::{backends::{ImageDecodePipelineKind, ImageProcessingBackend}, image_formats::ImageFormat};
 
@@ -31,7 +32,7 @@ impl Image {
         &self,
         image_processing_backend: &ImageProcessingBackend,
         image_buf_reader: &'a mut BufReader<R>,
-        notifier: &mut NotifierAPI
+        notifier: &mut Notifier
     ) -> Result<DecodedImage> {
         match image_processing_backend.get_decode_pipeline() {
             ImageDecodePipelineKind::ImageRS => {
@@ -97,13 +98,14 @@ impl Image {
                         ZuneImage::read(buffer, DecoderOptions::new_fast())
                     },
                     unsupported_image_format => {
-                        notifier.toasts.lock().unwrap().toast_and_log(
+                        notifier.toast(
                             format!(
                                 "The zune-image backend does not support decoding the image \
                                     format '{:#}' so we've fallen back to something that works.",
                                 unsupported_image_format
-                            ).into(),
-                            ToastLevel::Warning
+                            ),
+                            ToastLevel::Warning,
+                            |_| {}
                         );
 
                         return self.decode_image(&ImageProcessingBackend::ImageRS, image_buf_reader, notifier);
