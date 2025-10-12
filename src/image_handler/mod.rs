@@ -271,10 +271,10 @@ impl ImageHandler {
         }
     }
 
-    pub fn get_egui_image(&mut self, ctx: &egui::Context) -> egui::Image {
+    pub fn get_egui_image(&'_ mut self, ctx: &egui::Context) -> egui::Image<'_> {
         assert!(
             self.image_loaded,
-            "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is true!"
+            "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is false!"
         );
 
         let image = self.image.as_ref().unwrap();

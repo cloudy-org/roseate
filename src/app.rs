@@ -2,10 +2,10 @@ use core::f32;
 
 use cirrus_theming::v1::Theme;
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
-use egui::{Color32, Context, Event, Frame, Margin, Modifiers, Rect, Response, Sense, UiBuilder, Vec2};
+use egui::{Color32, Context, CornerRadius, Event, Frame, Margin, Modifiers, Rect, Response, Sense, UiBuilder, Vec2};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::{self, ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, zoom_pan::ZoomPan};
+use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, zoom_pan::ZoomPan};
 
 pub struct Roseate {
     theme: Theme,
@@ -87,59 +87,94 @@ impl eframe::App for Roseate {
             );
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
-            if let Some(image) = &self.image_handler.image.clone() {
-                let image_size = Vec2::new(
-                    image.image_size.0 as f32, image.image_size.1 as f32
-                );
+            match (&self.image_handler.image.clone(), self.image_handler.image_loaded) {
+                // TODO: in the future we'll have some sort of value 
+                // that tells use that the image exists and is loading.
+                (Some(image), true) => {
+                    let image_size = Vec2::new(
+                        image.image_size.0 as f32, image.image_size.1 as f32
+                    );
 
-                // we're getting the available rect (space) so we can then use 
-                // that to move the image's scene away from the top-left position to 
-                // center of the window (effectively centering the image).
-                let available_rect = ui.available_rect_before_wrap();
+                    // we're getting the available rect (space) so we can then use 
+                    // that to move the image's scene away from the top-left position to 
+                    // center of the window (effectively centering the image).
+                    let available_rect = ui.available_rect_before_wrap();
 
-                // Move image's scene top-left position to center.
-                let center = available_rect.min + (available_rect.size() - image_size) * 0.5;
+                    // Move image's scene top-left position to center.
+                    let center = available_rect.min + (available_rect.size() - image_size) * 0.5;
 
-                // Now we need to create a rect based off the center position 
-                // for the new isolated UI that we'll be drawing the scene inside.
-                let max_rect = Rect::from_min_size(center, image_size);
+                    // Now we need to create a rect based off the center position 
+                    // for the new isolated UI that we'll be drawing the scene inside.
+                    let max_rect = Rect::from_min_size(center, image_size);
 
-                let mut isolated_ui = ui.new_child(
-                    UiBuilder::default()
-                        .max_rect(max_rect)
-                        .layout(*ui.layout())
-                );
+                    let mut isolated_ui = ui.new_child(
+                        UiBuilder::default()
+                            .max_rect(max_rect)
+                            .layout(*ui.layout())
+                    );
 
-                let image_scene_response = egui::Scene::default()
-                    .zoom_range(0.001..=f32::MAX)
-                    .show(&mut isolated_ui, &mut self.image_scene_rect, |ui| {
-                            let egui_image = self.image_handler.get_egui_image(ctx)
-                                .corner_radius(10.0);
+                    let image_scene_response = egui::Scene::default()
+                        .zoom_range(0.001..=f32::MAX)
+                        .show(&mut isolated_ui, &mut self.image_scene_rect, |ui| {
+                                let egui_image = self.image_handler.get_egui_image(ctx)
+                                    .corner_radius(10.0);
 
-                            ui.add(egui_image);
-                        }
-                    ).response;
+                                ui.add(egui_image);
+                            }
+                        ).response;
 
-                let image_scene_initial_rect = self.image_scene_initial_rect.get_or_insert(
-                    self.image_scene_rect
-                );
+                    let image_scene_initial_rect = self.image_scene_initial_rect.get_or_insert(
+                        self.image_scene_rect
+                    );
 
-                let initial_size = image_scene_initial_rect.size();
-                let current_size = self.image_scene_rect.size();
+                    let initial_size = image_scene_initial_rect.size();
+                    let current_size = self.image_scene_rect.size();
 
-                self.image_scene_zoom_factor = (
-                    initial_size.x / current_size.x + initial_size.y / current_size.y
-                ) * 0.5;
+                    self.image_scene_zoom_factor = (
+                        initial_size.x / current_size.x + initial_size.y / current_size.y
+                    ) * 0.5;
 
-                self.image_scene_is_panning = image_scene_response.dragged();
-                self.image_scene_response = Some(image_scene_response);
+                    self.image_scene_is_panning = image_scene_response.dragged();
+                    self.image_scene_response = Some(image_scene_response);
 
-                // ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
-                // // just in case one doesn't happen when the window is resized in a certain circumstance 
-                // // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
+                    // ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
+                    // // just in case one doesn't happen when the window is resized in a certain circumstance 
+                    // // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
+                },
+                _ => {
+
+                },
             }
         });
 
+        // This is deliberately placed after the central panel so the central panel 
+        // can take up all the space essentially ignoring the space this panel would otherwise take.
+        // Check out the egui docs for more clarification: https://docs.rs/egui/0.32.3/egui/containers/panel/struct.CentralPanel.html
+        egui::TopBottomPanel::bottom("status_bar")
+            .frame(Frame::NONE)
+            .show_separator_line(false)
+            .show(ctx, |ui| {
+                if let Some(loading) = &self.notifier.loading {
+                    Frame::default()
+                        .fill(Color32::from_hex(&self.theme.primary_colour.hex_code).unwrap())
+                        .inner_margin(Margin::symmetric(10, 6))
+                        .corner_radius(CornerRadius {ne: 10, ..Default::default()})
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Spinner::new()
+                                        .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
+                                        .size(20.0)
+                                );
+
+                                if let Some(message) = &loading.message {
+                                    ui.label(message);
+                                }
+                            });
+                        });
+                }
+            }
+        );
     }
 
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
