@@ -73,7 +73,7 @@ impl<'a> AboutWindow<'a> {
 
             let response = egui::Window::new(
                 egui::WidgetText::RichText(
-                    egui::RichText::new("ℹ About").size(15.0)
+                    egui::RichText::new("ℹ About").size(15.0).into()
                 )
             )
                 .default_size(default_window_size)

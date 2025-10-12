@@ -58,7 +58,7 @@ impl InfoWindow {
         if self.show {
             let response = egui::Window::new(
                 egui::WidgetText::RichText(
-                    egui::RichText::new("ℹ Info").size(15.0)
+                    egui::RichText::new("ℹ Info").size(15.0).into()
                 )
             )
                 .default_pos(pos2(200.0, 200.0))
@@ -68,7 +68,7 @@ impl InfoWindow {
                 .show(ctx, |ui| {
                     let mem_allocated = ALLOCATOR.allocated();
 
-                    egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1.0)).show(
+                    egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1)).show(
                         ui, |ui| {
                             egui::Grid::new("info_box_grid")
                             .num_columns(3)

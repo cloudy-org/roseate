@@ -9,7 +9,7 @@ use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_
 use super::ImageHandler;
 
 impl ImageHandler {
-    pub fn dynamic_sampling_update(&mut self, zoom_pan: &ZoomPan, monitor_size: &MonitorSize) {
+    pub fn dynamic_sampling_update(&mut self, zoom_factor: &f32, monitor_size: &MonitorSize) {
         if let Some(image) = &self.image {
             let is_enabled = self.image_optimizations.contains(
                 &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
@@ -19,20 +19,20 @@ impl ImageHandler {
                 return;
             }
 
-            if zoom_pan.zoom_factor <= 1.0 {
+            if *zoom_factor <= 1.0 {
                 self.last_zoom_factor = 1.0;
                 self.accumulated_zoom_factor_change = 0.0;
                 // self.dynamic_sampling_new_resolution = (0, 0);
                 // self.dynamic_sampling_old_resolution = (0, 0);
 
-                if zoom_pan.zoom_factor < 1.0 {
+                if *zoom_factor < 1.0 {
                     return;
                 }
             }
 
-            self.accumulated_zoom_factor_change += (zoom_pan.zoom_factor).log2() - (self.last_zoom_factor).log2();
+            self.accumulated_zoom_factor_change += (zoom_factor).log2() - (self.last_zoom_factor).log2();
 
-            self.last_zoom_factor = zoom_pan.zoom_factor;
+            self.last_zoom_factor = *zoom_factor;
 
             let change = 0.8;
 
@@ -50,9 +50,8 @@ impl ImageHandler {
                 image_size = get_monitor_downsampling_size(&marginal_allowance, monitor_size);
             }
 
-            let new_resolution = zoom_pan.relative_image_size(
-                Vec2::new(image_size.0 as f32, image_size.1 as f32)
-            );
+            let new_resolution = Vec2::new(image_size.0 as f32, image_size.1 as f32) * *zoom_factor;
+
             let new_resolution = (
                 new_resolution.x.clamp(0.0, max_image_size.0 as f32) as u32,
                 new_resolution.y.clamp(0.0, max_image_size.1 as f32) as u32

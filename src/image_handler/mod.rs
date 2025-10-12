@@ -93,7 +93,8 @@ impl ImageHandler {
     pub fn update(
         &mut self,
         ctx: &Context,
-        zoom_pan: &ZoomPan,
+        zoom_factor: &f32,
+        is_panning: bool,
         monitor_size: &MonitorSize,
         notifier: &mut Notifier,
         backend: ImageProcessingBackend
@@ -119,12 +120,12 @@ impl ImageHandler {
             }
         }
 
-        self.dynamic_sampling_update(zoom_pan, monitor_size);
+        self.dynamic_sampling_update(zoom_factor, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             // TODO: if we are still panning once we have stopped 
             // defer some addition seconds to the dynamic_sample_schedule.
-            if !zoom_pan.is_panning {
+            if !is_panning {
                 if schedule.update().is_some() {
                     if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
                         debug!(

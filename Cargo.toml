@@ -16,11 +16,11 @@ cirrus_error = { path = "./cirrus/error" }
 cirrus_config = { path = "./cirrus/config" }
 cirrus_theming = { path = "./cirrus/theming" }
 
-egui = "0.29.1"
-eframe = { version = "0.29.1", features = ["default"] }
-egui_extras = { version = "0.29.1", features = ["all_loaders"]}
-egui_animation = "0.6.0" # this needs to stay "0.6.0" for egui "0.29.1"
-egui-notify = "0.17.0" # this needs to stay "0.17.0" for egui "0.29.1"
+egui = "0.32.3"
+eframe = { version = "0.32.3", features = ["default"] }
+egui_extras = { version = "0.32.3", features = ["all_loaders"]}
+egui_animation = "0.9.0" # this needs to stay "0.6.0" for egui "0.29.1"
+egui-notify = "0.20.0" # this needs to stay "0.17.0" for egui "0.29.1"
 rfd = "0.15.3"
 imagesize = "0.14.0"
 image = {version = "0.25.6"}

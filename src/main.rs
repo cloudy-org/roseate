@@ -206,7 +206,9 @@ fn main() -> eframe::Result {
                 .set_all()
                 .apply(&cc.egui_ctx);
 
-            Ok(Box::new(Roseate::new(image_handler, monitor_size, notifier, theme, config_manager)))
+            let app = Roseate::new(image_handler, monitor_size, theme, notifier, config_manager);
+
+            Ok(Box::new(app))
         }),
     )
 }
