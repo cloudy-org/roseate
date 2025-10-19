@@ -1,5 +1,4 @@
 target
-Cargo.lock
 
 # Just in case you switch from the web version branch.
 dist
