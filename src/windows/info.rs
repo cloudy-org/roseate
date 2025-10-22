@@ -1,10 +1,11 @@
 use std::alloc;
 
 use cap::Cap;
+use cirrus_egui::v1::notifier::Notifier;
 use egui_notify::ToastLevel;
 use eframe::egui::{self, pos2, Key, Margin, Response};
 
-use crate::{config::config::Config, image::image::Image, notifier::NotifierAPI};
+use crate::{config::config::Config, image::image::Image};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -17,13 +18,14 @@ pub struct InfoWindow {
 }
 
 impl InfoWindow {
-    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
+    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let config_key = match Key::from_name(&config.key_binds.info_box.toggle) {
             Some(key) => key,
             None => {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.".into(), 
-                    ToastLevel::Error
+                notifier.toast(
+                    "The key bind set for 'info_box.toggle' is invalid! Defaulting to `I`.", 
+                    ToastLevel::Error,
+                    |_| {}
                 );
 
                 Key::I
@@ -56,7 +58,7 @@ impl InfoWindow {
         if self.show {
             let response = egui::Window::new(
                 egui::WidgetText::RichText(
-                    egui::RichText::new("ℹ Info").size(15.0)
+                    egui::RichText::new("ℹ Info").size(15.0).into()
                 )
             )
                 .default_pos(pos2(200.0, 200.0))
@@ -66,7 +68,7 @@ impl InfoWindow {
                 .show(ctx, |ui| {
                     let mem_allocated = ALLOCATOR.allocated();
 
-                    egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1.0)).show(
+                    egui::Frame::group(&ctx.style()).inner_margin(Margin::same(1)).show(
                         ui, |ui| {
                             egui::Grid::new("info_box_grid")
                             .num_columns(3)

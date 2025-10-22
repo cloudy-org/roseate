@@ -13,7 +13,7 @@ gui.lazy_loading = true
 
 [image.optimizations]
 # Comment this out if you would like to customize the optimization settings below.
-# MOTE: The optimizations that are defaulted to in "mode" will always take priority over 
+# NOTE: The optimizations that are defaulted to in "mode" will always take priority over 
 # the optimizations specified below.
 mode = "default"
 
@@ -45,10 +45,10 @@ padding = 2
 [key_binds]
 info_box.toggle = "I"
 about_box.toggle = "A"
-# Keybind to reset the image pan 
+# Key bind to reset the image pan 
 # position and zoom scale back to default.
 image.reset_pos = "R"
-# Keybind to toggle all your UI controls like the magnification panel.
+# Key bind to toggle all your UI controls like the magnification panel.
 ui_controls.toggle = "C"
 
 [misc]

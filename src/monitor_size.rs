@@ -1,12 +1,13 @@
 use std::{fs::{File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
 
+use cirrus_egui::v1::notifier::Notifier;
 use egui_notify::ToastLevel;
 use fs2::FileExt;
 use eframe::egui::Context;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, files, notifier::NotifierAPI};
+use crate::{error::Error, files};
 
 // TODO: move this to cirrus when it's good and stable enough.
 
@@ -84,7 +85,7 @@ impl MonitorSize {
         }
     }
 
-    pub fn update(&mut self, ctx: &Context, notifier: &mut NotifierAPI) {
+    pub fn update(&mut self, ctx: &Context, notifier: &mut Notifier) {
         self.last_monitor_size = self.monitor_size;
 
         if self.override_monitor_size.is_some() {
@@ -104,7 +105,7 @@ impl MonitorSize {
         self.persistent_state_update(notifier);
     }
 
-    fn persistent_state_update(&mut self, notifier: &mut NotifierAPI) {
+    fn persistent_state_update(&mut self, notifier: &mut Notifier) {
         if self.monitor_size == self.last_monitor_size && self.retry_persistent_state_update == None {
             return;
         }
@@ -209,12 +210,11 @@ impl MonitorSize {
             },
             Err(error) => {
                 // TODO: test this and see how it looks.
-                notifier.toasts.lock()
-                    .unwrap()
-                    .toast_and_log(
-                        error.into(),
-                        ToastLevel::Error
-                    );
+                notifier.toast(
+                    Box::new(error),
+                    ToastLevel::Error,
+                    |_| {}
+                );
 
                 return;
             }

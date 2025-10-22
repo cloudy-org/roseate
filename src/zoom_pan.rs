@@ -1,11 +1,12 @@
 use std::time::{Duration, Instant};
 
+use cirrus_egui::v1::notifier::Notifier;
 use egui_notify::ToastLevel;
 use rand::Rng;
 use log::debug;
 use eframe::egui::{Context, Key, Pos2, Response, Vec2};
 
-use crate::{config::config::Config, notifier::NotifierAPI};
+use crate::{config::config::Config};
 
 /// Struct that controls the zoom and panning of the image.
 pub struct ZoomPan {
@@ -27,13 +28,14 @@ struct ResetManager {
 }
 
 impl ZoomPan {
-    pub fn new(config: &Config, notifier: &mut NotifierAPI) -> Self {
+    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
         let reset_key = match Key::from_name(&config.key_binds.image.reset_pos) {
             Some(key) => key,
             None => {
-                notifier.toasts.lock().unwrap().toast_and_log(
-                    "The key bind set for 'image.reset_pos' is invalid! Defaulting to `R`.".into(), 
-                    ToastLevel::Error
+                notifier.toast(
+                    "The key bind set for 'image.reset_pos' is invalid! Defaulting to `R`.", 
+                    ToastLevel::Error,
+                    |_| {}
                 );
 
                 Key::R
