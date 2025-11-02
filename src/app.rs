@@ -2,10 +2,10 @@ use core::f32;
 
 use cirrus_theming::v1::Theme;
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
-use egui::{Color32, Context, CornerRadius, Event, Frame, Margin, Modifiers, Rect, Response, Sense, UiBuilder, Vec2};
+use egui::{Color32, Context, CornerRadius, CursorIcon, Frame, Margin, Pos2, Rect, Sense, Vec2};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, zoom_pan::ZoomPan};
+use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize};
 
 pub struct Roseate {
     theme: Theme,
@@ -16,11 +16,9 @@ pub struct Roseate {
     monitor_size: MonitorSize,
     magnification_panel: MagnificationPanel,
 
-    image_scene_rect: Rect,
-    image_scene_initial_rect: Option<Rect>,
-    image_scene_zoom_factor: f32,
-    image_scene_is_panning: bool,
-    image_scene_response: Option<Response>
+    zoom: f32,
+    offset: Vec2,
+    last_drag: Option<Pos2>,
 }
 
 impl Roseate {
@@ -51,11 +49,9 @@ impl Roseate {
             monitor_size,
             magnification_panel,
             config_manager,
-            image_scene_rect: Rect::ZERO,
-            image_scene_initial_rect: None,
-            image_scene_zoom_factor: 1.0,
-            image_scene_is_panning: false,
-            image_scene_response: None
+            zoom: 1.0,
+            offset: Vec2::ZERO,
+            last_drag: None,
         }
     }
 }
@@ -79,8 +75,8 @@ impl eframe::App for Roseate {
             self.notifier.update(ctx);
             self.image_handler.update(
                 &ctx,
-                &self.image_scene_zoom_factor,
-                self.image_scene_is_panning,
+                &self.zoom,
+                self.last_drag.is_some(),
                 &self.monitor_size,
                 &mut self.notifier,
                 config.misc.experimental.get_image_processing_backend()
@@ -91,55 +87,76 @@ impl eframe::App for Roseate {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
                 (Some(image), true) => {
-                    let image_size = Vec2::new(
-                        image.image_size.0 as f32, image.image_size.1 as f32
-                    );
+                    egui::Frame::NONE
+                        .show(ui, |ui| {
+                            let available_rect = ui.available_rect_before_wrap();
 
-                    // we're getting the available rect (space) so we can then use 
-                    // that to move the image's scene away from the top-left position to 
-                    // center of the window (effectively centering the image).
-                    let available_rect = ui.available_rect_before_wrap();
+                            let response = ui.interact(
+                                available_rect,
+                                ui.id().with("image_viewport"),
+                                Sense::click_and_drag()
+                            );
 
-                    // Move image's scene top-left position to center.
-                    let center = available_rect.min + (available_rect.size() - image_size) * 0.5;
+                            let image_size = Vec2::new(
+                                image.image_size.0 as f32, image.image_size.1 as f32
+                            );
 
-                    // Now we need to create a rect based off the center position 
-                    // for the new isolated UI that we'll be drawing the scene inside.
-                    let max_rect = Rect::from_min_size(center, image_size);
+                            let image_size_relative_to_zoom = image_size * self.zoom;
 
-                    let mut isolated_ui = ui.new_child(
-                        UiBuilder::default()
-                            .max_rect(max_rect)
-                            .layout(*ui.layout())
-                    );
+                            // Center the image in the center plus the offset for panning.
+                            // The "image_rect" controls entirely how the image should be painted in size and position.
+                            let image_rect = Rect::from_center_size(
+                                available_rect.center() + self.offset,
+                                image_size_relative_to_zoom,
+                            );
 
-                    let image_scene_response = egui::Scene::default()
-                        .zoom_range(0.001..=f32::MAX)
-                        .show(&mut isolated_ui, &mut self.image_scene_rect, |ui| {
-                                let egui_image = self.image_handler.get_egui_image(ctx)
-                                    .corner_radius(10.0);
+                            // Handle zoom
+                            if response.hovered() {
+                                let scroll = ui.input(|i| i.smooth_scroll_delta.y);
 
-                                ui.add(egui_image);
+                                if scroll.abs() > 0.0 {
+                                    // Mouse position relative to screen coordinates.
+                                    let mouse_position = ui.input(|i| i.pointer.hover_pos())
+                                        .unwrap_or(available_rect.center());
+
+                                    let before_zoom = self.zoom;
+
+                                    // TODO: configurable zoom speed (default is "0.005").
+                                    let zoom_delta = (scroll * 0.005).exp(); // ".exp()" applies a smooth exponential zoom
+                                    // TODO: configurable zoom factor limits, sensible values are currently in place but 
+                                    // it would be FUNNY to zoom out of the entire galaxy and zoom in until maximum 32 bit 
+                                    // unsigned floating point integer is reached (this is how it used to be before v1.0 alpha 17).
+                                    self.zoom = (self.zoom * zoom_delta).clamp(0.01, 100.0);
+
+                                    // Zoom into mouse cursor using offset.
+                                    let before_relative_mouse_position = (mouse_position - image_rect.center()) / before_zoom;
+                                    let relative_mouse_position = (mouse_position - image_rect.center()) / self.zoom;
+
+                                    self.offset += (relative_mouse_position - before_relative_mouse_position) * before_zoom;
+                                }
                             }
-                        ).response;
 
-                    let image_scene_initial_rect = self.image_scene_initial_rect.get_or_insert(
-                        self.image_scene_rect
-                    );
+                            // Handle panning
+                            if response.dragged() {
+                                let delta = response.drag_delta();
+                                self.offset += delta;
 
-                    let initial_size = image_scene_initial_rect.size();
-                    let current_size = self.image_scene_rect.size();
+                                // I kinda like the grabbing cursor.
+                                ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
 
-                    self.image_scene_zoom_factor = (
-                        initial_size.x / current_size.x + initial_size.y / current_size.y
-                    ) * 0.5;
+                                // ui.ctx().request_repaint();
+                            }
 
-                    self.image_scene_is_panning = image_scene_response.dragged();
-                    self.image_scene_response = Some(image_scene_response);
+                            let egui_image = self.image_handler.get_egui_image(ctx)
+                                .corner_radius(10.0);
 
-                    // ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
-                    // // just in case one doesn't happen when the window is resized in a certain circumstance 
-                    // // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
+                            // Drawing the image to the viewport
+                            egui_image.paint_at(ui, image_rect);
+                        });
+
+                    ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
+                    // just in case one doesn't happen when the window is resized in a certain circumstance 
+                    // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
                 },
                 _ => {
 
@@ -175,25 +192,5 @@ impl eframe::App for Roseate {
                 }
             }
         );
-    }
-
-    fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
-        if let Some(image_scene_response) = &self.image_scene_response {
-            // we don't want to modify mouse wheel event's modifiers 
-            // unless the user is interacting with our image scene widget.
-            if image_scene_response.contains_pointer() == false {
-                return;
-            }
-
-            for event in &mut raw_input.events {
-                if let Event::MouseWheel { modifiers, .. } = event {
-                    // this is a temporary solution to enable zooming in / out in the
-                    // egui::Scene widget without holding a CTRL key.
-                    // 
-                    // So here we are spoofing that modifier key press.
-                    *modifiers = Modifiers::CTRL;
-                }
-            }
-        }
     }
 }
