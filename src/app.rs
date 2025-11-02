@@ -89,11 +89,8 @@ impl eframe::App for Roseate {
                 (Some(image), true) => {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            let available_rect = ui.available_rect_before_wrap();
-
-                            let response = ui.interact(
-                                available_rect,
-                                ui.id().with("image_viewport"),
+                            let (available_rect, response) = ui.allocate_exact_size(
+                                ui.available_size(),
                                 Sense::click_and_drag()
                             );
 
@@ -116,7 +113,7 @@ impl eframe::App for Roseate {
 
                                 if scroll.abs() > 0.0 {
                                     // Mouse position relative to screen coordinates.
-                                    let mouse_position = ui.input(|i| i.pointer.hover_pos())
+                                    let mouse_position = ui.input(|i| i.pointer.latest_pos())
                                         .unwrap_or(available_rect.center());
 
                                     let before_zoom = self.zoom;
