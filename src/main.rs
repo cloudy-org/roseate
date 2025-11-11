@@ -27,6 +27,7 @@ mod image_handler;
 mod window_scaling;
 mod magnification_panel;
 mod monitor_size;
+mod viewport;
 
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
