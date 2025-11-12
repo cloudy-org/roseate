@@ -13,7 +13,7 @@ gui.lazy_loading = true
 
 [image.optimizations]
 # Comment this out if you would like to customize the optimization settings below.
-# NOTE: The optimizations that are defaulted to in "mode" will always take priority over 
+# NOTE: The optimizations that are defaulted to within "mode" will always take priority over 
 # the optimizations specified below.
 mode = "default"
 
@@ -41,6 +41,9 @@ enabled_default = false
 [ui.viewport]
 # Adjust this value to control the spacing between the image and the edge of the window.
 padding = 2
+# Changes how image zooming behaves with the scroll wheel.
+# Set to "false" to disable zooming into the position of the mouse cursor.
+zoom_into_cursor = true
 
 [key_binds]
 info_box.toggle = "I"

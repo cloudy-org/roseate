@@ -28,18 +28,22 @@ impl Default for MagnificationPanel {
 pub struct Viewport {
     #[serde(default = "ui_padding")]
     pub padding: f32,
+    #[serde(default = "super::true_default")]
+    pub zoom_into_cursor: bool
 }
 
 impl Hash for Viewport {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         ((self.padding * 100.0) as u32).hash(state);
+        self.zoom_into_cursor.hash(state);
     }
 }
 
 impl Default for Viewport {
     fn default() -> Self {
         Self {
-            padding: ui_padding()
+            padding: ui_padding(),
+            zoom_into_cursor: true
         }
     }
 }

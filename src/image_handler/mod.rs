@@ -8,7 +8,7 @@ use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize};
 
 mod dynamic_sampling;
 
@@ -292,6 +292,10 @@ impl ImageHandler {
                 let texture = match &self.egui_image_texture {
                     Some(texture) => texture,
                     None => {
+                        debug!("Taking image texture and uploading it to the GPU with egui...");
+
+                        let image_size = [*width as usize, *height as usize];
+
                         self.egui_image_texture = Some(
                             ctx.load_texture(
                                 "image",
@@ -299,22 +303,19 @@ impl ImageHandler {
                                     ImageColourType::Grey | ImageColourType::GreyAlpha => {
                                         debug!("Rendering image as grey scale egui texture...");
                                         egui::ColorImage::from_gray(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
+                                            image_size, pixels
                                         )
                                     },
                                     ImageColourType::RGB => {
                                         debug!("Rendering image as rgb egui texture...");
                                         egui::ColorImage::from_rgb(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
+                                            image_size, pixels
                                         )
                                     },
                                     ImageColourType::RGBA => {
                                         debug!("Rendering image as rgba egui texture...");
                                         egui::ColorImage::from_rgba_unmultiplied(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
+                                            image_size, pixels
                                         )
                                     },
                                 },
@@ -322,7 +323,7 @@ impl ImageHandler {
                             )
                         );
 
-                        &self.egui_image_texture.as_ref().unwrap()
+                        self.egui_image_texture.as_ref().unwrap()
                     },
                 };
 
@@ -331,8 +332,7 @@ impl ImageHandler {
             ImageData::StaticBytes(bytes) => {
                 egui::Image::from_bytes(
                     format!("bytes://{}.{:#}", image_hash, image.image_format),
-                    bytes.to_vec() // TODO: I think this duplicates memory so 
-                    // this will need to be analysed and changed.
+                    bytes.clone() // we can clone here without turning into a java application as we're using arc
                 )
             },
         }

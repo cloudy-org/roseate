@@ -151,7 +151,7 @@ impl Image {
 
         let current_modifications = modifications.clone();
 
-        let arc_pixels: (Arc<Vec<u8>>, ImageSizeT, ImageColourType) = match load_from_disk {
+        let arc_pixels: (Arc<[u8]>, ImageSizeT, ImageColourType) = match load_from_disk {
             false => {
                 debug!("Reloading image from memory... at the spweed of a spwinting c-cat meow :3 (wait WTF!?!?)...");
 
@@ -198,7 +198,7 @@ impl Image {
                     image_buf_reader.read_to_end(&mut buffer).unwrap();
 
                     *self.image_data.lock().unwrap() = Some(
-                        ImageData::StaticBytes(Arc::new(buffer))
+                        ImageData::StaticBytes(Arc::from(buffer.as_slice()))
                     );
         
                     return Ok(());
@@ -216,7 +216,7 @@ impl Image {
                     decoded_image
                 )?;
 
-                (Arc::new(pixels), image_size, image_colour_type)
+                (Arc::from(pixels.as_slice()), image_size, image_colour_type)
             },
         };
 
@@ -253,7 +253,7 @@ impl Image {
             image_buf_reader.read_to_end(&mut buffer).unwrap();
 
             *self.image_data.lock().unwrap() = Some(
-                ImageData::StaticBytes(Arc::new(buffer))
+                ImageData::StaticBytes(Arc::from(buffer.as_slice()))
             );
 
             return Ok(());

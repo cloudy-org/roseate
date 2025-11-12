@@ -1,24 +1,19 @@
-use core::f32;
-
 use cirrus_theming::v1::Theme;
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
-use egui::{Color32, Context, CornerRadius, CursorIcon, Frame, Margin, Pos2, Rect, Sense, Vec2};
+use egui::{Color32, Context, CornerRadius, Frame, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize};
+use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
 
 pub struct Roseate {
     theme: Theme,
     notifier: Notifier,
     config_manager: ConfigManager<Config>,
 
+    viewport: Viewport,
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
     magnification_panel: MagnificationPanel,
-
-    zoom: f32,
-    offset: Vec2,
-    last_drag: Option<Pos2>,
 }
 
 impl Roseate {
@@ -40,18 +35,17 @@ impl Roseate {
             );
         }
 
+        let viewport = Viewport::new();
         let magnification_panel = MagnificationPanel::new(config, &mut notifier);
 
         Self {
             theme,
             notifier,
+            viewport,
             image_handler,
             monitor_size,
             magnification_panel,
-            config_manager,
-            zoom: 1.0,
-            offset: Vec2::ZERO,
-            last_drag: None,
+            config_manager
         }
     }
 }
@@ -75,8 +69,8 @@ impl eframe::App for Roseate {
             self.notifier.update(ctx);
             self.image_handler.update(
                 &ctx,
-                &self.zoom,
-                self.last_drag.is_some(),
+                &self.viewport.zoom,
+                false,
                 &self.monitor_size,
                 &mut self.notifier,
                 config.misc.experimental.get_image_processing_backend()
@@ -89,66 +83,18 @@ impl eframe::App for Roseate {
                 (Some(image), true) => {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            let (available_rect, response) = ui.allocate_exact_size(
-                                ui.available_size(),
-                                Sense::click_and_drag()
+                            let egui_image = self.image_handler.get_egui_image(ctx);
+
+                            let config_padding = config.ui.viewport.padding;
+                            let proper_padding_percentage = ((100.0 - config_padding) / 100.0).clamp(0.0, 1.0);
+
+                            self.viewport.show(
+                                ui,
+                                &image,
+                                egui_image,
+                                proper_padding_percentage,
+                                config.ui.viewport.zoom_into_cursor
                             );
-
-                            let image_size = Vec2::new(
-                                image.image_size.0 as f32, image.image_size.1 as f32
-                            );
-
-                            let image_size_relative_to_zoom = image_size * self.zoom;
-
-                            // Center the image in the center plus the offset for panning.
-                            // The "image_rect" controls entirely how the image should be painted in size and position.
-                            let image_rect = Rect::from_center_size(
-                                available_rect.center() + self.offset,
-                                image_size_relative_to_zoom,
-                            );
-
-                            // Handle zoom
-                            if response.hovered() {
-                                let scroll = ui.input(|i| i.smooth_scroll_delta.y);
-
-                                if scroll.abs() > 0.0 {
-                                    // Mouse position relative to screen coordinates.
-                                    let mouse_position = ui.input(|i| i.pointer.latest_pos())
-                                        .unwrap_or(available_rect.center());
-
-                                    let before_zoom = self.zoom;
-
-                                    // TODO: configurable zoom speed (default is "0.005").
-                                    let zoom_delta = (scroll * 0.005).exp(); // ".exp()" applies a smooth exponential zoom
-                                    // TODO: configurable zoom factor limits, sensible values are currently in place but 
-                                    // it would be FUNNY to zoom out of the entire galaxy and zoom in until maximum 32 bit 
-                                    // unsigned floating point integer is reached (this is how it used to be before v1.0 alpha 17).
-                                    self.zoom = (self.zoom * zoom_delta).clamp(0.01, 100.0);
-
-                                    // Zoom into mouse cursor using offset.
-                                    let before_relative_mouse_position = (mouse_position - image_rect.center()) / before_zoom;
-                                    let relative_mouse_position = (mouse_position - image_rect.center()) / self.zoom;
-
-                                    self.offset += (relative_mouse_position - before_relative_mouse_position) * before_zoom;
-                                }
-                            }
-
-                            // Handle panning
-                            if response.dragged() {
-                                let delta = response.drag_delta();
-                                self.offset += delta;
-
-                                // I kinda like the grabbing cursor.
-                                ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
-
-                                // ui.ctx().request_repaint();
-                            }
-
-                            let egui_image = self.image_handler.get_egui_image(ctx)
-                                .corner_radius(10.0);
-
-                            // Drawing the image to the viewport
-                            egui_image.paint_at(ui, image_rect);
                         });
 
                     ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
