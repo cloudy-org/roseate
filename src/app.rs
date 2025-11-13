@@ -93,7 +93,9 @@ impl eframe::App for Roseate {
                                 &image,
                                 egui_image,
                                 proper_padding_percentage,
-                                config.ui.viewport.zoom_into_cursor
+                                config.ui.viewport.zoom_into_cursor,
+                                true,
+                                false
                             );
                         });
 
