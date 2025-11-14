@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use cirrus_egui::v1::scheduler::{Scheduler};
 use egui::{CursorIcon, Rect, Sense, Ui, Vec2};
+use log::debug;
 
 use crate::image::image::Image;
 
@@ -9,8 +10,10 @@ pub struct Viewport {
     pub zoom: f32,
     offset: Vec2,
 
-    image_fit_to_window_scale: Option<f32>,
-    image_fit_to_window_animate_schedule: Scheduler
+    fit_to_window_animate_schedule: Scheduler,
+
+    last_window_size: Vec2,
+    last_fit_to_window_image_scale: f32,
 }
 
 impl Viewport {
@@ -19,58 +22,39 @@ impl Viewport {
             zoom: 1.0,
             offset: Vec2::ZERO,
 
-            image_fit_to_window_scale: None,
-            image_fit_to_window_animate_schedule: Scheduler::new(
-                || {},
-                Duration::from_secs_f32(0.3)
-            )
+            fit_to_window_animate_schedule: Self::schedule_fit_to_window_animation(),
+
+            last_window_size: Vec2::ZERO,
+            last_fit_to_window_image_scale: 1.0,
         }
     }
 
-    fn calculate_fit_to_window_scale(
-        &mut self,
-        ui: &Ui,
-        window_size: Vec2,
-        image_size: Vec2,
-        fit_to_window: bool,
-        animate_fit_to_window: bool
-    ) -> f32 {
-        // self.image_fit_to_window_animate_schedule.update();
-        // let can_animate_fit_to_window = self.image_fit_to_window_animate_schedule.done;
+    fn schedule_fit_to_window_animation() -> Scheduler {
+        debug!("The image has been scheduled to fit to window...");
+        Scheduler::new(
+            || {},
+            Duration::from_secs_f32(0.3)
+        )
+    }
+
+    fn calculate_fit_to_window_scale(&mut self, image_size: Vec2, fit_to_window: bool, animate_fit_to_window: bool) -> f32 {
+        self.fit_to_window_animate_schedule.update();
+        // should always be true if animation is 
+        // disabled so the image scales instantly
+        let can_fit_to_window = self.fit_to_window_animate_schedule.done || !animate_fit_to_window;
+
+        if can_fit_to_window == false || fit_to_window == false || self.zoom != 1.0 {
+            return self.last_fit_to_window_image_scale;
+        }
 
         // we need the image size without padding to calculate 
         // what the image size scale (or zoom if you want to call it that) 
         // would be when scaled to fit the window size.
-        let image_fit_to_window_scale = (window_size / image_size).min_elem();
+        let fit_to_window_image_scale = (self.last_window_size / image_size).min_elem().min(1.0);
 
-        let image_fit_to_window_scale = match (
-            self.zoom,
-            fit_to_window,
-        ) {
-            (1.0, true) => {
-                self.image_fit_to_window_scale = Some(image_fit_to_window_scale);
+        self.last_fit_to_window_image_scale = fit_to_window_image_scale;
 
-                image_fit_to_window_scale
-            },
-            _ => self.image_fit_to_window_scale.unwrap_or(1.0)
-        }.min(1.0);
-
-        println!("BEFORE --> {}", image_fit_to_window_scale);
-
-        let image_fit_to_window_scale = match animate_fit_to_window {
-            true => egui_animation::animate_eased(
-                ui.ctx(),
-                "fit_to_window_animation",
-                image_fit_to_window_scale,
-                1.5,
-                simple_easing::cubic_in_out
-            ),
-            false => image_fit_to_window_scale
-        };
-
-        println!("AFTER ANI --> {}", image_fit_to_window_scale);
-
-        image_fit_to_window_scale
+        fit_to_window_image_scale
     }
 
     pub fn show(
@@ -85,26 +69,43 @@ impl Viewport {
     ) {
         let window_size = ui.input(|i: &egui::InputState| i.viewport_rect()).size();
 
-        let (available_rect, response) = ui.allocate_exact_size(
-            ui.available_size(),
-            Sense::click_and_drag()
-        );
+        // Schedule fit to window animation on window size 
+        // change and reset that schedule if any more changes occur.
+        if window_size != self.last_window_size {
+            if animate_fit_to_window {
+                self.fit_to_window_animate_schedule = Self::schedule_fit_to_window_animation();
+            }
+
+            // we keep track of the last known window size so we can 
+            // determine when to schedule the fit to window animation.
+            self.last_window_size = window_size;
+        }
 
         let image_size = Vec2::new(
             image.image_size.0 as f32, image.image_size.1 as f32
         );
         let image_size_with_padding = image_size * padding;
 
-        let image_fit_to_window_scale = self.calculate_fit_to_window_scale(
-            ui,
-            window_size,
-            image_size,
-            fit_to_window,
-            animate_fit_to_window
+        let fit_to_window_image_scale = self.calculate_fit_to_window_scale(image_size, fit_to_window, animate_fit_to_window);
+
+        let fit_to_window_image_scale = match animate_fit_to_window {
+            true => egui_animation::animate_eased(
+                ui.ctx(),
+                "fit_to_window_animation",
+                fit_to_window_image_scale,
+                1.5,
+                simple_easing::cubic_in_out
+            ),
+            false => fit_to_window_image_scale
+        };
+
+        let (available_rect, response) = ui.allocate_exact_size(
+            ui.available_size(),
+            Sense::click_and_drag()
         );
 
         // The image size relative to viewport padding, zoom factor and fit to window size.
-        let relative_image_size = (image_size_with_padding * self.zoom) * image_fit_to_window_scale;
+        let relative_image_size = (image_size_with_padding * self.zoom) * fit_to_window_image_scale;
 
         // Center the image in the center plus the offset for panning.
         // The "image_rect" controls entirely how the image should be painted in size and position.
@@ -152,8 +153,6 @@ impl Viewport {
 
             // I kinda like the grabbing cursor. ツ
             ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
-
-            // ui.ctx().request_repaint();
         }
 
         let egui_image = egui_image
