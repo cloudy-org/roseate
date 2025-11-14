@@ -118,16 +118,16 @@ impl Viewport {
 
         // Respond to mouse zoom
         if response.hovered() {
+            let center_of_image = image_rect.center();
             let scroll = ui.input(|i| i.smooth_scroll_delta.y);
 
             if scroll.abs() > 0.0 {
                 // Mouse position relative to screen coordinates.
                 let mouse_position = match zoom_into_cursor {
                     true => ui.input(|i| i.pointer.latest_pos())
-                        .unwrap_or(available_rect.center()),
+                        .unwrap_or(center_of_image),
                     // if configured to not zoom into cursor zoom into center of image instead
-                    // TODO: test this!
-                    false => available_rect.center()
+                    false => center_of_image
                 };
 
                 let before_zoom = self.zoom;
@@ -141,8 +141,8 @@ impl Viewport {
 
                 // Zoom into mouse cursor using offset.
                 // TODO: fix zoom on cursor drifting ...you're not a nissan s15 silvia...
-                let before_relative_mouse_position = (mouse_position - image_rect.center()) / before_zoom;
-                let relative_mouse_position = (mouse_position - image_rect.center()) / self.zoom;
+                let before_relative_mouse_position = (mouse_position - center_of_image) / before_zoom;
+                let relative_mouse_position = (mouse_position - center_of_image) / self.zoom;
 
                 self.offset += (relative_mouse_position - before_relative_mouse_position) * self.zoom;
             }
