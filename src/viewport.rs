@@ -52,6 +52,8 @@ impl Viewport {
         // would be when scaled to fit the window size.
         let fit_to_window_image_scale = (self.last_window_size / image_size).min_elem().min(1.0);
 
+        // println!("-> {}", fit_to_window_image_scale);
+
         self.last_fit_to_window_image_scale = fit_to_window_image_scale;
 
         fit_to_window_image_scale
@@ -75,6 +77,8 @@ impl Viewport {
             if animate_fit_to_window {
                 self.fit_to_window_animate_schedule = Self::schedule_fit_to_window_animation();
             }
+
+            println!("CHANGED!");
 
             // we keep track of the last known window size so we can 
             // determine when to schedule the fit to window animation.
@@ -156,7 +160,7 @@ impl Viewport {
         }
 
         let egui_image = egui_image
-            .corner_radius(10.0);
+            .corner_radius(10.0); // TODO: config to customize image corner radius.
 
         // Drawing the image to the viewport.
         egui_image.paint_at(ui, image_rect);

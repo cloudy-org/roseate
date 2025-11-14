@@ -105,8 +105,8 @@ fn main() -> eframe::Result {
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-        .with_inner_size([800.0, 600.0])
-        .with_drag_and_drop(true),
+            .with_inner_size([800.0, 600.0])
+            .with_drag_and_drop(true),
         multisampling: 0,
         vsync: true,
         ..Default::default()
