@@ -78,8 +78,6 @@ impl Viewport {
                 self.fit_to_window_animate_schedule = Self::schedule_fit_to_window_animation();
             }
 
-            println!("CHANGED!");
-
             // we keep track of the last known window size so we can 
             // determine when to schedule the fit to window animation.
             self.last_window_size = window_size;
@@ -146,7 +144,7 @@ impl Viewport {
                 let before_relative_mouse_position = (mouse_position - image_rect.center()) / before_zoom;
                 let relative_mouse_position = (mouse_position - image_rect.center()) / self.zoom;
 
-                self.offset += (relative_mouse_position - before_relative_mouse_position) * before_zoom;
+                self.offset += (relative_mouse_position - before_relative_mouse_position) * self.zoom;
             }
         }
 
