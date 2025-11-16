@@ -41,7 +41,7 @@ impl<'a> AboutWindow<'a> {
         };
 
         let about_widget = About::new(
-            files::get_platform_rose_image(), about_app_info
+            files::get_rose_image(), about_app_info
         );
 
         Self {

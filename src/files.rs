@@ -5,11 +5,10 @@ use eframe::egui::{self, ImageSource};
 
 use crate::error::{Error, Result};
 
-pub fn get_platform_rose_image<'a>() -> ImageSource<'a> {
+// TODO: add ability to customize this image in the future
+pub fn get_rose_image<'a>() -> ImageSource<'a> {
     if cfg!(target_os = "windows") {
         return egui::include_image!("../assets/rose_emojis/microsoft.png");
-    } else if cfg!(target_os = "macos") {
-        return egui::include_image!("../assets/rose_emojis/apple.png");
     }
 
     return egui::include_image!("../assets/rose_emojis/google_noto.png");

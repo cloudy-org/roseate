@@ -15,15 +15,12 @@ pub struct Misc {
 pub struct Experimental {
     #[serde(default = "super::none_default")]
     image_processing_backend: Option<String>,
-    #[serde(default = "super::false_default")]
-    pub use_dynamic_sampling_optimization: bool
 }
 
 impl Default for Experimental {
     fn default() -> Self {
         Self {
             image_processing_backend: None,
-            use_dynamic_sampling_optimization: false
         }
     }
 }

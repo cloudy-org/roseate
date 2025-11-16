@@ -26,6 +26,7 @@ mod zoom_pan;
 mod image_handler;
 mod window_scaling;
 mod magnification_panel;
+mod image_selection_menu;
 mod monitor_size;
 mod viewport;
 
@@ -140,13 +141,6 @@ fn main() -> eframe::Result {
             )
         } else {
             let mut configured_image_optimizations = config.image.optimizations.get_optimizations();
-
-            // TODO: remove this once we move DS to image.optimizations.
-            if config.misc.experimental.use_dynamic_sampling_optimization {
-                configured_image_optimizations.push(
-                    ImageOptimizations::DynamicSampling(true, true)
-                );
-            }
 
             let result = image_handler.init_image(path, configured_image_optimizations);
 

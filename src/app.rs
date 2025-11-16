@@ -3,7 +3,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
 use egui::{Color32, Context, CornerRadius, Frame, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::{ImageHandler}, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
+use crate::{config::config::Config, files, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
 
 pub struct Roseate {
     theme: Theme,
@@ -13,6 +13,7 @@ pub struct Roseate {
     viewport: Viewport,
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
+    selection_menu: ImageSelectionMenu,
     magnification_panel: MagnificationPanel,
 }
 
@@ -36,6 +37,7 @@ impl Roseate {
         }
 
         let viewport = Viewport::new();
+        let selection_menu = ImageSelectionMenu::new();
         let magnification_panel = MagnificationPanel::new(config, &mut notifier);
 
         Self {
@@ -44,6 +46,7 @@ impl Roseate {
             viewport,
             image_handler,
             monitor_size,
+            selection_menu,
             magnification_panel,
             config_manager
         }
@@ -104,7 +107,19 @@ impl eframe::App for Roseate {
                     // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
                 },
                 _ => {
-
+                    egui::Frame::NONE
+                        .show(ui, |ui| {
+                            self.selection_menu.show(
+                                ui,
+                                &mut self.image_handler,
+                                config.image.optimizations.get_optimizations(),
+                                &mut self.notifier,
+                                &self.monitor_size,
+                                config.misc.experimental.get_image_processing_backend(),
+                                &self.theme.accent_colour,
+                                true // TODO: add to config
+                            );
+                        });
                 },
             }
         });

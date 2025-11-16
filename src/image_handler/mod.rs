@@ -194,8 +194,8 @@ impl ImageHandler {
 
         let image_loaded_arc = self.image_loaded_arc.clone();
         let forget_last_image_bytes_arc = self.forget_last_image_bytes_arc.clone();
-        let mut notifier_arc = notifier.clone();
-        let monitor_size_arc = monitor_size.clone();
+        let mut notifier_clone = notifier.clone();
+        let monitor_size_clone = monitor_size.clone();
 
         let loading_logic = move || {
             let now = Instant::now();
@@ -203,10 +203,10 @@ impl ImageHandler {
 
             let result = match *image_loaded_arc.lock().unwrap() {
                 true => {
-                    notifier_arc.set_loading(Some("Reloading image...".into()));
+                    notifier_clone.set_loading(Some("Reloading image...".into()));
 
                     let result = image.reload_image(
-                        &mut notifier_arc,
+                        &mut notifier_clone,
                         image_modifications,
                         &backend
                     );
@@ -220,11 +220,11 @@ impl ImageHandler {
                     result
                 },
                 false => {
-                    notifier_arc.set_loading(Some("Loading image...".into()));
+                    notifier_clone.set_loading(Some("Loading image...".into()));
 
                     let result = image.load_image(
-                        &mut notifier_arc,
-                        &monitor_size_arc,
+                        &mut notifier_clone,
+                        &monitor_size_clone,
                         image_modifications,
                         &backend
                     );
@@ -249,7 +249,7 @@ impl ImageHandler {
                     debug!("Image current modifications: {}", image_modifications_display);
                 },
                 Err(error) => {
-                    notifier_arc.toast(
+                    notifier_clone.toast(
                         Box::new(error),
                         egui_notify::ToastLevel::Error,
                         |toast| {
@@ -259,7 +259,7 @@ impl ImageHandler {
                 },
             }
 
-            notifier_arc.unset_loading();
+            notifier_clone.unset_loading();
         };
 
         if lazy_load {

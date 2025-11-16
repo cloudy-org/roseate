@@ -140,7 +140,6 @@ impl Viewport {
                 self.zoom = (self.zoom * zoom_delta).clamp(0.01, 100.0);
 
                 // Zoom into mouse cursor using offset.
-                // TODO: fix zoom on cursor drifting ...you're not a nissan s15 silvia...
                 let before_relative_mouse_position = (mouse_position - center_of_image) / before_zoom;
                 let relative_mouse_position = (mouse_position - center_of_image) / self.zoom;
 

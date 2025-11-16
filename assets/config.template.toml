@@ -32,6 +32,15 @@ mode = "default"
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.3}
 
+# Setting this to true will enable the new but extremely experimental 
+# dynamic sampling feature that upsamples your image when you zoom into it 
+# to bring back the detail lost from monitor downsampling.
+# 
+# When this feature is more complete it will be named without the "experimental_" prefix.
+# 
+# Again, this is VERY experimental and incomplete! Expect a very broken implementation and bugs.
+experimental_dynamic_sampling = {enabled = false, also_downsample = true}
+
 [ui]
 
 [ui.magnification_panel]
@@ -73,13 +82,3 @@ ui_controls.toggle = "C"
 # 
 # Set this back to it's default, "image-rs" if the image looks weird or you want stability.
 image_processing_backend = "image-rs"
-
-# Setting this to true will enable the new but extremely experimental 
-# dynamic sampling feature that upsamples your image when you zoom into it 
-# to bring back the detail lost from monitor downsampling.
-# 
-# If this feature was more complete it would live under "[image.optimizations]"
-# as "dynamic_sampling = {enabled = false, also_downsample = true}".
-# 
-# Again, this is VERY experimental and incomplete! Expect a very broken implementation.
-use_dynamic_sampling_optimization = false
