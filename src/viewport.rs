@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use cirrus_egui::v1::scheduler::{Scheduler};
-use egui::{CursorIcon, Rect, Sense, Ui, Vec2};
+use cirrus_egui::v1::scheduler::{self, Scheduler};
+use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 use log::debug;
 
 use crate::image::image::Image;
@@ -9,6 +9,11 @@ use crate::image::image::Image;
 pub struct Viewport {
     pub zoom: f32,
     offset: Vec2,
+
+    reset_zoom: Option<f32>,
+    reset_offset: Option<Vec2>,
+    zoom_is_resetting: bool,
+    offset_is_resetting: bool,
 
     fit_to_window_animate_schedule: Scheduler,
 
@@ -22,14 +27,19 @@ impl Viewport {
             zoom: 1.0,
             offset: Vec2::ZERO,
 
-            fit_to_window_animate_schedule: Self::schedule_fit_to_window_animation(),
+            reset_zoom: None,
+            reset_offset: None,
+            zoom_is_resetting: false,
+            offset_is_resetting: false,
+
+            fit_to_window_animate_schedule: Self::get_fit_to_window_animation_schedule(),
 
             last_window_size: Vec2::ZERO,
             last_fit_to_window_image_scale: 1.0,
         }
     }
 
-    fn schedule_fit_to_window_animation() -> Scheduler {
+    fn get_fit_to_window_animation_schedule() -> Scheduler {
         debug!("The image has been scheduled to fit to window...");
         Scheduler::new(
             || {},
@@ -59,6 +69,68 @@ impl Viewport {
         fit_to_window_image_scale
     }
 
+    pub fn handle_input(&mut self, ui: &Ui) {
+        if ui.ctx().input(|i| i.key_pressed(Key::R)) {
+            self.reset_zoom = Some(self.zoom);
+            self.reset_offset = Some(self.offset);
+        }
+    }
+
+    pub fn update(&mut self, ui: &Ui, animate_reset: bool) {
+        if let Some(offset_before_reset) = self.reset_offset {
+            self.offset = Vec2::ZERO;
+
+            self.offset_is_resetting = false;
+            self.reset_offset = None
+        }
+
+        if let Some(zoom_before_reset) = self.reset_zoom {
+            let first_pass = !self.zoom_is_resetting;
+
+            let zoom_factor = match first_pass {
+                true => zoom_before_reset,
+                false => self.zoom
+            };
+
+            // we can only animate forward values so we use 
+            // 0 here to represent an un-resetted zoom and 1 to 
+            // represent zoom reset.
+            let forward_zoom_factor = match first_pass {
+                true => 0.0,
+                false => 1.0,
+            };
+
+            println!("-> {}", zoom_factor);
+
+            let forward_zoom_factor = match animate_reset {
+                true => egui_animation::animate_eased(
+                    ui.ctx(),
+                   "reset_zoom_animation",
+                    forward_zoom_factor,
+                    2.0,
+                    simple_easing::cubic_in_out
+                ),
+                false => 1.0
+            };
+
+            self.zoom = zoom_before_reset + (1.0 - zoom_before_reset) * forward_zoom_factor;
+
+            println!("# {}", self.zoom);
+
+            if first_pass {
+                self.zoom_is_resetting = true;
+
+                return;
+            }
+
+            if self.zoom <= 1.0 {
+                println!("--> {}", self.zoom);
+                self.zoom_is_resetting = false;
+                self.reset_zoom = None
+            }
+        }
+    }
+
     pub fn show(
         &mut self,
         ui: &mut Ui,
@@ -75,7 +147,7 @@ impl Viewport {
         // change and reset that schedule if any more changes occur.
         if window_size != self.last_window_size {
             if animate_fit_to_window {
-                self.fit_to_window_animate_schedule = Self::schedule_fit_to_window_animation();
+                self.fit_to_window_animate_schedule = Self::get_fit_to_window_animation_schedule();
             }
 
             // we keep track of the last known window size so we can 

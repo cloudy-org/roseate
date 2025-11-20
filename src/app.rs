@@ -3,7 +3,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
 use egui::{Color32, Context, CornerRadius, Frame, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, files, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
+use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
 
 pub struct Roseate {
     theme: Theme,
@@ -84,6 +84,10 @@ impl eframe::App for Roseate {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
                 (Some(image), true) => {
+                    self.viewport.handle_input(ui);
+
+                    self.viewport.update(ui, true);
+
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             let egui_image = self.image_handler.get_egui_image(ctx);
