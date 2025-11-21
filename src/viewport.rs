@@ -1,14 +1,16 @@
-use std::time::Duration;
+use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
-use cirrus_egui::v1::scheduler::{self, Scheduler};
-use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 use log::debug;
+use std::hash::Hasher;
+use cirrus_egui::v1::scheduler::{Scheduler};
+use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 
 use crate::image::image::Image;
 
 pub struct Viewport {
     pub zoom: f32,
     offset: Vec2,
+    is_busy: bool,
 
     reset_zoom: Option<f32>,
     reset_offset: Option<Vec2>,
@@ -26,6 +28,7 @@ impl Viewport {
         Self {
             zoom: 1.0,
             offset: Vec2::ZERO,
+            is_busy: false,
 
             reset_zoom: None,
             reset_offset: None,
@@ -69,68 +72,6 @@ impl Viewport {
         fit_to_window_image_scale
     }
 
-    pub fn handle_input(&mut self, ui: &Ui) {
-        if ui.ctx().input(|i| i.key_pressed(Key::R)) {
-            self.reset_zoom = Some(self.zoom);
-            self.reset_offset = Some(self.offset);
-        }
-    }
-
-    pub fn update(&mut self, ui: &Ui, animate_reset: bool) {
-        if let Some(offset_before_reset) = self.reset_offset {
-            self.offset = Vec2::ZERO;
-
-            self.offset_is_resetting = false;
-            self.reset_offset = None
-        }
-
-        if let Some(zoom_before_reset) = self.reset_zoom {
-            let first_pass = !self.zoom_is_resetting;
-
-            let zoom_factor = match first_pass {
-                true => zoom_before_reset,
-                false => self.zoom
-            };
-
-            // we can only animate forward values so we use 
-            // 0 here to represent an un-resetted zoom and 1 to 
-            // represent zoom reset.
-            let forward_zoom_factor = match first_pass {
-                true => 0.0,
-                false => 1.0,
-            };
-
-            println!("-> {}", zoom_factor);
-
-            let forward_zoom_factor = match animate_reset {
-                true => egui_animation::animate_eased(
-                    ui.ctx(),
-                   "reset_zoom_animation",
-                    forward_zoom_factor,
-                    2.0,
-                    simple_easing::cubic_in_out
-                ),
-                false => 1.0
-            };
-
-            self.zoom = zoom_before_reset + (1.0 - zoom_before_reset) * forward_zoom_factor;
-
-            println!("# {}", self.zoom);
-
-            if first_pass {
-                self.zoom_is_resetting = true;
-
-                return;
-            }
-
-            if self.zoom <= 1.0 {
-                println!("--> {}", self.zoom);
-                self.zoom_is_resetting = false;
-                self.reset_zoom = None
-            }
-        }
-    }
-
     pub fn show(
         &mut self,
         ui: &mut Ui,
@@ -139,8 +80,11 @@ impl Viewport {
         padding: f32,
         zoom_into_cursor: bool,
         fit_to_window: bool,
-        animate_fit_to_window: bool
+        animate_fit_to_window: bool,
+        animate_reset: bool
     ) {
+        self.pan_and_zoom_reset_update(ui, animate_reset);
+
         let window_size = ui.input(|i: &egui::InputState| i.viewport_rect()).size();
 
         // Schedule fit to window animation on window size 
@@ -189,9 +133,9 @@ impl Viewport {
         );
 
         // Respond to mouse zoom
+        let scroll = ui.input(|i| i.smooth_scroll_delta.y);
         if response.hovered() {
             let center_of_image = image_rect.center();
-            let scroll = ui.input(|i| i.smooth_scroll_delta.y);
 
             if scroll.abs() > 0.0 {
                 // Mouse position relative to screen coordinates.
@@ -228,10 +172,123 @@ impl Viewport {
             ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
         }
 
+        // the viewport is busy if the user is interacting with it (scrolling, zooming, etc).
+        self.is_busy = response.dragged() || response.hovered() && scroll.abs() > 0.0;
+
         let egui_image = egui_image
             .corner_radius(10.0); // TODO: config to customize image corner radius.
 
         // Drawing the image to the viewport.
         egui_image.paint_at(ui, image_rect);
+    }
+
+    fn pan_and_zoom_reset_update(&mut self, ui: &Ui, animate_reset: bool) {
+        if ui.ctx().input(|i| i.key_pressed(Key::R)) {
+            debug!("Force resetting zoom and pan...");
+
+            self.reset_zoom = Some(self.zoom);
+            self.reset_offset = Some(self.offset);
+        }
+
+        if self.is_busy {
+            return;
+        }
+
+        if let Some(offset_before_reset) = self.reset_offset {
+            // we only set self.offset_is_resetting to true at the end
+            // so if it's false we know this is the first pass.
+            let first_pass = !self.offset_is_resetting;
+
+            self.offset = match animate_reset {
+                true => Vec2::new(
+                    Self::animate_to(
+                        ui,
+                        "reset_offset_x_animation",
+                        offset_before_reset.x,
+                        0.0,
+                        0.5,
+                        first_pass
+                    ),
+                    Self::animate_to(
+                        ui,
+                        "reset_offset_y_animation",
+                        offset_before_reset.y,
+                        0.0,
+                        0.5,
+                        first_pass
+                    ),
+                ),
+                false => Vec2::new(0.0, 0.0)
+            };
+
+            self.offset_is_resetting = true;
+
+            if self.offset == Vec2::ZERO {
+                self.reset_offset = None;
+                self.offset_is_resetting = false;
+
+                debug!("Pan reset done!");
+            }
+        }
+
+        if let Some(zoom_before_reset) = self.reset_zoom {
+            self.zoom = match animate_reset {
+                true => Self::animate_to(
+                    ui,
+                    "reset_zoom_animation",
+                    zoom_before_reset,
+                    1.0,
+                    0.5,
+                    // we only set self.zoom_is_resetting to true at the end
+                    // so if it's false we know this is the first pass.
+                    !self.zoom_is_resetting
+                ),
+                false => 1.0
+            };
+
+            self.zoom_is_resetting = true;
+
+            if self.zoom <= 1.0 {
+                self.reset_zoom = None;
+                self.zoom_is_resetting = false;
+
+                debug!("Zoom reset done!");
+            }
+        }
+    }
+
+    fn animate_to(ui: &Ui, animation_id: &str, current: f32, destination: f32, animation_time: f32, is_first_pass: bool) -> f32 {
+        let mut hasher = DefaultHasher::new();
+        animation_id.hash(&mut hasher);
+        (current as i32).hash(&mut hasher);
+
+        let animated_value = egui_animation::animate_eased(
+            ui.ctx(),
+            hasher.finish(),
+            // we can only animate forward values so we use 
+            // 0 here to represent current value and 1 to 
+            // represent destination.
+            match is_first_pass {
+                true => 0.0, // current (or value before 'animate_to', e.g: 'zoom_before_reset')
+                false => 1.0, // destination (e.g: 'self.zoom = 1.0')
+            },
+            animation_time,
+            simple_easing::cubic_in_out
+        );
+
+        let animated_current = current + (destination - current) * animated_value;
+
+        // if animated_current == destination {
+        //     // TODO: switch to some type of method to only 
+        //     // clear this specific animation and nothing else 
+        //     // as this may cause problems.
+        //     // 
+        //     // Like 'clear_animation("animation_id")'.
+        //     ui.ctx().clear_animations();
+
+        //     debug!("Animations cleared due to '{}'!", animation_id);
+        // }
+
+        animated_current
     }
 }

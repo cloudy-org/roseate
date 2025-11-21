@@ -84,10 +84,6 @@ impl eframe::App for Roseate {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
                 (Some(image), true) => {
-                    self.viewport.handle_input(ui);
-
-                    self.viewport.update(ui, true);
-
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             let egui_image = self.image_handler.get_egui_image(ctx);
@@ -101,6 +97,7 @@ impl eframe::App for Roseate {
                                 egui_image,
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
+                                true,
                                 true,
                                 true
                             );

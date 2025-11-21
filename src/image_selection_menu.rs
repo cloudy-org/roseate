@@ -43,10 +43,9 @@ impl ImageSelectionMenu {
                     ui.add(
                         Button::new(
                             RichText::new("Open Image")
-                                .size(20.0)
-                        ).min_size(Vec2::new(140.0, 40.0))
+                                .size(19.0)
+                        ).min_size(Vec2::new(135.0, 35.0))
                         .corner_radius(14.0)
-                        .fill(Color32::GRAY.gamma_multiply(0.15))
                     )
                 );
             }
