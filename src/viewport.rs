@@ -195,7 +195,7 @@ impl Viewport {
             self.reset_offset = Some(self.offset);
         }
 
-        let pan_bounds_to_not_exceed = (window_size / 1.8) * self.zoom;
+        let pan_bounds_to_not_exceed = (window_size / 1.9) * self.zoom;
 
         let is_out_of_bounds = self.offset.x > pan_bounds_to_not_exceed.x || 
             self.offset.y > pan_bounds_to_not_exceed.y || 
