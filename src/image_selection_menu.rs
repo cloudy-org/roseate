@@ -2,18 +2,16 @@ use std::{time::Duration};
 
 use cirrus_egui::v1::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
 use cirrus_theming::v1::Colour;
-use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, UiBuilder, Vec2};
+use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 
 use crate::{files::get_rose_image, image::backends::ImageProcessingBackend, image_handler::{ImageHandler, optimization::ImageOptimizations}, monitor_size::MonitorSize};
 
-pub struct ImageSelectionMenu {
-}
+pub struct ImageSelectionMenu {}
 
 impl ImageSelectionMenu {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 
     pub fn show(

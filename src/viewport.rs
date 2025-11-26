@@ -14,9 +14,14 @@ pub struct Viewport {
 
     reset_zoom: Option<f32>,
     reset_offset: Option<Vec2>,
+    // we use these booleans to check if we are currently 
+    // in the animation of resetting zoom or offset in our 
+    // update loop.
     zoom_is_resetting: bool,
     offset_is_resetting: bool,
 
+    // we use a scheduler for fit to window 
+    // animation so we can have a nice delay effect.
     fit_to_window_animate_schedule: Scheduler,
 
     last_window_size: Vec2,
@@ -83,9 +88,9 @@ impl Viewport {
         animate_fit_to_window: bool,
         animate_reset: bool
     ) {
-        self.pan_and_zoom_reset_update(ui, animate_reset);
-
         let window_size = ui.input(|i: &egui::InputState| i.viewport_rect()).size();
+
+        self.pan_and_zoom_reset_update(ui, window_size, animate_reset);
 
         // Schedule fit to window animation on window size 
         // change and reset that schedule if any more changes occur.
@@ -182,12 +187,27 @@ impl Viewport {
         egui_image.paint_at(ui, image_rect);
     }
 
-    fn pan_and_zoom_reset_update(&mut self, ui: &Ui, animate_reset: bool) {
+    fn pan_and_zoom_reset_update(&mut self, ui: &Ui, window_size: Vec2, animate_reset: bool) {
         if ui.ctx().input(|i| i.key_pressed(Key::R)) {
             debug!("Force resetting zoom and pan...");
 
             self.reset_zoom = Some(self.zoom);
             self.reset_offset = Some(self.offset);
+        }
+
+        let pan_bounds_to_not_exceed = (window_size / 1.8) * self.zoom;
+
+        let is_out_of_bounds = self.offset.x > pan_bounds_to_not_exceed.x || 
+            self.offset.y > pan_bounds_to_not_exceed.y || 
+            self.offset.x < -pan_bounds_to_not_exceed.x || 
+            self.offset.y < -pan_bounds_to_not_exceed.y || 
+            self.zoom < 1.0;
+
+        if is_out_of_bounds {
+            debug!("You panned or zoomed out of bounds, resetting offset and zoom...");
+
+            if !self.zoom_is_resetting { self.reset_zoom = Some(self.zoom) };
+            if !self.offset_is_resetting { self.reset_offset = Some(self.offset) };
         }
 
         if self.is_busy {
@@ -218,7 +238,7 @@ impl Viewport {
                         first_pass
                     ),
                 ),
-                false => Vec2::new(0.0, 0.0)
+                false => Vec2::ZERO
             };
 
             self.offset_is_resetting = true;
@@ -248,7 +268,7 @@ impl Viewport {
 
             self.zoom_is_resetting = true;
 
-            if self.zoom <= 1.0 {
+            if self.zoom == 1.0 {
                 self.reset_zoom = None;
                 self.zoom_is_resetting = false;
 
