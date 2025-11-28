@@ -204,10 +204,23 @@ impl Viewport {
             self.zoom < 1.0;
 
         if is_out_of_bounds {
-            debug!("You panned or zoomed out of bounds, resetting offset and zoom...");
+            if let Some(zoom_before_reset) = self.reset_zoom {
+                if !self.zoom_is_resetting && zoom_before_reset != self.zoom {
+                    self.reset_zoom = Some(self.zoom);
+                }
+            } else {
+                debug!("You zoomed out of bounds, resetting zoom...");
+                self.reset_zoom = Some(self.zoom);
+            }
 
-            if !self.zoom_is_resetting { self.reset_zoom = Some(self.zoom) };
-            if !self.offset_is_resetting { self.reset_offset = Some(self.offset) };
+            if let Some(offset_before_reset) = self.reset_offset {
+                if !self.offset_is_resetting && offset_before_reset != self.offset {
+                    self.reset_offset = Some(self.offset);
+                }
+            } else {
+                debug!("You panned out of bounds, resetting offset...");
+                self.reset_offset = Some(self.offset);
+            }
         }
 
         if self.is_busy {
