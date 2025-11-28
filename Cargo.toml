@@ -16,9 +16,9 @@ cirrus_error = { path = "./cirrus/error" }
 cirrus_config = { path = "./cirrus/config" }
 cirrus_theming = { path = "./cirrus/theming" }
 
-egui = "0.33.0"
-eframe = { version = "0.33.0", features = ["default"] }
-egui_extras = { version = "0.33.0", features = ["all_loaders"]}
+egui = "0.33.2"
+eframe = { version = "0.33.2", features = ["default"] }
+egui_extras = { version = "0.33.2", features = ["all_loaders"]}
 egui_animation = "0.10.0"
 egui-notify = "0.21.0"
 rfd = "0.15.3"

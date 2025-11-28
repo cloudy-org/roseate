@@ -4,7 +4,7 @@ use std::{env, path::Path, time::Duration};
 
 use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use config::config::Config;
-use image_handler::{optimization::ImageOptimizations, ImageHandler};
+use image_handler::{ImageHandler};
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
@@ -29,6 +29,7 @@ mod magnification_panel;
 mod image_selection_menu;
 mod monitor_size;
 mod viewport;
+mod settings;
 
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
@@ -140,7 +141,7 @@ fn main() -> eframe::Result {
                 }
             )
         } else {
-            let mut configured_image_optimizations = config.image.optimizations.get_optimizations();
+            let configured_image_optimizations = config.image.optimizations.get_optimizations();
 
             let result = image_handler.init_image(path, configured_image_optimizations);
 

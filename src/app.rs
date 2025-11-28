@@ -1,9 +1,9 @@
 use cirrus_theming::v1::Theme;
-use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier};
+use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
 use egui::{Color32, Context, CornerRadius, Frame, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, viewport::Viewport};
+use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, settings::SettingsMenu, viewport::Viewport};
 
 pub struct Roseate {
     theme: Theme,
@@ -13,8 +13,11 @@ pub struct Roseate {
     viewport: Viewport,
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
+    settings_menu: SettingsMenu,
     selection_menu: ImageSelectionMenu,
     magnification_panel: MagnificationPanel,
+
+    show_settings: bool,
 }
 
 impl Roseate {
@@ -37,6 +40,7 @@ impl Roseate {
         }
 
         let viewport = Viewport::new();
+        let settings_menu = SettingsMenu::new();
         let selection_menu = ImageSelectionMenu::new();
         let magnification_panel = MagnificationPanel::new(config, &mut notifier);
 
@@ -46,9 +50,12 @@ impl Roseate {
             viewport,
             image_handler,
             monitor_size,
+            settings_menu,
             selection_menu,
             magnification_panel,
-            config_manager
+            config_manager,
+
+            show_settings: false
         }
     }
 }
@@ -56,6 +63,13 @@ impl Roseate {
 impl eframe::App for Roseate {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         self.magnification_panel.handle_input(ctx);
+
+        Settings::handle_input(
+            &ctx,
+            &mut self.config_manager,
+            &mut self.notifier,
+            &mut self.show_settings
+        );
 
         let central_panel_frame = Frame {
             inner_margin: Margin::ZERO,
@@ -78,6 +92,20 @@ impl eframe::App for Roseate {
                 &mut self.notifier,
                 config.misc.experimental.get_image_processing_backend()
             );
+
+            if self.show_settings {
+                // we only want to run the config manager's 
+                // update loop when were are in the settings menu
+                self.config_manager.update(ctx, &mut self.notifier);
+
+                self.settings_menu.show(
+                    ui,
+                    &self.theme,
+                    &mut self.config_manager.config
+                );
+
+                return;
+            }
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
             match (&self.image_handler.image.clone(), self.image_handler.image_loaded) {
