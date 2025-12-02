@@ -1,9 +1,9 @@
 use cirrus_theming::v1::Theme;
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
-use egui::{Color32, Context, CornerRadius, Frame, Margin};
+use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, settings::SettingsMenu, viewport::Viewport};
+use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, settings::SettingsMenu, viewport::Viewport, windows::info::InfoWindow};
 
 pub struct Roseate {
     theme: Theme,
@@ -15,9 +15,11 @@ pub struct Roseate {
     monitor_size: MonitorSize,
     settings_menu: SettingsMenu,
     selection_menu: ImageSelectionMenu,
+    info_window: InfoWindow,
     magnification_panel: MagnificationPanel,
 
     show_settings: bool,
+    show_info_window: bool
 }
 
 impl Roseate {
@@ -42,6 +44,7 @@ impl Roseate {
         let viewport = Viewport::new();
         let settings_menu = SettingsMenu::new();
         let selection_menu = ImageSelectionMenu::new();
+        let info_window = InfoWindow::new();
         let magnification_panel = MagnificationPanel::new(config, &mut notifier);
 
         Self {
@@ -52,10 +55,12 @@ impl Roseate {
             monitor_size,
             settings_menu,
             selection_menu,
+            info_window,
             magnification_panel,
             config_manager,
 
-            show_settings: false
+            show_settings: false,
+            show_info_window: false
         }
     }
 }
@@ -70,6 +75,11 @@ impl eframe::App for Roseate {
             &mut self.notifier,
             &mut self.show_settings
         );
+
+        // TODO: Manage all windows input and show state in a separate struct.
+        if ctx.input(|input| input.key_pressed(Key::I)) {
+            self.show_info_window = !self.show_info_window;
+        }
 
         let central_panel_frame = Frame {
             inner_margin: Margin::ZERO,
@@ -114,6 +124,11 @@ impl eframe::App for Roseate {
                 (Some(image), true) => {
                     egui::Frame::NONE
                         .show(ui, |ui| {
+                            // TODO: Draw and manage all windows in a separate struct.
+                            if self.show_info_window {
+                                self.info_window.show(ui, &image);
+                            }
+
                             let egui_image = self.image_handler.get_egui_image(ctx);
 
                             let config_padding = config.ui.viewport.padding;
