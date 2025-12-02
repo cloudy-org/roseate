@@ -321,7 +321,7 @@ impl ImageHandler {
                                 },
                                 TextureOptions {
                                     magnification: TextureFilter::Linear,
-                                    minification: TextureFilter::Nearest,
+                                    minification: TextureFilter::Linear,
                                     wrap_mode: TextureWrapMode::ClampToEdge,
                                     mipmap_mode: None,
                                 }
