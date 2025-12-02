@@ -212,6 +212,7 @@ impl Viewport {
             return;
         }
 
+        // TODO: derive from image size too
         let clamped_zoom_factor = (self.zoom / 2.3).clamp(1.0, f32::MAX);
         let pan_bounds_to_not_exceed = window_size / 2.0 * clamped_zoom_factor;
 

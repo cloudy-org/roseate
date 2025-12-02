@@ -2,7 +2,7 @@ use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path,
 
 use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use eframe::egui::Context;
-use egui::{TextureHandle, TextureOptions};
+use egui::{TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
@@ -319,7 +319,12 @@ impl ImageHandler {
                                         )
                                     },
                                 },
-                                TextureOptions::default()
+                                TextureOptions {
+                                    magnification: TextureFilter::Linear,
+                                    minification: TextureFilter::Nearest,
+                                    wrap_mode: TextureWrapMode::ClampToEdge,
+                                    mipmap_mode: None,
+                                }
                             )
                         );
 
