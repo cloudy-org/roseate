@@ -2,7 +2,7 @@ use cirrus_egui::v1::notifier::Notifier;
 use eframe::egui::{self, Key, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{config::config::Config, zoom_pan::ZoomPan};
+use crate::{config::config::Config, viewport::Viewport};
 
 pub struct MagnificationPanel {
     pub show: bool,
@@ -40,7 +40,7 @@ impl MagnificationPanel {
         }
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, zoom_pan: &mut ZoomPan) {
+    pub fn update(&mut self, ctx: &egui::Context, viewport: &mut Viewport) {
         if !self.show {
             return;
         }
@@ -64,7 +64,7 @@ impl MagnificationPanel {
                                 );
 
                             if zoom_in.clicked() {
-                                zoom_pan.zoom_factor = (zoom_pan.zoom_factor + 0.2).clamp(1.0, 100.0);
+                                viewport.zoom = (viewport.zoom + 0.2).clamp(1.0, 100.0);
                             }
                         });
                         ui.end_row();
@@ -77,7 +77,7 @@ impl MagnificationPanel {
                                 );
 
                             if zoom_out.clicked() {
-                                zoom_pan.zoom_factor = (zoom_pan.zoom_factor - 0.2).clamp(1.0, 100.0);
+                                viewport.zoom = (viewport.zoom - 0.2).clamp(1.0, 100.0);
                             }
                         });
                     });

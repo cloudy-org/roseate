@@ -4,7 +4,7 @@ use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Vec2;
 use log::debug;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize, zoom_pan::ZoomPan};
+use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize};
 
 use super::ImageHandler;
 
