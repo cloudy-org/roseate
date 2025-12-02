@@ -3,7 +3,7 @@ version = 1
 [image]
 
 [image.loading]
-# Setting this to "true" will make the image load on a separate thread to the GUI initially. This
+# Setting this to "true" will make the image load on a separate thread to the GUI initially. This 
 # means the GUI may load up before the image is ready to display itself. Will this improve load times? idk 🤷
 initial.lazy_loading = false
 

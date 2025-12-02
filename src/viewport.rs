@@ -1,3 +1,4 @@
+use core::f32;
 use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
 use log::debug;
@@ -17,8 +18,10 @@ pub struct Viewport {
     // we use these booleans to check if we are currently 
     // in the animation of resetting zoom or offset in our 
     // update loop.
-    zoom_is_resetting: bool,
-    offset_is_resetting: bool,
+    zoom_first_pass: bool,
+    offset_first_pass: bool,
+
+    zoom_offset_reset_schedule: Scheduler,
 
     // we use a scheduler for fit to window 
     // animation so we can have a nice delay effect.
@@ -37,8 +40,10 @@ impl Viewport {
 
             reset_zoom: None,
             reset_offset: None,
-            zoom_is_resetting: false,
-            offset_is_resetting: false,
+            zoom_first_pass: true,
+            offset_first_pass: true,
+
+            zoom_offset_reset_schedule: Scheduler::UNSET,
 
             fit_to_window_animate_schedule: Self::get_fit_to_window_animation_schedule(),
 
@@ -188,6 +193,13 @@ impl Viewport {
     }
 
     fn pan_and_zoom_reset_update(&mut self, ui: &Ui, window_size: Vec2, animate_reset: bool) {
+        if self.zoom_offset_reset_schedule.update().is_some() {
+            debug!("Completing scheduled zoom and pan reset...");
+
+            self.reset_zoom = Some(self.zoom);
+            self.reset_offset = Some(self.offset);
+        }
+
         if ui.ctx().input(|i| i.key_pressed(Key::R)) {
             debug!("Force resetting zoom and pan...");
 
@@ -195,7 +207,13 @@ impl Viewport {
             self.reset_offset = Some(self.offset);
         }
 
-        let pan_bounds_to_not_exceed = (window_size / 1.9) * self.zoom;
+        // don't schedule resets if the user is currently using the viewport
+        if self.is_busy {
+            return;
+        }
+
+        let clamped_zoom_factor = (self.zoom / 2.3).clamp(1.0, f32::MAX);
+        let pan_bounds_to_not_exceed = window_size / 2.0 * clamped_zoom_factor;
 
         let is_out_of_bounds = self.offset.x > pan_bounds_to_not_exceed.x || 
             self.offset.y > pan_bounds_to_not_exceed.y || 
@@ -203,35 +221,20 @@ impl Viewport {
             self.offset.y < -pan_bounds_to_not_exceed.y || 
             self.zoom < 1.0;
 
-        if is_out_of_bounds {
-            if let Some(zoom_before_reset) = self.reset_zoom {
-                if !self.zoom_is_resetting && zoom_before_reset != self.zoom {
-                    self.reset_zoom = Some(self.zoom);
-                }
-            } else {
-                debug!("You zoomed out of bounds, resetting zoom...");
-                self.reset_zoom = Some(self.zoom);
-            }
+        let can_schedule_reset = self.zoom_offset_reset_schedule.done && 
+            self.reset_zoom.is_none() && 
+            self.reset_offset.is_none();
 
-            if let Some(offset_before_reset) = self.reset_offset {
-                if !self.offset_is_resetting && offset_before_reset != self.offset {
-                    self.reset_offset = Some(self.offset);
-                }
-            } else {
-                debug!("You panned out of bounds, resetting offset...");
-                self.reset_offset = Some(self.offset);
-            }
-        }
+        if is_out_of_bounds && can_schedule_reset {
+            debug!("The viewport zoom and pan has been scheduled to reset...");
 
-        if self.is_busy {
-            return;
+            self.zoom_offset_reset_schedule = Scheduler::new(
+                move || {},
+                Duration::from_secs_f32(0.5)
+            );
         }
 
         if let Some(offset_before_reset) = self.reset_offset {
-            // we only set self.offset_is_resetting to true at the end
-            // so if it's false we know this is the first pass.
-            let first_pass = !self.offset_is_resetting;
-
             self.offset = match animate_reset {
                 true => Vec2::new(
                     Self::animate_to(
@@ -240,7 +243,7 @@ impl Viewport {
                         offset_before_reset.x,
                         0.0,
                         0.5,
-                        first_pass
+                        self.offset_first_pass
                     ),
                     Self::animate_to(
                         ui,
@@ -248,17 +251,17 @@ impl Viewport {
                         offset_before_reset.y,
                         0.0,
                         0.5,
-                        first_pass
+                        self.offset_first_pass
                     ),
                 ),
                 false => Vec2::ZERO
             };
 
-            self.offset_is_resetting = true;
+            self.offset_first_pass = false;
 
             if self.offset == Vec2::ZERO {
                 self.reset_offset = None;
-                self.offset_is_resetting = false;
+                self.offset_first_pass = true;
 
                 debug!("Pan reset done!");
             }
@@ -274,16 +277,16 @@ impl Viewport {
                     0.5,
                     // we only set self.zoom_is_resetting to true at the end
                     // so if it's false we know this is the first pass.
-                    !self.zoom_is_resetting
+                    self.zoom_first_pass
                 ),
                 false => 1.0
             };
 
-            self.zoom_is_resetting = true;
+            self.zoom_first_pass = false;
 
             if self.zoom == 1.0 {
                 self.reset_zoom = None;
-                self.zoom_is_resetting = false;
+                self.zoom_first_pass = true;
 
                 debug!("Zoom reset done!");
             }
