@@ -37,7 +37,7 @@ impl SettingsMenu {
                 &mut config.ui.magnification_panel.enabled_default,
                 SectionOverrides::default(),
                 SectionDisplayInfo {
-                    name: Some("Enable Magnification Panel".into()),
+                    name: Some("Display Magnification Panel".into()),
                     ..Default::default()
                 }
             )
@@ -52,6 +52,47 @@ impl SettingsMenu {
                 },
                 SectionDisplayInfo {
                     name: Some("Viewport padding".into()),
+                    ..Default::default()
+                }
+            )
+        )
+        .add_section(
+            Section::new(
+                config_key_path!(config.ui.viewport.zoom_into_cursor),
+                &mut config.ui.viewport.zoom_into_cursor,
+                SectionOverrides::default(),
+                SectionDisplayInfo::default()
+            )
+        )
+        .add_section(
+            Section::new(
+                config_key_path!(config.ui.viewport.fit_to_window),
+                &mut config.ui.viewport.fit_to_window,
+                SectionOverrides::default(),
+                SectionDisplayInfo {
+                    name: Some("Fit image to window".into()),
+                    ..Default::default()
+                }
+            )
+        )
+        .add_section(
+            Section::new(
+                config_key_path!(config.ui.viewport.animate_fit_to_window),
+                &mut config.ui.viewport.animate_fit_to_window,
+                SectionOverrides::default(),
+                SectionDisplayInfo {
+                    name: Some("Animate fit image to window".into()),
+                    ..Default::default()
+                }
+            )
+        )
+        .add_section(
+            Section::new(
+                config_key_path!(config.ui.viewport.animate_reset),
+                &mut config.ui.viewport.animate_reset,
+                SectionOverrides::default(),
+                SectionDisplayInfo {
+                    name: Some("Animate viewport reset".into()),
                     ..Default::default()
                 }
             )

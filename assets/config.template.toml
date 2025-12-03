@@ -51,12 +51,12 @@ enabled_default = false
 # Adjust this value to control the spacing between the image and the edge of the window.
 padding = 2
 # Changes how image zooming behaves with the scroll wheel.
-# Set to "false" to disable zooming into the position of the mouse cursor.
+# Set to "false" to disable zooming into mouse cursor position.
 zoom_into_cursor = true
 # If set to "true", the viewport will automatically fit the image to the window.
 fit_to_window = true
-# Set to "false" if you want the image to instantly snap to the window size.
-# If set to "true", the viewport will perform a fancy animation fitting the image to the window.
+# Set to "false" if you want the image to instantly snap to the window size otherwise 
+# the viewport will perform a fancy animation while fitting the image to the window.
 animate_fit_to_window = true
 # If set to "true", the viewport will animate pan and zoom when they are reset.
 animate_reset = true
