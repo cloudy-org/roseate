@@ -89,7 +89,7 @@ impl eframe::App for Roseate {
             self.image_handler.update(
                 &ctx,
                 &self.viewport.zoom,
-                false,
+                self.viewport.is_busy,
                 &self.monitor_size,
                 &mut self.notifier,
                 config.misc.experimental.get_image_processing_backend()
@@ -171,7 +171,7 @@ impl eframe::App for Roseate {
                 if let Some(loading) = &self.notifier.loading {
                     Frame::default()
                         .fill(Color32::from_hex(&self.theme.primary_colour.hex_code).unwrap())
-                        .inner_margin(Margin::symmetric(10, 6))
+                        .inner_margin(Margin::same(8))
                         .corner_radius(CornerRadius {ne: 10, ..Default::default()})
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {

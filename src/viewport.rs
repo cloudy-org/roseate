@@ -11,7 +11,7 @@ use crate::{image::image::Image, image_handler::ImageHandlerData};
 pub struct Viewport {
     pub zoom: f32,
     offset: Vec2,
-    is_busy: bool,
+    pub is_busy: bool,
 
     reset_zoom: Option<f32>,
     reset_offset: Option<Vec2>,
@@ -214,9 +214,9 @@ impl Viewport {
             return;
         }
 
-        // TODO: derive from image size too
-        let clamped_zoom_factor = (self.zoom / 2.3).clamp(1.0, f32::MAX);
-        let pan_bounds_to_not_exceed = window_size / 2.0 * clamped_zoom_factor;
+        // NOTE: deriving from image size might help too, 
+        // we'll see if this causes any problems first
+        let pan_bounds_to_not_exceed = window_size / 2.0 * self.zoom;
 
         let is_out_of_bounds = self.offset.x > pan_bounds_to_not_exceed.x || 
             self.offset.y > pan_bounds_to_not_exceed.y || 
