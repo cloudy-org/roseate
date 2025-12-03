@@ -3,5 +3,8 @@
         "./Cargo.toml",
         "./cirrus/egui/Cargo.toml",
         "./cirrus/theming/Cargo.toml"
+    ],
+    "cSpell.words": [
+        "rect"
     ]
 }

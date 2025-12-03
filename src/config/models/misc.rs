@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::image::backends::ImageProcessingBackend;
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Hash)]
 pub struct Misc {
     #[serde(default = "super::none_default")]
     pub override_monitor_size: Option<OverrideMonitorSize>,
@@ -11,19 +11,16 @@ pub struct Misc {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct Experimental {
     #[serde(default = "super::none_default")]
     image_processing_backend: Option<String>,
-    #[serde(default = "super::false_default")]
-    pub use_dynamic_sampling_optimization: bool
 }
 
 impl Default for Experimental {
     fn default() -> Self {
         Self {
             image_processing_backend: None,
-            use_dynamic_sampling_optimization: false
         }
     }
 }
@@ -45,7 +42,7 @@ impl Experimental {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct OverrideMonitorSize {
     pub width: u32,
     pub height: u32

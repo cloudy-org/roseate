@@ -1,10 +1,11 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hasher}};
 
+use cirrus_egui::v1::notifier::Notifier;
 use log::debug;
 use image::imageops::{resize, FilterType};
 
 use std::hash::Hash;
-use crate::{error::{Error, Result}, image::{backends::ModificationProcessingMeat, fast_downsample::fast_downsample}, notifier::NotifierAPI};
+use crate::{error::{Error, Result}, image::{backends::ModificationProcessingMeat, fast_downsample::fast_downsample}};
 use zune_image::image::Image as ZuneImage;
 
 use super::{decode::{DecodedImage, ImageRSImage}, image::{Image, ImageSizeT}};
@@ -42,9 +43,9 @@ impl Image {
         &self,
         modifications: HashSet<ImageModifications>,
         decoded_image: DecodedImage,
-        notifier: &mut NotifierAPI,
+        notifier: &mut Notifier,
     ) -> Result<DecodedImage> {
-        notifier.set_loading_and_log(Some("Modifying decoded image...".to_string()));
+        notifier.set_loading(Some("Modifying decoded image...".to_string()));
 
         //let image_colour_type = image_decoder.color_type();
 

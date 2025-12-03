@@ -57,8 +57,8 @@ impl TryFrom<ColorSpace> for ImageColourType {
 /// modification is not possible, otherwise always use `ImageData::Pixels`.
 #[derive(Clone)]
 pub enum ImageData {
-    Pixels((Arc<Vec<u8>>, ImageSizeT, ImageColourType)),
+    Pixels((Arc<[u8]>, ImageSizeT, ImageColourType)),
     /// Use this for images that do not support decoding to pixels like SVGs 
     /// or for images that cannot be decoded by decoders (e.g. decoder doesn't support said image format).
-    StaticBytes(Arc<Vec<u8>>)
+    StaticBytes(Arc<[u8]>)
 }

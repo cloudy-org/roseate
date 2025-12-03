@@ -3,7 +3,7 @@ version = 1
 [image]
 
 [image.loading]
-# Setting this to "true" will make the image load on a separate thread to the GUI initially. This
+# Setting this to "true" will make the image load on a separate thread to the GUI initially. This 
 # means the GUI may load up before the image is ready to display itself. Will this improve load times? idk 🤷
 initial.lazy_loading = false
 
@@ -13,7 +13,7 @@ gui.lazy_loading = true
 
 [image.optimizations]
 # Comment this out if you would like to customize the optimization settings below.
-# MOTE: The optimizations that are defaulted to in "mode" will always take priority over 
+# NOTE: The optimizations that are defaulted to within "mode" will always take priority over 
 # the optimizations specified below.
 mode = "default"
 
@@ -32,6 +32,15 @@ mode = "default"
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.3}
 
+# Setting this to true will enable the new but extremely experimental 
+# dynamic sampling feature that upsamples your image when you zoom into it 
+# to bring back the detail lost from monitor downsampling.
+# 
+# When this feature is more complete it will be named without the "experimental_" prefix.
+# 
+# Again, this is VERY experimental and incomplete! Expect a very broken implementation and bugs.
+experimental_dynamic_sampling = {enabled = false, also_downsample = true}
+
 [ui]
 
 [ui.magnification_panel]
@@ -41,14 +50,29 @@ enabled_default = false
 [ui.viewport]
 # Adjust this value to control the spacing between the image and the edge of the window.
 padding = 2
+# Changes how image zooming behaves with the scroll wheel.
+# Set to "false" to disable zooming into mouse cursor position.
+zoom_into_cursor = true
+# If set to "true", the viewport will automatically fit the image to the window.
+fit_to_window = true
+# Set to "false" if you want the image to instantly snap to the window size otherwise 
+# the viewport will perform a fancy animation while fitting the image to the window.
+animate_fit_to_window = true
+# If set to "true", the viewport will animate pan and zoom when they are reset.
+animate_reset = true
+
+[ui.selection_menu]
+# If set to "true", the image selection menu will display an 
+# "Open Image" button otherwise to open an image you can click on the rose.
+show_open_image_button = true
 
 [key_binds]
 info_box.toggle = "I"
 about_box.toggle = "A"
-# Keybind to reset the image pan 
+# Key bind to reset the image pan 
 # position and zoom scale back to default.
 image.reset_pos = "R"
-# Keybind to toggle all your UI controls like the magnification panel.
+# Key bind to toggle all your UI controls like the magnification panel.
 ui_controls.toggle = "C"
 
 [misc]
@@ -70,13 +94,3 @@ ui_controls.toggle = "C"
 # 
 # Set this back to it's default, "image-rs" if the image looks weird or you want stability.
 image_processing_backend = "image-rs"
-
-# Setting this to true will enable the new but extremely experimental 
-# dynamic sampling feature that upsamples your image when you zoom into it 
-# to bring back the detail lost from monitor downsampling.
-# 
-# If this feature was more complete it would live under "[image.optimizations]"
-# as "dynamic_sampling = {enabled = false, also_downsample = true}".
-# 
-# Again, this is VERY experimental and incomplete! Expect a very broken implementation.
-use_dynamic_sampling_optimization = false

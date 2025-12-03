@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Hash)]
 pub struct KeyBinds {
     #[serde(default)]
     pub info_box: InfoBoxBinds,
@@ -13,7 +13,7 @@ pub struct KeyBinds {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct InfoBoxBinds {
     #[serde(default = "info_box_toggle")]
     pub toggle: String,
@@ -32,7 +32,7 @@ fn info_box_toggle() -> String {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct AboutBoxBinds {
     #[serde(default = "about_box_toggle")]
     pub toggle: String,
@@ -51,7 +51,7 @@ fn about_box_toggle() -> String {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct ImageBinds {
     #[serde(default = "image_reset_pos")]
     pub reset_pos: String,
@@ -70,7 +70,7 @@ fn image_reset_pos() -> String {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Hash)]
 pub struct UIControlsBinds {
     #[serde(default = "ui_controls_toggle")]
     pub toggle: String,

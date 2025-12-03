@@ -1,64 +1,71 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use cirrus_egui::v1::scheduler::Scheduler;
+use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use eframe::egui::Context;
-use egui::{TextureHandle, TextureOptions};
+use egui::{TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
 use rfd::FileDialog;
 use log::{debug, info, warn};
 use monitor_downsampling::get_monitor_downsampling_size;
 use optimization::ImageOptimizations;
 
-use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize, notifier::NotifierAPI, zoom_pan::ZoomPan};
+use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize};
 
 mod dynamic_sampling;
 
 pub mod optimization;
 pub mod monitor_downsampling;
 
+// NOTE: need a better name for this
+#[derive(Clone)]
+pub enum ImageHandlerData {
+    Texture(TextureHandle),
+    EguiImage(egui::Image<'static>)
+}
+
 /// Struct that handles all the image loading logic in a thread safe 
 /// manner to allow features such as background image loading / lazy loading.
 /// 
-/// ImageHandler struct is a ui facing, Image struct is low-level stuff.
+/// ImageHandler struct is more ui facing, Image struct is lower-level.
 pub struct ImageHandler {
     pub image: Option<Image>,
-    pub image_loaded: bool,
-    image_loading: bool,
-    image_loaded_arc: Arc<Mutex<bool>>,
-    egui_image_texture: Option<TextureHandle>,
     pub image_optimizations: HashSet<ImageOptimizations>,
+    pub data: Option<ImageHandlerData>,
+
+    image_loading: bool,
+
     dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
     dynamic_sampling_old_resolution: ImageSizeT,
     accumulated_zoom_factor_change: f32,
-    forget_last_image_bytes_arc: Arc<Mutex<bool>>,
     monitor_downsampling_required: bool,
+    load_image_texture: Arc<Mutex<bool>>,
 }
 
 impl ImageHandler {
     pub fn new() -> Self {
         Self {
             image: None,
-            image_loaded: false,
-            image_loaded_arc: Arc::new(Mutex::new(false)),
-            image_loading: false,
             image_optimizations: HashSet::new(),
+            data: None,
+
+            image_loading: false,
+
             dynamic_sample_schedule: None,
-            egui_image_texture: None,
             last_zoom_factor: 1.0,
             dynamic_sampling_new_resolution: (0, 0),
             dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
-            forget_last_image_bytes_arc: Arc::new(Mutex::new(false)),
-            monitor_downsampling_required: false
+            monitor_downsampling_required: false,
+            load_image_texture: Arc::new(Mutex::new(false)),
         }
     }
 
     pub fn init_image(&mut self, image_path: &Path, image_optimizations: Vec<ImageOptimizations>) -> Result<()> {
         let image = Image::from_path(image_path)?;
 
-        self.image_optimizations = HashSet::from_iter(image_optimizations);
         self.image = Some(image);
+        self.image_optimizations = HashSet::from_iter(image_optimizations);
 
         Ok(())
     }
@@ -93,38 +100,28 @@ impl ImageHandler {
     pub fn update(
         &mut self,
         ctx: &Context,
-        zoom_pan: &ZoomPan,
+        zoom_factor: &f32,
+        is_panning: bool,
         monitor_size: &MonitorSize,
-        notifier: &mut NotifierAPI,
+        notifier: &mut Notifier,
         backend: ImageProcessingBackend
     ) {
         // I use an update function to keep the public 
         // fields update to date with their Arc<Mutex<T>> twins
         // and also now to perform dynamic downsampling.
 
-        if let Ok(value) = self.image_loaded_arc.try_lock() {
-            self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
-            self.image_loading = false; // set that bitch back to false yeah
-        }
+        // if let Ok(value) = self.image_loaded_arc.try_lock() {
+        //     self.image_loaded = value.clone(); // cloning here shouldn't be too expensive
+        //     self.image_loading = false; // set that bitch back to false yeah
+        // }
 
-        if self.image_loaded {
-            if *self.forget_last_image_bytes_arc.lock().unwrap() {
-                notifier.set_loading(Some("Releasing some memory...".into()));
-                debug!("Releasing last image bytes from egui's memory...");
-                ctx.forget_all_images();
-
-                notifier.unset_loading();
-                self.egui_image_texture = None;
-                *self.forget_last_image_bytes_arc.lock().unwrap() = false;
-            }
-        }
-
-        self.dynamic_sampling_update(zoom_pan, monitor_size);
+        self.load_texture_update(ctx);
+        self.dynamic_sampling_update(zoom_factor, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
             // TODO: if we are still panning once we have stopped 
             // defer some addition seconds to the dynamic_sample_schedule.
-            if !zoom_pan.is_panning {
+            if !is_panning {
                 if schedule.update().is_some() {
                     if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
                         debug!(
@@ -147,11 +144,105 @@ impl ImageHandler {
         }
     }
 
+    fn load_texture_update(&mut self, ctx: &Context) {
+        let reload_texture = match self.load_image_texture.try_lock() {
+            Ok(load_image_texture_mutex) => *load_image_texture_mutex,
+            Err(_) => false,
+        };
+
+        if reload_texture == false {
+            return;
+        }
+
+        if let Some(image) = &self.image {
+            if let Some(image_data) = image.image_data.lock().unwrap().as_ref() {
+                let texture_options = TextureOptions {
+                    magnification: TextureFilter::Linear,
+                    minification: TextureFilter::Linear,
+                    wrap_mode: TextureWrapMode::ClampToEdge,
+                    mipmap_mode: None,
+                };
+
+                match image_data {
+                    ImageData::Pixels(
+                        (pixels, (width, height), image_colour_type)
+                    ) => {
+                        let image_size = [*width as usize, *height as usize];
+
+                        debug!("Handing image texture to egui's backend to upload to the GPU...");
+
+                        let texture = ctx.load_texture(
+                            "image",
+                            match image_colour_type {
+                                ImageColourType::Grey | ImageColourType::GreyAlpha => {
+                                    debug!("Rendering image as grey scale egui texture...");
+                                    egui::ColorImage::from_gray(
+                                        image_size, pixels
+                                    )
+                                },
+                                ImageColourType::RGB => {
+                                    debug!("Rendering image as rgb egui texture...");
+                                    egui::ColorImage::from_rgb(
+                                        image_size, pixels
+                                    )
+                                },
+                                ImageColourType::RGBA => {
+                                    debug!("Rendering image as rgba egui texture...");
+                                    egui::ColorImage::from_rgba_unmultiplied(
+                                        image_size, pixels
+                                    )
+                                },
+                            },
+                            texture_options
+                        );
+
+                        // Texture handle doesn't need forgetting like egui::Image 
+                        // as it's smart enough to free itself from memory
+
+                        ctx.forget_all_images(); // we want to free the rose image in 
+                        // image selection menu and all other images from memory.
+
+                        self.data = Some(ImageHandlerData::Texture(texture));
+                    },
+                    ImageData::StaticBytes(bytes ) => {
+                        // load from bytes using egui's image loading logic.
+                        let egui_image = egui::Image::from_bytes(
+                            format!("bytes://image.{:#}", image.image_format),
+                            egui::load::Bytes::Shared(bytes.clone()) // we can clone here 
+                            // without turning into a java application as we're using arc
+                        );
+
+                        ctx.forget_all_images();
+
+                        // forget last image if there was one
+                        // if let Some(data) = self.data.as_ref() {
+                        //     if let ImageHandlerData::EguiImage(image) = data {
+                        //         if let Some(uri) = image.uri() {
+                        //             println!("test!");
+                        //             ctx.forget_image(uri);
+                        //         }
+                        //     }
+                        // }
+
+                        self.data = Some(
+                            ImageHandlerData::EguiImage(
+                                egui_image.texture_options(texture_options)
+                            )
+                        );
+                    },
+                };
+            }
+        };
+
+        *self.load_image_texture.lock().unwrap() = false;
+        self.image_loading = false;
+    }
+
     /// Handles loading the image in a background thread or on the main thread. 
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut NotifierAPI, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut Notifier, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -159,7 +250,7 @@ impl ImageHandler {
 
         self.image_loading = true;
 
-        notifier.set_loading_and_log(
+        notifier.set_loading(
             Some("Preparing to load image...".into())
         );
 
@@ -167,7 +258,7 @@ impl ImageHandler {
             "You must run 'ImageHandler.init_image()' before using 'ImageHandler.load_image()'!"
         );
 
-        notifier.set_loading_and_log(
+        notifier.set_loading(
             Some("Gathering necessary image modifications...".into())
         );
 
@@ -181,30 +272,33 @@ impl ImageHandler {
         // Also broken! https://github.com/cloudy-org/roseate/issues/66 
         // Let's warn the user.
         if ImageFormat::Svg == image.image_format {
-            notifier.toasts.lock().unwrap()
-                .toast_and_log(
-                    "SVG files are experimental and broken! \
-                    Expect many bugs, inconstancies and performance / memory issues.".into(),
-                egui_notify::ToastLevel::Warning
-                )
-                .duration(Some(Duration::from_secs(8)));
+            notifier.toast(
+                "SVG files are experimental and broken! \
+                Expect many bugs, inconstancies and performance / memory issues.",
+                egui_notify::ToastLevel::Warning,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(8)));
+                }
+            );
         }
 
-        let image_loaded_arc = self.image_loaded_arc.clone();
-        let forget_last_image_bytes_arc = self.forget_last_image_bytes_arc.clone();
-        let mut notifier_arc = notifier.clone();
-        let monitor_size_arc = monitor_size.clone();
+        // let image_loaded_arc = self.image_loaded_arc.clone();
+        let mut notifier_clone = notifier.clone();
+        let monitor_size_clone = monitor_size.clone();
+        let load_image_texture_clone = self.load_image_texture.clone();
+
+        let image_loaded = self.data.is_some();
 
         let loading_logic = move || {
             let now = Instant::now();
             let mut hasher = DefaultHasher::new();
 
-            let result = match *image_loaded_arc.lock().unwrap() {
+            let result = match image_loaded {
                 true => {
-                    notifier_arc.set_loading_and_log(Some("Reloading image...".into()));
+                    notifier_clone.set_loading(Some("Reloading image...".into()));
 
                     let result = image.reload_image(
-                        &mut notifier_arc,
+                        &mut notifier_clone,
                         image_modifications,
                         &backend
                     );
@@ -218,11 +312,11 @@ impl ImageHandler {
                     result
                 },
                 false => {
-                    notifier_arc.set_loading_and_log(Some("Loading image...".into()));
+                    notifier_clone.set_loading(Some("Loading image...".into()));
 
                     let result = image.load_image(
-                        &mut notifier_arc,
-                        &monitor_size_arc,
+                        &mut notifier_clone,
+                        &monitor_size_clone,
                         image_modifications,
                         &backend
                     );
@@ -238,22 +332,25 @@ impl ImageHandler {
 
             match result {
                 Ok(()) => {
-                    *image_loaded_arc.lock().unwrap() = true;
-
-                    *forget_last_image_bytes_arc.lock().unwrap() = true;
+                    *load_image_texture_clone.lock().unwrap() = true;
 
                     image.hash(&mut hasher);
+
                     debug!("Image data hash: {}", hasher.finish());
                     debug!("Image current modifications: {}", image_modifications_display);
                 },
                 Err(error) => {
-                    notifier_arc.toasts.lock().unwrap()
-                        .toast_and_log(error.into(), egui_notify::ToastLevel::Error)
-                        .duration(Some(Duration::from_secs(10)));
+                    notifier_clone.toast(
+                        Box::new(error),
+                        egui_notify::ToastLevel::Error,
+                        |toast| {
+                            toast.duration(Some(Duration::from_secs(10)));
+                        }
+                    );
                 },
             }
 
-            notifier_arc.unset_loading();
+            notifier_clone.unset_loading();
         };
 
         if lazy_load {
@@ -265,72 +362,78 @@ impl ImageHandler {
         }
     }
 
-    pub fn get_egui_image(&mut self, ctx: &egui::Context) -> egui::Image {
-        assert!(
-            self.image_loaded,
-            "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is true!"
-        );
+    // NOTE: this is temporary, it will be rewritten.
+    // pub fn get_egui_image(&'_ mut self, ctx: &egui::Context) -> egui::Image<'_> {
+    //     // assert!(
+    //     //     self.image_loaded,
+    //     //     "'ImageHandler::get_egui_image()' should never be called if 'self.image_loaded' is false!"
+    //     // );
 
-        let image = self.image.as_ref().unwrap();
+    //     let image = self.image.as_ref().unwrap();
 
-        let mut hasher = DefaultHasher::new();
-        image.hash(&mut hasher);
+    //     let mut hasher = DefaultHasher::new();
+    //     image.hash(&mut hasher);
 
-        let image_hash = hasher.finish();
+    //     let image_hash = hasher.finish();
 
-        // we can unwrap Option<T> here as if 
-        // "self.image_handler.image_loaded" is true image data should exist.
-        match image.image_data.lock().unwrap().as_ref()
-            .expect("Image data was not present! This is a logic error on our side, please report it.") {
-            ImageData::Pixels((pixels, (width, height), image_colour_type)) => {
-                let texture = match &self.egui_image_texture {
-                    Some(texture) => texture,
-                    None => {
-                        self.egui_image_texture = Some(
-                            ctx.load_texture(
-                                "image",
-                                match image_colour_type {
-                                    ImageColourType::Grey | ImageColourType::GreyAlpha => {
-                                        debug!("Rendering image as grey scale egui texture...");
-                                        egui::ColorImage::from_gray(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
-                                        )
-                                    },
-                                    ImageColourType::RGB => {
-                                        debug!("Rendering image as rgb egui texture...");
-                                        egui::ColorImage::from_rgb(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
-                                        )
-                                    },
-                                    ImageColourType::RGBA => {
-                                        debug!("Rendering image as rgba egui texture...");
-                                        egui::ColorImage::from_rgba_unmultiplied(
-                                            [*width as usize, *height as usize],
-                                            pixels.as_slice()
-                                        )
-                                    },
-                                },
-                                TextureOptions::default()
-                            )
-                        );
+    //     // we can unwrap Option<T> here as if 
+    //     // "self.image_handler.image_loaded" is true image data should exist.
+    //     match image.image_data.lock().unwrap().as_ref()
+    //         .expect("Image data was not present! This is a logic error on our side, please report it.") {
+    //         ImageData::Pixels((pixels, (width, height), image_colour_type)) => {
+    //             let texture = match &self.egui_image_texture {
+    //                 Some(texture) => texture,
+    //                 None => {
+    //                     debug!("Taking image texture and uploading it to the GPU with egui...");
 
-                        &self.egui_image_texture.as_ref().unwrap()
-                    },
-                };
+    //                     let image_size = [*width as usize, *height as usize];
 
-                egui::Image::from_texture(texture)
-            },
-            ImageData::StaticBytes(bytes) => {
-                egui::Image::from_bytes(
-                    format!("bytes://{}.{:#}", image_hash, image.image_format),
-                    bytes.to_vec() // TODO: I think this duplicates memory so 
-                    // this will need to be analysed and changed.
-                )
-            },
-        }
-    }
+    //                     self.egui_image_texture = Some(
+    //                         ctx.load_texture(
+    //                             "image",
+    //                             match image_colour_type {
+    //                                 ImageColourType::Grey | ImageColourType::GreyAlpha => {
+    //                                     debug!("Rendering image as grey scale egui texture...");
+    //                                     egui::ColorImage::from_gray(
+    //                                         image_size, pixels
+    //                                     )
+    //                                 },
+    //                                 ImageColourType::RGB => {
+    //                                     debug!("Rendering image as rgb egui texture...");
+    //                                     egui::ColorImage::from_rgb(
+    //                                         image_size, pixels
+    //                                     )
+    //                                 },
+    //                                 ImageColourType::RGBA => {
+    //                                     debug!("Rendering image as rgba egui texture...");
+    //                                     egui::ColorImage::from_rgba_unmultiplied(
+    //                                         image_size, pixels
+    //                                     )
+    //                                 },
+    //                             },
+    //                             TextureOptions {
+    //                                 magnification: TextureFilter::Linear,
+    //                                 minification: TextureFilter::Linear,
+    //                                 wrap_mode: TextureWrapMode::ClampToEdge,
+    //                                 mipmap_mode: None,
+    //                             }
+    //                         )
+    //                     );
+
+    //                     self.egui_image_texture.as_ref().unwrap()
+    //                 },
+    //             };
+
+    //             egui::Image::from_texture(texture)
+    //         },
+    //         ImageData::StaticBytes(bytes) => {
+    //             egui::Image::from_bytes(
+    //                 format!("bytes://{}.{:#}", image_hash, image.image_format),
+    //                 bytes.clone() // we can clone here without turning into a java application as we're using arc
+    //             )
+    //         },
+    //     }
+    // }
 
     /// Method that handles choosing which type of modifications 
     /// should be done to the image at this time. It decides that on a number of various factors, 
