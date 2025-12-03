@@ -1,4 +1,4 @@
-use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use eframe::egui::Context;
@@ -39,7 +39,7 @@ pub struct ImageHandler {
     dynamic_sampling_old_resolution: ImageSizeT,
     accumulated_zoom_factor_change: f32,
     monitor_downsampling_required: bool,
-    free_last_image_memory: bool,
+    load_image_texture: Arc<Mutex<bool>>,
 }
 
 impl ImageHandler {
@@ -57,7 +57,7 @@ impl ImageHandler {
             dynamic_sampling_old_resolution: (0, 0),
             accumulated_zoom_factor_change: 0.0,
             monitor_downsampling_required: false,
-            free_last_image_memory: false,
+            load_image_texture: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -115,7 +115,7 @@ impl ImageHandler {
         //     self.image_loading = false; // set that bitch back to false yeah
         // }
 
-        self.load_texture_update(ctx, notifier);
+        self.load_texture_update(ctx);
         self.dynamic_sampling_update(zoom_factor, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
@@ -134,7 +134,6 @@ impl ImageHandler {
                     }
 
                     self.load_image(
-                        ctx,
                         true,
                         notifier,
                         monitor_size,
@@ -145,29 +144,13 @@ impl ImageHandler {
         }
     }
 
-    fn load_texture_update(&mut self, ctx: &Context, notifier: &mut Notifier) {
-        if let Some(data) = self.data.as_ref() {
-            // TODO: untested!
-            if self.free_last_image_memory {
-                notifier.set_loading(Some("Releasing some memory...".into()));
-                debug!("Releasing last image texture from egui's memory...");
+    fn load_texture_update(&mut self, ctx: &Context) {
+        let reload_texture = match self.load_image_texture.try_lock() {
+            Ok(load_image_texture_mutex) => *load_image_texture_mutex,
+            Err(_) => false,
+        };
 
-                match data {
-                    ImageHandlerData::EguiImage(image) => {
-                        if let Some(uri) = image.uri() {
-                            ctx.forget_image(uri);
-                        }
-                    },
-                    ImageHandlerData::Texture(texture) => {
-                        // if the image was loaded from a texture, it won't have a uri 
-                        // so we use a texture id to free it from the texture manager.
-                        ctx.tex_manager().write().free(texture.id());
-                    },
-                };
-
-                notifier.unset_loading();
-            }
-
+        if reload_texture == false {
             return;
         }
 
@@ -213,7 +196,13 @@ impl ImageHandler {
                             texture_options
                         );
 
-                        self.data = Some(ImageHandlerData::Texture((texture)));
+                        // Texture handle doesn't need forgetting like egui::Image 
+                        // as it's smart enough to free itself from memory
+
+                        ctx.forget_all_images(); // we want to free the rose image in 
+                        // image selection menu and all other images from memory.
+
+                        self.data = Some(ImageHandlerData::Texture(texture));
                     },
                     ImageData::StaticBytes(bytes ) => {
                         // load from bytes using egui's image loading logic.
@@ -223,6 +212,18 @@ impl ImageHandler {
                             // without turning into a java application as we're using arc
                         );
 
+                        ctx.forget_all_images();
+
+                        // forget last image if there was one
+                        // if let Some(data) = self.data.as_ref() {
+                        //     if let ImageHandlerData::EguiImage(image) = data {
+                        //         if let Some(uri) = image.uri() {
+                        //             println!("test!");
+                        //             ctx.forget_image(uri);
+                        //         }
+                        //     }
+                        // }
+
                         self.data = Some(
                             ImageHandlerData::EguiImage(
                                 egui_image.texture_options(texture_options)
@@ -231,14 +232,17 @@ impl ImageHandler {
                     },
                 };
             }
-        }
+        };
+
+        *self.load_image_texture.lock().unwrap() = false;
+        self.image_loading = false;
     }
 
     /// Handles loading the image in a background thread or on the main thread. 
     /// Set `lazy_load` to `true` if you want the image to be loaded in the background on a separate thread.
     /// 
     /// Setting `lazy_load` to `false` **will block the main thread** until the image is loaded.
-    pub fn load_image(&mut self, ctx: &Context, lazy_load: bool, notifier: &mut Notifier, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
+    pub fn load_image(&mut self, lazy_load: bool, notifier: &mut Notifier, monitor_size: &MonitorSize, backend: ImageProcessingBackend) {
         if self.image_loading {
             warn!("Not loading image as one is already being loaded!");
             return;
@@ -281,10 +285,9 @@ impl ImageHandler {
         // let image_loaded_arc = self.image_loaded_arc.clone();
         let mut notifier_clone = notifier.clone();
         let monitor_size_clone = monitor_size.clone();
+        let load_image_texture_clone = self.load_image_texture.clone();
 
         let image_loaded = self.data.is_some();
-
-        let free_last_image_memory_mutex = Mutex::new(self.free_last_image_memory);
 
         let loading_logic = move || {
             let now = Instant::now();
@@ -329,9 +332,7 @@ impl ImageHandler {
 
             match result {
                 Ok(()) => {
-                    if image_loaded {
-                        *free_last_image_memory_mutex.lock().unwrap() = true;
-                    }
+                    *load_image_texture_clone.lock().unwrap() = true;
 
                     image.hash(&mut hasher);
 

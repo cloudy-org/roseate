@@ -203,7 +203,6 @@ fn main() -> eframe::Result {
 
             if image_handler.image.is_some() {
                 image_handler.load_image(
-                    &cc.egui_ctx,
                     config_manager.config.image.loading.initial.lazy_loading,
                     &mut notifier,
                     &monitor_size,

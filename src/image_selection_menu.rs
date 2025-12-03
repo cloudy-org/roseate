@@ -66,7 +66,6 @@ impl ImageSelectionMenu {
             match result {
                 Ok(_) => {
                     image_handler.load_image(
-                        &ui.ctx(),
                         true,
                         notifier,
                         monitor_size,
