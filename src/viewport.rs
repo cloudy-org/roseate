@@ -3,10 +3,10 @@ use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
 use log::debug;
 use std::hash::Hasher;
-use cirrus_egui::v1::scheduler::{Scheduler};
+use cirrus_egui::v1::{scheduler::Scheduler};
 use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 
-use crate::image::image::Image;
+use crate::{image::image::Image, image_handler::ImageHandlerData};
 
 pub struct Viewport {
     pub zoom: f32,
@@ -86,7 +86,7 @@ impl Viewport {
         &mut self,
         ui: &mut Ui,
         image: &Image,
-        egui_image: egui::Image,
+        image_handler_data: ImageHandlerData,
         padding: f32,
         zoom_into_cursor: bool,
         fit_to_window: bool,
@@ -185,10 +185,12 @@ impl Viewport {
         // the viewport is busy if the user is interacting with it (scrolling, zooming, etc).
         self.is_busy = response.dragged() || response.hovered() && scroll.abs() > 0.0;
 
-        let egui_image = egui_image
-            .corner_radius(10.0); // TODO: config to customize image corner radius.
+        let egui_image = match image_handler_data {
+            ImageHandlerData::Texture(texture) => egui::Image::from_texture(&texture),
+            ImageHandlerData::EguiImage(image) => image,
+        }.corner_radius(10.0); // TODO: config to customize image corner radius.
 
-        // Drawing the image to the viewport.
+        // // Drawing the image to the viewport.
         egui_image.paint_at(ui, image_rect);
     }
 
@@ -328,4 +330,46 @@ impl Viewport {
 
         animated_current
     }
+
+    // fn paint_image_and_handle_failure(ui: &mut Ui, egui_image: egui::Image, image_rect: Rect, notifier: &mut Notifier) {
+    //     let pixel_size = image_rect.size();
+
+    //     let loaded_texture_result = egui_image.source(ui.ctx())
+    //         .load(
+    //             ui.ctx(),
+    //             TextureOptions::default(),
+    //             SizeHint::Size {
+    //                 width: pixel_size.x as _,
+    //                 height: pixel_size.y as _,
+    //                 maintain_aspect_ratio: false, // no - just get exactly what we asked for
+    //             },
+    //         );
+
+    //     match loaded_texture_result {
+    //         Ok(loaded_texture) => {
+    //             let image_options = egui_image.image_options();
+
+    //             ui.painter()
+    //                 .image(
+    //                     loaded_texture.texture_id().unwrap(),
+    //                     image_rect,
+    //                     image_options.uv,
+    //                     image_options.tint
+    //                 );
+    //         },
+    //         Err(error) => {
+    //             let error = Error::FailedToLoadTexture(Some(error.to_string()));
+
+    //             notifier.toast(
+    //                 Box::new(error.clone()),
+    //                 ToastLevel::Error,
+    //                 |_| {}
+    //             );
+
+    //             ui.heading("Failed to load texture!");
+
+    //             ui.code(error.actual_error().unwrap());
+    //         },
+    //     }
+    // }
 }

@@ -24,22 +24,13 @@ pub struct Roseate {
 
 impl Roseate {
     pub fn new(
-        mut image_handler: ImageHandler,
+        image_handler: ImageHandler,
         monitor_size: MonitorSize,
         theme: Theme,
         mut notifier: Notifier,
         config_manager: ConfigManager<Config>
     ) -> Self {
         let config = &config_manager.config;
-
-        if image_handler.image.is_some() {
-            image_handler.load_image(
-                config.image.loading.initial.lazy_loading,
-                &mut notifier,
-                &monitor_size,
-                config.misc.experimental.get_image_processing_backend()
-            );
-        }
 
         let viewport = Viewport::new();
         let settings_menu = SettingsMenu::new();
@@ -118,10 +109,10 @@ impl eframe::App for Roseate {
             }
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
-            match (&self.image_handler.image.clone(), self.image_handler.image_loaded) {
+            match (self.image_handler.image.as_ref(), self.image_handler.data.as_ref()) {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
-                (Some(image), true) => {
+                (Some(image), Some(image_handler_data))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             // TODO: Draw and manage all windows in a separate struct.
@@ -129,15 +120,13 @@ impl eframe::App for Roseate {
                                 self.info_window.show(ui, &image);
                             }
 
-                            let egui_image = self.image_handler.get_egui_image(ctx);
-
                             let config_padding = config.ui.viewport.padding;
                             let proper_padding_percentage = ((100.0 - config_padding) / 100.0).clamp(0.0, 1.0);
 
                             self.viewport.show(
                                 ui,
                                 &image,
-                                egui_image,
+                                image_handler_data.clone(), // ImageHandlerData is safe to clone
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
                                 true,
@@ -161,7 +150,7 @@ impl eframe::App for Roseate {
                                 &self.monitor_size,
                                 config.misc.experimental.get_image_processing_backend(),
                                 &self.theme.accent_colour,
-                                true // TODO: add to config
+                                true, // TODO: add to config
                             );
                         });
                 },

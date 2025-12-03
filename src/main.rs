@@ -1,9 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{env, path::Path, time::Duration};
+use std::{path::Path, time::Duration};
 
 use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use config::config::Config;
+use env_logger::Env;
 use image_handler::{ImageHandler};
 use log::debug;
 use eframe::egui;
@@ -46,17 +47,16 @@ struct Args {
 }
 
 fn main() -> eframe::Result {
-    if !env::var("RUST_LOG").is_ok() {
-        env::set_var("RUST_LOG", "WARN");
-    }
+    let logger_env = Env::default()
+        .filter_or("RUST_LOG", "warn");
 
-    env_logger::init();
+    env_logger::init_from_env(logger_env);
 
     // Modern GUI image viewers should never silently 
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
-    let notifier = Notifier::new();
+    let mut notifier = Notifier::new();
 
     let config_manager: ConfigManager<Config> = match ConfigManager::new(APP_NAME, TEMPLATE_CONFIG_TOML_STRING) {
         Ok(config_manager) => config_manager,
@@ -199,6 +199,16 @@ fn main() -> eframe::Result {
             Styling::new(&theme, None)
                 .set_all()
                 .apply(&cc.egui_ctx);
+
+            if image_handler.image.is_some() {
+                image_handler.load_image(
+                    &cc.egui_ctx,
+                    config_manager.config.image.loading.initial.lazy_loading,
+                    &mut notifier,
+                    &monitor_size,
+                    config_manager.config.misc.experimental.get_image_processing_backend()
+                );
+            }
 
             let app = Roseate::new(image_handler, monitor_size, theme, notifier, config_manager);
 

@@ -26,6 +26,10 @@ impl ImageSelectionMenu {
         show_open_image_button: bool
     ) {
         let (rose_or_button_response, rose_rect) = ui_multiple_centered_double_render(ui, |ui| {
+            if image_handler.image.is_some() {
+                ui.disable();
+            }
+
             let mut rose_response = ui.add(
                 egui::Image::new(get_rose_image())
                     .max_width(145.0)
@@ -62,6 +66,7 @@ impl ImageSelectionMenu {
             match result {
                 Ok(_) => {
                     image_handler.load_image(
+                        &ui.ctx(),
                         true,
                         notifier,
                         monitor_size,

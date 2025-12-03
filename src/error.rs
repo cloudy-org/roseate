@@ -14,6 +14,7 @@ pub enum Error {
     /// String: user friendly reason why image didn't load
     FailedToLoadImage(ActualError, String),
     /// String: technical reason to why the image failed to convert to pixels.
+    FailedToLoadTexture(ActualError),
     FailedToConvertImageToPixels(ActualError, String),
     ImageFormatNotSupported(ActualError, String),
     MonitorNotFound(ActualError),
@@ -39,6 +40,7 @@ impl CError for Error {
             Error::FailedToApplyOptimizations(actual_error, _) => actual_error,
             Error::FailedToInitImage(actual_error, _, _) => actual_error,
             Error::FailedToLoadImage(actual_error, _) => actual_error,
+            Error::FailedToLoadTexture(actual_error) => actual_error,
             Error::FailedToConvertImageToPixels(actual_error, _) => actual_error,
             Error::ImageFormatNotSupported(actual_error, _) => actual_error,
             Error::MonitorNotFound(actual_error) => actual_error,
@@ -83,6 +85,9 @@ impl Display for Error {
                 f,
                 "Failed to load that image! The image might be corrupted. Reason: {}",
                 reason
+            ),
+            Error::FailedToLoadTexture(_) => write!(
+                f, "Egui failed to load image texture! Possible image corruption."
             ),
             Error::FailedToConvertImageToPixels(_, technical_reason) => write!(
                 f,
