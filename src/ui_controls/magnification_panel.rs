@@ -1,55 +1,34 @@
-use cirrus_egui::v1::notifier::Notifier;
-use eframe::egui::{self, Key, Vec2};
-use egui_notify::ToastLevel;
+use eframe::egui::{self, Vec2};
+use egui::Ui;
 
-use crate::{config::config::Config, viewport::Viewport};
+use crate::{viewport::Viewport};
 
-pub struct MagnificationPanel {
-    pub show: bool,
-    toggle_key: Key,
-}
+pub struct MagnificationPanel {}
 
 impl MagnificationPanel {
-    pub fn new(config: &Config, notifier: &mut Notifier) -> Self {
-        let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
-            Some(key) => key,
-            None => {
-                notifier.toast(
-                    "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.", 
-                    ToastLevel::Error,
-                    |_| {}
-                );
+    pub fn new() -> Self {
+        // let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
+        //     Some(key) => key,
+        //     None => {
+        //         notifier.toast(
+        //             "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.", 
+        //             ToastLevel::Error,
+        //             |_| {}
+        //         );
 
-                Key::C
-            },
-        };
+        //         Key::C
+        //     },
+        // };
 
-        Self {
-            show: config.ui.magnification_panel.enabled_default,
-            toggle_key,
-        }
+        Self {}
     }
 
-    pub fn handle_input(&mut self, ctx: &egui::Context) {
-        if ctx.input(|i| i.key_pressed(self.toggle_key)) {
-            if self.show == true {
-                self.show = false;
-            } else {
-                self.show = true;
-            }
-        }
-    }
-
-    pub fn update(&mut self, ctx: &egui::Context, viewport: &mut Viewport) {
-        if !self.show {
-            return;
-        }
-
+    pub fn show(&mut self, ui: &Ui, viewport: &mut Viewport) {
         egui::Window::new("controls_window")
             .anchor(egui::Align2::RIGHT_CENTER, Vec2::new(-16.0, 0.0))
             .title_bar(false)
             .resizable(false)
-            .show(ctx, |ui| {
+            .show(ui.ctx(), |ui| {
                 egui::Grid::new("controls_grid")
                     .spacing([10.0, 10.0])
                     .num_columns(2)

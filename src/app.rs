@@ -3,7 +3,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
-use crate::{config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, magnification_panel::MagnificationPanel, monitor_size::MonitorSize, settings::SettingsMenu, viewport::Viewport, windows::info::InfoWindow};
+use crate::{about_window::AboutWindow, config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -15,11 +15,12 @@ pub struct Roseate {
     monitor_size: MonitorSize,
     settings_menu: SettingsMenu,
     selection_menu: ImageSelectionMenu,
-    info_window: InfoWindow,
-    magnification_panel: MagnificationPanel,
+    about_window: AboutWindow<'static>,
+    windows_manager: WindowsManager,
+    ui_controls_manager: UIControlsManager,
 
     show_settings: bool,
-    show_info_window: bool
+    show_about: bool,
 }
 
 impl Roseate {
@@ -27,16 +28,15 @@ impl Roseate {
         image_handler: ImageHandler,
         monitor_size: MonitorSize,
         theme: Theme,
-        mut notifier: Notifier,
+        notifier: Notifier,
         config_manager: ConfigManager<Config>
     ) -> Self {
-        let config = &config_manager.config;
-
         let viewport = Viewport::new();
+        let windows_manager = WindowsManager::new();
         let settings_menu = SettingsMenu::new();
+        let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
-        let info_window = InfoWindow::new();
-        let magnification_panel = MagnificationPanel::new(config, &mut notifier);
+        let ui_controls_manager = UIControlsManager::new();
 
         Self {
             theme,
@@ -46,20 +46,19 @@ impl Roseate {
             monitor_size,
             settings_menu,
             selection_menu,
-            info_window,
-            magnification_panel,
+            about_window,
+            windows_manager,
+            ui_controls_manager,
             config_manager,
 
             show_settings: false,
-            show_info_window: false
+            show_about: false,
         }
     }
 }
 
 impl eframe::App for Roseate {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        self.magnification_panel.handle_input(ctx);
-
         Settings::handle_input(
             &ctx,
             &mut self.config_manager,
@@ -67,9 +66,11 @@ impl eframe::App for Roseate {
             &mut self.show_settings
         );
 
-        // TODO: Manage all windows input and show state in a separate struct.
-        if ctx.input(|input| input.key_pressed(Key::I)) {
-            self.show_info_window = !self.show_info_window;
+        self.windows_manager.handle_input(&ctx);
+        self.ui_controls_manager.handle_input(&ctx);
+
+        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
+            self.show_about = !self.show_about;
         }
 
         let central_panel_frame = Frame {
@@ -108,6 +109,10 @@ impl eframe::App for Roseate {
                 return;
             }
 
+            if self.show_about {
+                self.about_window.show(ui);
+            }
+
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
             match (self.image_handler.image.as_ref(), self.image_handler.data.as_ref()) {
                 // TODO: in the future we'll have some sort of value 
@@ -116,9 +121,8 @@ impl eframe::App for Roseate {
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             // TODO: Draw and manage all windows in a separate struct.
-                            if self.show_info_window {
-                                self.info_window.show(ui, &image);
-                            }
+                            self.windows_manager.show(ui, image);
+                            self.ui_controls_manager.show(ui, &mut self.viewport);
 
                             let config_padding = config.ui.viewport.padding;
                             let proper_padding_percentage = ((100.0 - config_padding) / 100.0).clamp(0.0, 1.0);
