@@ -133,9 +133,9 @@ impl eframe::App for Roseate {
                                 image_handler_data.clone(), // ImageHandlerData is safe to clone
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
-                                true,
-                                true,
-                                true
+                                config.ui.viewport.fit_to_window,
+                                config.ui.viewport.animate_fit_to_window,
+                                config.ui.viewport.animate_reset
                             );
                         });
 
@@ -154,7 +154,7 @@ impl eframe::App for Roseate {
                                 &self.monitor_size,
                                 config.misc.experimental.get_image_processing_backend(),
                                 &self.theme.accent_colour,
-                                true, // TODO: add to config
+                                config.ui.selection_menu.show_open_image_button,
                             );
                         });
                 },
