@@ -8,7 +8,7 @@ description = "A fast as fuck, memory efficient and simple but fancy image viewe
 authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
 license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
-rust-version = "1.80"
+rust-version = "1.89"
 
 [dependencies]
 cirrus_egui = { path = "./cirrus/egui" }
@@ -27,7 +27,7 @@ image = {version = "0.25.6"}
 simple-easing = "1.0.1"
 log = "0.4.27"
 env_logger = "0.11.8"
-re_format = "0.23.1"
+re_format = "0.27.3"
 cap = "0.1.2"
 clap = {version = "4.5.37", features = ["derive"]}
 rand = "0.9"
@@ -36,11 +36,12 @@ textwrap = "0.16.2"
 dirs = "6.0.0"
 rayon = "1.10.0"
 fs2 = "0.4.3"
-toml = "0.8.22"
-serde_json = "1.0"
+toml = "0.9.8"
+serde_json = "1.0.145"
 serde_derive = "1.0"
 serde = {version = "1.0", features = ["derive"]}
 zune-image = "0.4.15"
+chrono = "0.4.42"
 
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
 # 

@@ -1,25 +1,37 @@
 use std::alloc;
 
 use cap::Cap;
+use chrono::{DateTime, Local};
 use egui::{Pos2, RichText, Ui, WidgetText};
-use eframe::egui::{self, Margin, Response};
+use eframe::egui::{self, Response};
 
-use crate::{image::image::Image};
+use crate::{image::image::Image, image_handler::ImageHandlerData};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
 
-pub struct InfoWindow {}
+pub struct ImageInfoWindow {
+    data: Option<ImageInfoData>
+}
 
-impl InfoWindow {
+impl ImageInfoWindow {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            data: None
+        }
     }
 
-    pub fn show(&mut self, ui: &Ui, image: &Image) -> Response {
+    pub fn show<'a>(&mut self, ui: &Ui, image_handler_data: &ImageHandlerData, image: &Image, show_extra: bool) -> Response {
+        let image_info_data = self.data.get_or_insert_with(
+            || ImageInfoData::new(image_handler_data, image)
+        );
+
         let window = egui::Window::new(
             WidgetText::RichText(
-                RichText::new("ℹ Info").size(15.0).into()
+                match show_extra {
+                    false => RichText::new("ℹ Image Info"),
+                    true => RichText::new("ℹ Image Info (Extra)"),
+                }.size(15.0).into()
             )
         );
 
@@ -28,51 +40,147 @@ impl InfoWindow {
             .fade_in(false)
             .fade_out(false)
             .show(ui.ctx(), |ui| {
-                let mem_allocated = ALLOCATOR.allocated();
+                let app_memory_allocated = ALLOCATOR.allocated();
 
                 egui::Frame::group(&ui.ctx().style())
-                    .inner_margin(Margin::same(1))
                     .show(ui, |ui| {
-                        egui::Grid::new("info_box_grid")
-                            .num_columns(3)
-                            .spacing([20.0, 4.0])
-                            .striped(true)
-                            .max_col_width(130.0)
+                        egui::Grid::new("info_window_grid")
+                            .num_columns(2)
                             .show(ui, |ui| {
-                                let image_metadata = image.image_path.metadata().expect(
-                                    "Failed to retrieve file metadata!"
-                                );
+                                egui::Grid::new("image_info_grid")
+                                    .striped(true)
+                                    .max_col_width(150.0)
+                                    .show(ui, |ui| {
+                                        ui.label("Name:");
+                                        ui.label(&image_info_data.file_name);
+                                        ui.end_row();
 
-                                ui.label("Name:");
-                                ui.label(
-                                    image.image_path.file_name().expect("Failed to retrieve image name from path!").to_string_lossy()
-                                );
-                                ui.end_row();
+                                        ui.label("Dimensions:");
+                                        ui.label(
+                                            format!(
+                                                "{}x{}", image.image_size.0, image.image_size.1
+                                            )
+                                        );
+                                        ui.end_row();
 
-                                ui.label("Dimensions: ");
-                                ui.label(
-                                    format!(
-                                        "{}x{}", image.image_size.0, image.image_size.1
-                                    )
-                                );
-                                ui.end_row();
+                                        ui.label("Format:");
+                                        ui.label(format!("{}", image.image_format));
+                                        ui.end_row();
 
-                                ui.label("File size: ");
-                                ui.label(
-                                    format!(
-                                        "{}", re_format::format_bytes(image_metadata.len() as f64)
-                                    )
-                                );
+                                        ui.label("File Created:");
+                                        ui.label(
+                                            match &image_info_data.file_created_time {
+                                                Some(time_string) => RichText::new(time_string),
+                                                None => RichText::new("Unknown").weak(),
+                                            }
+                                        );
+                                        ui.end_row();
+
+                                        ui.label("File Modified:");
+                                        ui.label(
+                                            match &image_info_data.file_modified_time {
+                                                Some(time_string) => RichText::new(time_string),
+                                                None => RichText::new("Unknown").weak(),
+                                            }
+                                        );
+                                        ui.end_row();
+
+                                        ui.label("File size:");
+                                        ui.label(
+                                            match image_info_data.file_size {
+                                                Some(size) => RichText::new(re_format::format_bytes(size)),
+                                                None => RichText::new("Unknown").weak(),
+                                            }
+                                        );
+                                        ui.end_row();
+                                    });
+
+                                if show_extra {
+                                    egui::Grid::new("misc_info_grid")
+                                        .striped(true)
+                                        .max_col_width(150.0)
+                                        .show(ui, |ui| {
+                                            let mem_alloc_hint = "How much memory the entire app is currently allocating.";
+
+                                            ui.label("Mem Alloc:").on_hover_text(mem_alloc_hint);
+                                            ui.label(
+                                                RichText::new(re_format::format_bytes(app_memory_allocated as f64))
+                                                .code()
+                                            ).on_hover_text(mem_alloc_hint);
+                                            ui.end_row();
+                                        });
+                                }
+
                                 ui.end_row();
                             });
                     }
                 );
-
-                ui.add_space(3.0);
-                ui.label(format!(
-                        "Memory Allocated: {}",
-                        re_format::format_bytes(mem_allocated as f64)
-                ));
             }).unwrap().response
+    }
+}
+
+struct ImageInfoData {
+    pub file_name: String,
+    pub file_size: Option<f64>,
+    pub file_created_time: Option<String>,
+    pub file_modified_time: Option<String>,
+}
+
+impl ImageInfoData {
+    pub fn new(image_handler_data: &ImageHandlerData, image: &Image) -> Self {
+        let path = &image.image_path;
+
+        let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+
+        let file_metadata = match path.metadata() {
+            Ok(metadata) => Some(metadata),
+            Err(error) => {
+                log::error!(
+                    "Failed to retrive image file metadata from file system! Error: {}",
+                    error
+                );
+
+                None
+            },
+        };
+
+        let mut file_size = None;
+        let mut file_created_time = None;
+        let mut file_modified_time = None;
+
+        if let Some(metadata) = file_metadata {
+            file_created_time = match metadata.created() {
+                Ok(time) => {
+                    let datetime: DateTime<Local> = time.into();
+                    Some(datetime.format("%d/%m/%Y (%H:%M)").to_string())
+                },
+                Err(error) => {
+                    log::warn!("Failed to retrieve image file created date! Error: {}", error);
+
+                    None
+                },
+            };
+
+            file_modified_time = match metadata.modified() {
+                Ok(time) => {
+                    let datetime: DateTime<Local> = time.into();
+                    Some(datetime.format("%d/%m/%Y (%H:%M)").to_string())
+                },
+                Err(error) => {
+                    log::warn!("Failed to retrieve image file modified date! Error: {}", error);
+
+                    None
+                },
+            };
+
+            file_size = Some(metadata.len() as f64);
+        }
+
+        Self {
+            file_name,
+            file_size,
+            file_created_time,
+            file_modified_time
+        }
     }
 }

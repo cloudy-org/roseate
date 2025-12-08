@@ -49,7 +49,7 @@ fn main() -> eframe::Result {
 
     env_logger::init_from_env(logger_env);
 
-    // Modern GUI image viewers should never silently 
+    // Modern GUI applications should never silently 
     // error and exit without visually notifying the user 
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
