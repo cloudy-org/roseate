@@ -10,7 +10,7 @@ use image_handler::{ImageHandler};
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
-use clap::{arg, command, Parser};
+use clap::{command, Parser};
 
 use error::Error;
 use app::Roseate;
@@ -41,10 +41,6 @@ static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.templa
 struct Args {
     /// Valid path to image.
     image: Option<String>,
-
-    /// Valid themes at the moment: dark, light
-    #[arg(short, long)]
-    theme: Option<String>,
 }
 
 fn main() -> eframe::Result {
@@ -116,7 +112,6 @@ fn main() -> eframe::Result {
     let cli_args = Args::parse();
 
     let image_path = cli_args.image;
-    let theme_string = cli_args.theme;
 
     let mut image_handler = ImageHandler::new();
 
@@ -154,26 +149,7 @@ fn main() -> eframe::Result {
         }
     }
 
-    let is_dark = match theme_string {
-        Some(string) => {
-            if string == "light" {
-                false
-            } else if string == "dark" {
-                true
-            } else {
-                log::warn!(
-                    "'{}' is not a valid theme. Pass either 'dark' or 'light'.", string
-                );
-
-                true
-            }
-        },
-        _ => true
-    };
-
-    let theme = Theme::new(
-        Some(Colour::from_hex(0xe05f78))
-    );
+    let theme = Theme::new(Some(Colour::from_hex(0xe05f78)));
 
     eframe::run_native(
         "Roseate",
