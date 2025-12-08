@@ -1,7 +1,7 @@
 use std::{time::Duration};
 
 use cirrus_egui::v1::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
-use cirrus_theming::v1::Colour;
+use cirrus_theming::v1::colour::Colour;
 use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 
@@ -111,8 +111,8 @@ impl ImageSelectionMenu {
                         Stroke {
                             width: 2.0,
                             color: Color32::from_hex(
-                                &accent_colour.hex_code
-                            ).unwrap()
+                                &accent_colour.to_hex_string()
+                            ).unwrap() // TODO: question if this is safe 🤔
                         },
                         11.0,
                         10.0

@@ -1,5 +1,5 @@
-use cirrus_theming::v1::Theme;
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
+use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
@@ -73,12 +73,11 @@ impl eframe::App for Roseate {
             self.show_about = !self.show_about;
         }
 
-        let central_panel_frame = Frame {
-            inner_margin: Margin::ZERO,
-            outer_margin: Margin::ZERO,
-            fill: Color32::from_hex(&self.theme.primary_colour.hex_code).unwrap(),
-            ..Frame::default_with_context(ctx)
-        };
+        // In roseate I prefer the central panel with zero margin.
+        let central_panel_frame = Frame::default_with_context(ctx)
+            .inner_margin(Margin::ZERO)
+            .outer_margin(Margin::ZERO)
+            .fill(Color32::from_hex(&self.theme.pallet.primary.to_hex_string()).unwrap());
 
         egui::CentralPanel::default()
             .frame(central_panel_frame)
@@ -153,7 +152,7 @@ impl eframe::App for Roseate {
                                 &mut self.notifier,
                                 &self.monitor_size,
                                 config.misc.experimental.get_image_processing_backend(),
-                                &self.theme.accent_colour,
+                                &self.theme.pallet.accent,
                                 config.ui.selection_menu.show_open_image_button,
                             );
                         });
@@ -170,14 +169,14 @@ impl eframe::App for Roseate {
             .show(ctx, |ui| {
                 if let Some(loading) = &self.notifier.loading {
                     Frame::default()
-                        .fill(Color32::from_hex(&self.theme.primary_colour.hex_code).unwrap())
+                        .fill(Color32::from_hex(&self.theme.pallet.primary.to_hex_string()).unwrap())
                         .inner_margin(Margin::same(8))
                         .corner_radius(CornerRadius {ne: 10, ..Default::default()})
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
                                 ui.add(
                                     egui::Spinner::new()
-                                        .color(Color32::from_hex("#e05f78").unwrap()) // NOTE: This should be the default accent colour.
+                                        .color(Color32::from_hex(&self.theme.pallet.accent.to_hex_string()).unwrap())
                                         .size(20.0)
                                 );
 

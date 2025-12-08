@@ -3,13 +3,13 @@
 use std::{path::Path, time::Duration};
 
 use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
+use cirrus_theming::v1::{colour::Colour, theme::Theme};
 use config::config::Config;
 use env_logger::Env;
 use image_handler::{ImageHandler};
 use log::debug;
 use eframe::egui;
 use egui_notify::ToastLevel;
-use cirrus_theming::v1::{Colour, Theme};
 use clap::{arg, command, Parser};
 
 use error::Error;
@@ -171,25 +171,8 @@ fn main() -> eframe::Result {
         _ => true
     };
 
-    let theme_colours = match is_dark {
-        true => vec![
-            Colour::from_hex("#0a0909"),
-            Colour::from_hex("#201f1f"),
-            Colour::from_hex("#494848"),
-        ],
-        false => vec![
-            Colour::from_hex("#b4dede"),
-            Colour::from_hex("#aec5d4"),
-            Colour::from_hex("#57575b"),
-        ],
-    };
-
     let theme = Theme::new(
-        is_dark,
-        theme_colours,
-        Some(
-            Colour::from_hex("#e05f78")
-        )
+        Some(Colour::from_hex(0xe05f78))
     );
 
     eframe::run_native(
@@ -197,7 +180,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Styling::new(&theme, None)
+            Styling::new(&theme)
                 .set_all()
                 .apply(&cc.egui_ctx);
 
