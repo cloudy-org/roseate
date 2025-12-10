@@ -254,7 +254,7 @@ impl ImageInfoWindow {
                         match show_extra {
                             true => {
                                 // NOTE: ImageHandlerData::EguiImage doesn't work for some reason.
-                                // ImageHandlerData::EguiImage will be entirely removed sometime anyways.
+                                // ImageHandlerData::EguiImage will be entirely removed sometime anyways (https://github.com/cloudy-org/roseate/issues/89).
                                 if let ImageHandlerData::Texture(texture_handle) = image_handler_data {
                                     ui.add(
                                         egui::Image::from_texture(texture_handle)
