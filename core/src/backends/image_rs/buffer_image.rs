@@ -36,19 +36,26 @@ impl BufferImage {
         )
     }
 
-    pub fn to_u8_pixels(self) -> (ImageSize, Pixels<u8>, ImageColourType) {
+    pub fn to_u8_pixels(self) -> (Pixels<u8>, ImageSize, ImageColourType) {
+        let size = match &self {
+            BufferImage::Grey8(image_buffer) => image_buffer.dimensions(),
+            BufferImage::GreyA8(image_buffer) => image_buffer.dimensions(),
+            BufferImage::Rgb8(image_buffer) => image_buffer.dimensions(),
+            BufferImage::Rgba8(image_buffer) => image_buffer.dimensions(),
+        };
+
         match self {
             BufferImage::Grey8(image_buffer) => {
-                (image_buffer.dimensions(), image_buffer.into_raw(), ImageColourType::Grey8)
+                (image_buffer.into_raw(), size, ImageColourType::Grey8)
             },
             BufferImage::GreyA8(image_buffer) => {
-                (image_buffer.dimensions(), image_buffer.into_raw(), ImageColourType::GreyA8)
+                (image_buffer.into_raw(), size, ImageColourType::GreyA8)
             },
             BufferImage::Rgb8(image_buffer) => {
-                (image_buffer.dimensions(), image_buffer.into_raw(), ImageColourType::Rgb8)
+                (image_buffer.into_raw(), size, ImageColourType::Rgb8)
             },
             BufferImage::Rgba8(image_buffer) => {
-                (image_buffer.dimensions(), image_buffer.into_raw(), ImageColourType::Rgba8)
+                (image_buffer.into_raw(), size, ImageColourType::Rgba8)
             },
         }
     }

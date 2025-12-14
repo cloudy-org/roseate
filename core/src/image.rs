@@ -1,9 +1,9 @@
-use crate::reader::ImageFormat;
+use crate::format::ImageFormat;
 
 pub type ImageSize = (u32, u32);
 pub type Pixels<Channel = u8> = Vec<Channel>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ImageColourType {
     Grey8,
     Grey16,
@@ -24,7 +24,7 @@ pub enum DecodedImageContent {
     // NOTE: we do not support outputting channels higher than a u8 yet so 
     // there's no point of storing a decoded image in RAM as anything bigger than a u8
     Static(Pixels<u8>),
-    Animated(Vec<Pixels<u8>>),
+    Animated(Vec<(Pixels<u8>, f32)>),
 }
 
 pub struct DecodedImage {

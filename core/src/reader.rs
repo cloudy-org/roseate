@@ -1,15 +1,6 @@
-use std::io::{BufReader, Cursor, Read, Seek};
+use std::io::{BufReader, Read, Seek};
 
-use crate::image::DecodedImage;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ImageFormat {
-    Png,
-    Jpeg,
-    Svg,
-    Gif,
-    Webp
-}
+use crate::{format::ImageFormat, image::DecodedImage};
 
 pub trait ReadSeek: Read + Seek {}
 impl<T: Read + Seek> ReadSeek for T {}

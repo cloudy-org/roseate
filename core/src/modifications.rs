@@ -1,4 +1,6 @@
-use std::hash::{Hasher, Hash};
+use std::{collections::HashSet, hash::{Hash, Hasher}};
+
+pub type ImageModifications = HashSet<ImageModification>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImageModification {

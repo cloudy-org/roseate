@@ -1,13 +1,12 @@
-use std::{fs, io::Cursor};
+use std::{io::Cursor};
 
-use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, image::{ImageColourType}, modifications::ImageModification, reader::{ImageFormat, ImageReader}};
+use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, format::ImageFormat, image::ImageColourType, modifications::ImageModification, reader::ImageReader};
 
-use crate::backends::{IMAGE_DUMP_PATH, save_image};
+use crate::backends::{save_image_as_rgba};
 
 #[test]
 fn init() {
     env_logger::init();
-    let _ = fs::create_dir(IMAGE_DUMP_PATH);
 }
 
 #[test]
@@ -23,14 +22,14 @@ fn test_decode() -> Result<()> {
     assert_eq!(decoded_image.size, (750, 250));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    save_image(decoded_image, "mov-cli.png");
+    save_image_as_rgba(decoded_image, "mov-cli.png");
 
     Ok(())
 }
 
 #[test]
 fn test_modify_and_decode() -> Result<()> {
-    let image_bytes = include_bytes!("../Mia_Sakurajima_Holding_Rust_Book.png");
+    let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
     let cursor = Cursor::new(&image_bytes[..]);
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
@@ -43,14 +42,14 @@ fn test_modify_and_decode() -> Result<()> {
     assert_eq!(decoded_image.size, (1280, 720));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    save_image(decoded_image, "smaller_mia.png");
+    save_image_as_rgba(decoded_image, "smaller_mia.png");
 
     Ok(())
 }
 
 #[test]
 fn test_modify_already_decoded_image() -> Result<()> {
-    let image_bytes = include_bytes!("../Mia_Sakurajima_Holding_Rust_Book.png");
+    let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
     let cursor = Cursor::new(&image_bytes[..]);
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
@@ -71,7 +70,47 @@ fn test_modify_already_decoded_image() -> Result<()> {
     assert_eq!(decoded_image.size, (500, 500));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    save_image(decoded_image, "squished_mia.png");
+    save_image_as_rgba(decoded_image, "squished_mia.png");
+
+    Ok(())
+}
+
+#[test]
+fn test_animated_png_decode_and_modify() -> Result<()> {
+    let image_bytes = include_bytes!("../animated_png.png");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Png);
+
+    let mut backend = ImageRSBackend::from_reader(image_reader)?;
+    backend.modify(vec![ImageModification::Resize(50, 50)]);
+
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (50, 50));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "tiny_animated_png");
+
+    Ok(())
+}
+
+#[test]
+fn test_gif_decode_and_modify() -> Result<()> {
+    let image_bytes = include_bytes!("../sailor_moon.gif");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Gif);
+
+    let mut backend = ImageRSBackend::from_reader(image_reader)?;
+    backend.modify(vec![ImageModification::Resize(300, 300)]);
+
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (300, 300));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "small_and_squished_sailor_moon.gif");
 
     Ok(())
 }
