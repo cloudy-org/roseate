@@ -33,10 +33,6 @@ impl From<DecodedImage> for ImageReaderData {
     }
 }
 
-// NOTE: I'm not sure if in the future there 
-// will be alternative ways of reading an image hence 
-// to ease changing it later I'm just going to wrap 
-// BufReader in a "ImageReader" struct.
 pub struct ImageReader {
     // NOTE: this may become private in the future.
     pub(crate) data: ImageReaderData,

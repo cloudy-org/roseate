@@ -34,7 +34,6 @@ impl ModificationBackend for ImageRSBackend {
 }
 
 impl DecodeBackend for ImageRSBackend {
-    // TODO: look into potentially changing that "'static" reference 
     fn from_reader(image_reader: ImageReader) -> Result<Self> {
         match image_reader.data {
             ImageReaderData::BufReader(buf_reader) => {
