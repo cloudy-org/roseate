@@ -1,6 +1,6 @@
 use std::{io::Cursor};
 
-use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, format::ImageFormat, image::ImageColourType, modifications::ImageModification, reader::ImageReader};
+use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, format::ImageFormat, colour_type::ImageColourType, modifications::ImageModification, reader::ImageReader};
 
 use crate::backends::{save_image_as_rgba};
 

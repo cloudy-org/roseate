@@ -1,7 +1,5 @@
 use std::{io, result::Result as StdResult};
 
-use image::ImageError;
-
 pub type Result<T, E = Error> = StdResult<T, E>;
 
 #[derive(Debug)]

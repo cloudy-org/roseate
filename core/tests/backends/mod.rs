@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
 use image::{ImageBuffer, Rgba};
-use roseate_core::{format::ImageFormat, image::{DecodedImage, DecodedImageContent}};
+use roseate_core::{format::ImageFormat, decoded_image::{DecodedImage, DecodedImageContent}};
 
 mod test_image_rs_backend;
 

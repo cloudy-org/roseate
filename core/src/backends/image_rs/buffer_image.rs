@@ -1,6 +1,6 @@
 use image::{ImageBuffer, Luma, LumaA, Rgb, Rgba};
 
-use crate::{error::Result, image::{ImageColourType, ImageSize, Pixels}};
+use crate::{colour_type::ImageColourType, decoded_image::{ImageSize, Pixels}, error::Result};
 
 
 /// Wrapper around different variants of image-rs image buffers.

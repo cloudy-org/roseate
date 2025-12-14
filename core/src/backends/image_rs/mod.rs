@@ -3,7 +3,7 @@ use std::{collections::HashSet, io::BufReader};
 use image::{AnimationDecoder, ImageDecoder, ImageError, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, imageops::{self, FilterType}};
 use log::debug;
 
-use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage}, error::{Error, Result}, format::ImageFormat, image::{DecodedImage, DecodedImageContent, ImageColourType, ImageSize, Pixels}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
+use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
 
 mod colour;
 mod buffer_image;

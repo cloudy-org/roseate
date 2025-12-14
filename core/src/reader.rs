@@ -1,6 +1,6 @@
 use std::io::{BufReader, Read, Seek};
 
-use crate::{format::ImageFormat, image::DecodedImage};
+use crate::{format::ImageFormat, decoded_image::DecodedImage};
 
 pub trait ReadSeek: Read + Seek {}
 impl<T: Read + Seek> ReadSeek for T {}

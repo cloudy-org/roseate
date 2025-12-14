@@ -1,4 +1,4 @@
-use crate::{error::Error, image::ImageColourType};
+use crate::{error::Error, colour_type::ImageColourType};
 
 impl TryFrom<image::ColorType> for ImageColourType {
     type Error = Error;
