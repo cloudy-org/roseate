@@ -1,6 +1,6 @@
 use std::{fs, io::Cursor};
 
-use roseate_core::{self, backends::{backend::{DecodeBackend, ModificationBackend}, image_rs::ImageRSBackend}, error::Result, image::{ImageColourType}, modifications::ImageModification, reader::{ImageFormat, ImageReader}};
+use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, image::{ImageColourType}, modifications::ImageModification, reader::{ImageFormat, ImageReader}};
 
 use crate::backends::{IMAGE_DUMP_PATH, save_image};
 

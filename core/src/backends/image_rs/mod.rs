@@ -2,7 +2,7 @@ use std::{collections::HashSet, time::Duration};
 
 use image::{AnimationDecoder, ImageDecoder, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, imageops::{self, FilterType}};
 
-use crate::{backends::{backend::{DecodeBackend, ModificationBackend}, image_rs::buffer_image::BufferImage}, error::{Error, Result}, image::{DecodedImage, DecodedImageContent, ImageColourType}, modifications::ImageModification, reader::{ImageFormat, ImageReader, ImageReaderData}};
+use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage}, error::{Error, Result}, image::{DecodedImage, DecodedImageContent, ImageColourType}, modifications::ImageModification, reader::{ImageFormat, ImageReader, ImageReaderData}};
 
 mod buffer_image;
 
@@ -25,12 +25,6 @@ pub struct ImageRSBackend {
     source: Source,
     modifications: HashSet<ImageModification>,
     image_format: ImageFormat,
-}
-
-impl ModificationBackend for ImageRSBackend {
-    fn modify(&mut self, modifications: Vec<ImageModification>) {
-        self.modifications.extend(modifications);
-    }
 }
 
 impl DecodeBackend for ImageRSBackend {
@@ -94,6 +88,10 @@ impl DecodeBackend for ImageRSBackend {
                 }
             },
         }
+    }
+
+    fn modify(&mut self, modifications: Vec<ImageModification>) {
+        self.modifications.extend(modifications);
     }
 
     fn decode(self) -> Result<DecodedImage> {
