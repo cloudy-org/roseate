@@ -6,7 +6,7 @@ use std::hash::Hasher;
 use cirrus_egui::v1::{scheduler::Scheduler};
 use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 
-use crate::{image::image::Image, image_handler::ImageHandlerData};
+use crate::{image::image::Image, image_handler::ImageResource};
 
 pub struct Viewport {
     pub zoom: f32,
@@ -86,7 +86,7 @@ impl Viewport {
         &mut self,
         ui: &mut Ui,
         image: &Image,
-        image_handler_data: ImageHandlerData,
+        image_handler_data: ImageResource,
         padding: f32,
         zoom_into_cursor: bool,
         fit_to_window: bool,
@@ -186,8 +186,9 @@ impl Viewport {
         self.is_busy = response.dragged() || response.hovered() && scroll.abs() > 0.0;
 
         let egui_image = match image_handler_data {
-            ImageHandlerData::Texture(texture) => egui::Image::from_texture(&texture),
-            ImageHandlerData::EguiImage(image) => image,
+            ImageResource::Texture(texture) => egui::Image::from_texture(&texture),
+            ImageResource::Vector(image) => todo!(),
+            ImageResource::AnimatedTexture(texture_handles) => todo!(),
         }.corner_radius(10.0); // TODO: config to customize image corner radius.
 
         // // Drawing the image to the viewport.

@@ -113,7 +113,7 @@ impl eframe::App for Roseate {
             }
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
-            match (self.image_handler.image.as_ref(), self.image_handler.data.as_ref()) {
+            match (self.image_handler.image.as_ref(), self.image_handler.resource.as_ref()) {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
                 (Some(image), Some(image_handler_data))=> {

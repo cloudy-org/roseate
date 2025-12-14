@@ -29,7 +29,7 @@ impl<'a> AboutWindow<'a> {
         let about_app_info = AboutApplicationInfo {
             name: "Roseate".to_string(),
             description: "Fast and minimal GPU accelerated image viewer that's cross platform.".to_string(),
-            license: include_str!("../LICENSE").to_string(),
+            license: include_str!("../../LICENSE").to_string(),
             version: VERSION.to_string(),
             authors: authors_toml_to_about_authors(&AUTHORS.to_string()),
             webpage: "https://github.com/cloudy-org/roseate".to_string(),

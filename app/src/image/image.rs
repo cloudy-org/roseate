@@ -81,7 +81,7 @@ impl Image {
                         Ok(value) => value,
                         Err(error) => {
                             return Err(
-                                Error::FailedToInitImage(
+                                Error::FailedToReadImage(
                                     Some(error.human_message()), path.to_path_buf(), error.human_message()
                                 )
                             )
@@ -90,7 +90,7 @@ impl Image {
                 },
                 Err(error) => {
                     return Err(
-                        Error::FailedToInitImage(
+                        Error::FailedToReadImage(
                             Some(error.to_string()),
                             path.to_path_buf(),
                             "Failed to retrieve image type!".to_string()
@@ -103,7 +103,7 @@ impl Image {
                 Ok(value) => value,
                 Err(error) => {
                     return Err(
-                        Error::FailedToInitImage(
+                        Error::FailedToReadImage(
                             Some(error.to_string()),
                             path.to_path_buf(),
                             "Failed to retrieve image dimensions!".to_string()

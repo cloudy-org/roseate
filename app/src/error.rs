@@ -10,9 +10,8 @@ pub enum Error {
     FileNotFound(ActualError, PathBuf, String),
     NoFileSelected(ActualError),
     FailedToApplyOptimizations(ActualError, String),
-    FailedToInitImage(ActualError, PathBuf, String),
-    /// String: user friendly reason why image didn't load
-    FailedToLoadImage(ActualError, String),
+    /// Failed to initially read image from path.
+    FailedToReadImage(ActualError, PathBuf, String),
     /// String: technical reason to why the image failed to convert to pixels.
     FailedToLoadTexture(ActualError),
     FailedToConvertImageToPixels(ActualError, String),
@@ -38,8 +37,7 @@ impl CError for Error {
             Error::FileNotFound(actual_error, _, _) => actual_error,
             Error::NoFileSelected(actual_error) => actual_error,
             Error::FailedToApplyOptimizations(actual_error, _) => actual_error,
-            Error::FailedToInitImage(actual_error, _, _) => actual_error,
-            Error::FailedToLoadImage(actual_error, _) => actual_error,
+            Error::FailedToReadImage(actual_error, _, _) => actual_error,
             Error::FailedToLoadTexture(actual_error) => actual_error,
             Error::FailedToConvertImageToPixels(actual_error, _) => actual_error,
             Error::ImageFormatNotSupported(actual_error, _) => actual_error,
@@ -75,15 +73,10 @@ impl Display for Error {
                     possibly leading to system crashes. BEWARE! \n\nTechnical Reason: {}",
                 technical_reason
             ),
-            Error::FailedToInitImage(_, path, reason) => write!(
+            Error::FailedToReadImage(_, path, reason) => write!(
                 f,
-                "Failed to initialize the image ({})! Reason: {}",
-                path.file_name().unwrap().to_string_lossy(),
-                reason
-            ),
-            Error::FailedToLoadImage(_, reason) => write!(
-                f,
-                "Failed to load that image! The image might be corrupted. Reason: {}",
+                "Failed to begin reading the image from path ({})! The image could be corrupted. \n\nReason: {}",
+                path.to_string_lossy(),
                 reason
             ),
             Error::FailedToLoadTexture(_) => write!(
@@ -91,7 +84,7 @@ impl Display for Error {
             ),
             Error::FailedToConvertImageToPixels(_, technical_reason) => write!(
                 f,
-                "Failed to transform image to pixels! The image may be corrupted. Technical Reason: {}",
+                "Failed to transform image to pixels! The image may be corrupted. \n\nTechnical Reason: {}",
                 technical_reason
             ),
             Error::ImageFormatNotSupported(_, image_format) => write!(

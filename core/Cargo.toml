@@ -1,0 +1,11 @@
+[package]
+name = "roseate-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4"
+image = {version = "0.25.9", features = ["rayon", "png", "jpeg", "gif", "webp"], default-features = false}
+
+[dev-dependencies]
+env_logger = "0.11"

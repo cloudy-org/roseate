@@ -57,7 +57,7 @@ impl Image {
             DecodedImage::Egui => unreachable!(),
             DecodedImage::ZuneImage(zune_image) => {
                 let mut pixels = zune_image.flatten_to_u8().into_iter().next()
-                    .ok_or_else(|| Error::FailedToLoadImage(
+                    .ok_or_else(|| Error::FailedToConvertImageToPixels(
                             None,
                             "zune-image backend failed to get image data. This image may be corrupted!".to_string()
                         )

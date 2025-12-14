@@ -1,0 +1,52 @@
+[package]
+name = "roseate"
+edition = "2021"
+version = "0.1.0-alpha.17"
+description = "A fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform."
+authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
+license = "GPL-3.0"
+repository = "https://github.com/cloudy-org/roseate/"
+rust-version = "1.89"
+
+[dependencies]
+cirrus_egui = { path = "../cirrus/egui" }
+cirrus_error = { path = "../cirrus/error" }
+cirrus_config = { path = "../cirrus/config" }
+cirrus_theming = { path = "../cirrus/theming" }
+
+egui = "0.33.2"
+eframe = { version = "0.33.2", features = ["default"] }
+egui_extras = { version = "0.33.2", features = ["all_loaders"]}
+egui_animation = "0.10.0"
+egui-notify = "0.21.0"
+rfd = "0.15.3"
+imagesize = "0.14.0"
+image = {version = "0.25.6"}
+simple-easing = "1.0.1"
+log = "0.4.27"
+env_logger = "0.11.8"
+re_format = "0.27.3"
+cap = "0.1.2"
+clap = {version = "4.5.37", features = ["derive"]}
+rand = "0.9"
+svg_metadata = "0.5.1"
+textwrap = "0.16.2"
+dirs = "6.0.0"
+rayon = "1.10.0"
+fs2 = "0.4.3"
+toml = "0.9.8"
+serde_json = "1.0.145"
+serde_derive = "1.0"
+serde = {version = "1.0", features = ["derive"]}
+zune-image = "0.4.15"
+chrono = "0.4.42"
+
+# I've now disabled compiling release builds of dependencies to speed up dev compile time.
+# 
+# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
+# SLOWER ON DEV BUILDS COMPARED TO RELEASE BUILDS
+# 
+# So with that said ALWAYS compile release unless you are developing Roseate.
+# 
+#[profile.dev.package."*"]
+#opt-level = 3

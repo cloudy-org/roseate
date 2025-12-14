@@ -1,4 +1,4 @@
-use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::Path, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, path::PathBuf, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use eframe::egui::Context;
@@ -11,15 +11,14 @@ use optimization::ImageOptimizations;
 use crate::{error::{Error, Result}, image::{backends::ImageProcessingBackend, image::{Image, ImageSizeT}, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications}, monitor_size::MonitorSize};
 
 mod dynamic_sampling;
-
 pub mod optimization;
 pub mod monitor_downsampling;
 
-// NOTE: need a better name for this
 #[derive(Clone)]
-pub enum ImageHandlerData {
+pub enum ImageResource {
     Texture(TextureHandle),
-    EguiImage(egui::Image<'static>)
+    AnimatedTexture(Vec<TextureHandle>),
+    Vector(egui::Image<'static>)
 }
 
 /// Struct that handles all the image loading logic in a thread safe 
@@ -28,11 +27,11 @@ pub enum ImageHandlerData {
 /// ImageHandler struct is more ui facing, Image struct is lower-level.
 pub struct ImageHandler {
     pub image: Option<Image>,
+    pub resource: Option<ImageResource>,
+
     pub image_optimizations: HashSet<ImageOptimizations>,
-    pub data: Option<ImageHandlerData>,
 
     image_loading: bool,
-
     dynamic_sample_schedule: Option<Scheduler>,
     last_zoom_factor: f32,
     dynamic_sampling_new_resolution: ImageSizeT,
@@ -46,8 +45,8 @@ impl ImageHandler {
     pub fn new() -> Self {
         Self {
             image: None,
+            resource: None,
             image_optimizations: HashSet::new(),
-            data: None,
 
             image_loading: false,
 
@@ -61,8 +60,8 @@ impl ImageHandler {
         }
     }
 
-    pub fn init_image(&mut self, image_path: &Path, image_optimizations: Vec<ImageOptimizations>) -> Result<()> {
-        let image = Image::from_path(image_path)?;
+    pub fn init_image(&mut self, image_path: PathBuf, image_optimizations: Vec<ImageOptimizations>) -> Result<()> {
+        let image = Image::from_path(&image_path)?;
 
         self.image = Some(image);
         self.image_optimizations = HashSet::from_iter(image_optimizations);
@@ -87,7 +86,7 @@ impl ImageHandler {
                     )
                 }
 
-                self.init_image(&path, image_optimizations)?;
+                self.init_image(path, image_optimizations)?;
 
                 Ok(())
             },
@@ -115,7 +114,7 @@ impl ImageHandler {
         //     self.image_loading = false; // set that bitch back to false yeah
         // }
 
-        self.load_texture_update(ctx);
+        self.load_resource_update(ctx);
         self.dynamic_sampling_update(zoom_factor, monitor_size);
 
         if let Some(schedule) = &mut self.dynamic_sample_schedule {
@@ -144,7 +143,7 @@ impl ImageHandler {
         }
     }
 
-    fn load_texture_update(&mut self, ctx: &Context) {
+    fn load_resource_update(&mut self, ctx: &Context) {
         let reload_texture = match self.load_image_texture.try_lock() {
             Ok(load_image_texture_mutex) => *load_image_texture_mutex,
             Err(_) => false,
@@ -202,7 +201,7 @@ impl ImageHandler {
                         ctx.forget_all_images(); // we want to free the rose image in 
                         // image selection menu and all other images from memory.
 
-                        self.data = Some(ImageHandlerData::Texture(texture));
+                        self.resource = Some(ImageResource::Texture(texture));
                     },
                     ImageData::StaticBytes(bytes ) => {
                         // load from bytes using egui's image loading logic.
@@ -224,8 +223,8 @@ impl ImageHandler {
                         //     }
                         // }
 
-                        self.data = Some(
-                            ImageHandlerData::EguiImage(
+                        self.resource = Some(
+                            ImageResource::Vector(
                                 egui_image.texture_options(texture_options)
                             )
                         );
@@ -287,7 +286,7 @@ impl ImageHandler {
         let monitor_size_clone = monitor_size.clone();
         let load_image_texture_clone = self.load_image_texture.clone();
 
-        let image_loaded = self.data.is_some();
+        let image_loaded = self.resource.is_some();
 
         let loading_logic = move || {
             let now = Instant::now();

@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 use egui::{Pos2, RichText, Ui, WidgetText};
 use eframe::egui::{self, Response};
 
-use crate::{image::image::Image, image_handler::ImageHandlerData};
+use crate::{image::image::Image, image_handler::ImageResource};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -18,7 +18,7 @@ struct ImageInfoData {
 }
 
 impl ImageInfoData {
-    pub fn new(image_handler_data: &ImageHandlerData, image: &Image) -> Self {
+    pub fn new(image_handler_data: &ImageResource, image: &Image) -> Self {
         let path = &image.image_path;
 
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -203,7 +203,7 @@ impl ImageInfoWindow {
             });
     }
 
-    pub fn show(&mut self, ui: &Ui, image_handler_data: &ImageHandlerData, image: &Image, show_extra: bool) -> Response {
+    pub fn show(&mut self, ui: &Ui, image_handler_data: &ImageResource, image: &Image, show_extra: bool) -> Response {
         let image_info_data = self.data.get_or_insert_with(
             || ImageInfoData::new(image_handler_data, image)
         );
@@ -255,7 +255,7 @@ impl ImageInfoWindow {
                             true => {
                                 // NOTE: ImageHandlerData::EguiImage doesn't work for some reason.
                                 // ImageHandlerData::EguiImage will be entirely removed sometime anyways (https://github.com/cloudy-org/roseate/issues/89).
-                                if let ImageHandlerData::Texture(texture_handle) = image_handler_data {
+                                if let ImageResource::Texture(texture_handle) = image_handler_data {
                                     ui.add(
                                         egui::Image::from_texture(texture_handle)
                                             .max_height(100.0)

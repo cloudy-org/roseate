@@ -87,8 +87,6 @@ fn main() -> eframe::Result {
     monitor_size.fetch_from_cache();
 
     if !monitor_size.exists() {
-        // we should be 100% safe to unwrap here 
-        // as we're the first ones to access notifier.toasts at this point.
         notifier.toast(
             "The monitor size was not cached yet so the \
             image MAY appear a little blurry or over sharpened at first. Roseate will \
@@ -97,7 +95,7 @@ fn main() -> eframe::Result {
             |toast| {
                 toast.duration(Some(Duration::from_secs(10)));
             }
-        )
+        );
     }
 
     let options = eframe::NativeOptions {
@@ -118,7 +116,7 @@ fn main() -> eframe::Result {
     if let Some(path) = image_path {
         debug!("Image '{}' loading from path...", path);
 
-        let path = Path::new(&path);
+        let path = Path::new(&path).to_owned();
 
         if !path.exists() {
             let error = Error::FileNotFound(
