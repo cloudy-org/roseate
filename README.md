@@ -3,7 +3,7 @@
   # 🌹 roseate
   <sub>A fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform. **VERY WIP!**</sub>
 
-  <img src="./assets/dev_preview_2.png">
+  <img src="./app/assets/dev_preview_2.png">
 
   <sub>(image from a WIP development build, this is **NOT** the final product)</sub>
 
@@ -24,13 +24,13 @@ As Roseate is in heavy development I won't offer packages and binaries yet so yo
 
 ## 🏗 Build from source
 ### Prerequisites:
-- [Rust](https://www.rust-lang.org/tools/install) and Cargo (Rust **`1.80.0`**+ is required!).
+- [Rust](https://www.rust-lang.org/tools/install) and Cargo (Rust **`1.89.0`**+ is required!).
 
 - Linux dependencies required by [eframe](https://crates.io/crates/eframe):
   - [libxcb](https://archlinux.org/packages/extra/x86_64/libxcb/)
   - [libxkbcommon](https://archlinux.org/packages/extra/x86_64/libxkbcommon/)
   - [openssl](https://archlinux.org/packages/core/x86_64/openssl/)
-- [libxrandr](https://archlinux.org/packages/extra/x86_64/libxrandr/) (required by [display-info](https://crates.io/crates/display-info) for smart downsampling)
+<!-- - [libxrandr](https://archlinux.org/packages/extra/x86_64/libxrandr/) (required by [display-info](https://crates.io/crates/display-info) for smart downsampling) -->
 - [xdg-desktop-portal](https://github.com/flatpak/xdg-desktop-portal) (required by [rfd](https://docs.rs/rfd/latest/rfd/) for file dialog)
 
 All of these deps are required on Linux. However they are *common* x11 / wayland dependencies so you most likely already have them installed.
