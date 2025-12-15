@@ -4,7 +4,7 @@
 
 </div>
 
-Little guide before as a reminder to myself on how to profile memory on individual roseate-core unittests.
+Little guide below as a reminder to myself on how to profile memory on individual roseate-core unittests.
 
 ## How to profile memory of a unittest (for debugging purposes).
 ![alt text](./tests/heaptrack_preview.png)
