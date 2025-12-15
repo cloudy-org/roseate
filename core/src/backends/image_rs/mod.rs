@@ -62,7 +62,7 @@ impl DecodeBackend for ImageRSBackend {
                 )
             },
             ImageReaderData::DecodedImage(decoded_image) => {
-                log::debug!("Initializing image-rs backend from decoded image...");
+                log::debug!("Initializing image-rs backend from already decoded image...");
 
                 match decoded_image.content {
                     DecodedImageContent::Static(pixels) => {
@@ -195,7 +195,11 @@ impl DecodeBackend for ImageRSBackend {
 }
 
 impl ImageRSBackend {
-    fn decode_animated_image<'a, T: AnimationDecoder<'a>>(animation_decoder: T, modifications: ImageModifications, image_format: ImageFormat) -> Result<DecodedImage> {
+    fn decode_animated_image<'a, T: AnimationDecoder<'a>>(
+        animation_decoder: T,
+        modifications: ImageModifications,
+        image_format: ImageFormat
+    ) -> Result<DecodedImage> {
         let mut image_size: Option<ImageSize> = None;
 
         let mut image_pixels: Vec<(Pixels, f32)> = Vec::new();

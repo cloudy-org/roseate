@@ -10,7 +10,7 @@ fn init() {
 }
 
 #[test]
-fn test_decode() -> Result<()> {
+fn test_png_decode_1() -> Result<()> {
     let image_bytes = include_bytes!("../mov_cli_logo.png");
 
     let cursor = Cursor::new(&image_bytes[..]);
@@ -28,7 +28,25 @@ fn test_decode() -> Result<()> {
 }
 
 #[test]
-fn test_modify_and_decode() -> Result<()> {
+fn test_png_decode_2() -> Result<()> {
+    let image_bytes = include_bytes!("../mia_holding_rust_book.png");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Png);
+
+    let backend = ImageRSBackend::from_reader(image_reader)?;
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (1920, 1080));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "normal_mia.png");
+
+    Ok(())
+}
+
+#[test]
+fn test_png_modify_and_decode_1() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
     let cursor = Cursor::new(&image_bytes[..]);
@@ -48,7 +66,27 @@ fn test_modify_and_decode() -> Result<()> {
 }
 
 #[test]
-fn test_modify_already_decoded_image() -> Result<()> {
+fn test_png_modify_and_decode_2() -> Result<()> {
+    let image_bytes = include_bytes!("../mia_holding_rust_book.png");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Png);
+
+    let mut backend = ImageRSBackend::from_reader(image_reader)?;
+    backend.modify(vec![ImageModification::Resize(540, 270)]);
+
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (540, 270));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "tiny_mia.png");
+
+    Ok(())
+}
+
+#[test]
+fn test_png_modify_already_decoded_image_1() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
     let cursor = Cursor::new(&image_bytes[..]);
@@ -71,6 +109,34 @@ fn test_modify_already_decoded_image() -> Result<()> {
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "squished_mia.png");
+
+    Ok(())
+}
+
+#[test]
+fn test_png_modify_already_decoded_image_2() -> Result<()> {
+    let image_bytes = include_bytes!("../mia_holding_rust_book.png");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Png);
+
+    let backend = ImageRSBackend::from_reader(image_reader)?;
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (1920, 1080));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    let mut backend = ImageRSBackend::from_reader(
+        ImageReader::new(decoded_image, ImageFormat::Png)
+    )?;
+
+    backend.modify(vec![ImageModification::Resize(250, 250)]);
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (250, 250));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "tiny_squished_mia.png");
 
     Ok(())
 }

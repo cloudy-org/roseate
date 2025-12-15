@@ -11,6 +11,8 @@ pub enum DecodedImageContent {
     Animated(Vec<(Pixels<u8>, f32)>),
 }
 
+// TODO: Pass more info about the image itself like EXIF tags 
+// and what camera was used from the decoder to DecodedImage.
 pub struct DecodedImage {
     pub size: ImageSize,
     pub content: DecodedImageContent,
