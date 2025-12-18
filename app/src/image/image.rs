@@ -8,7 +8,7 @@ use crate::{error::{Error, Result}, image::backend::DecodingBackend};
 
 #[derive(Clone)]
 pub struct Image {
-    pub path: PathBuf,
+    pub path: Arc<PathBuf>,
     pub size: ImageSize,
     pub format: ImageFormat,
     pub decoded: Arc<Mutex<Option<DecodedImage>>>,
@@ -61,7 +61,7 @@ impl Image {
 
         Ok(
             Self {
-                path,
+                path: Arc::new(path),
                 size,
                 format,
                 decoded: Arc::new(Mutex::new(None)),
@@ -129,7 +129,7 @@ impl Image {
 
         notifier.set_loading(Some("Opening image's file for reading..."));
 
-        let file = File::open(&self.path)
+        let file = File::open(&*self.path)
             .map_err(
                 |error| Error::ImageFileOpenFailure { error: error.to_string() }
             )?;

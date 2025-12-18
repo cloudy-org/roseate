@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::{Cursor, Read}, path::PathBuf};
+use std::{fmt::Display, fs::File, io::Read, path::PathBuf};
 
 use crate::{decoded_image::ImageSize, error::{Error, Result}};
 

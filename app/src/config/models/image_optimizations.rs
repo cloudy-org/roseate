@@ -106,7 +106,8 @@ impl Hash for MonitorDownsampling {
 }
 
 fn monitor_downsampling_strength_default() -> f32 {
-    1.3
+    1.4 // if our monitor is 1920x1080, this strength will 
+    // allow images up to 1512x1512 until it decides to downsample
 }
 
 

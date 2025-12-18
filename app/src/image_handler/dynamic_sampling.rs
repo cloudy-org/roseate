@@ -40,8 +40,8 @@ impl ImageHandler {
                 return;
             }
 
-            let max_image_size = image.size;
-            let mut image_size = image.size;
+            let max_image_size = &image.size;
+            let mut image_size = &image.size;
 
             // TODO: (28/03/2025) check if we even need this now
             // if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
