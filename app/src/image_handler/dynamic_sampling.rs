@@ -3,17 +3,17 @@ use std::time::Duration;
 use cirrus_egui::v1::scheduler::Scheduler;
 use eframe::egui::Vec2;
 use log::debug;
+use roseate_core::decoded_image::ImageSize;
 
-use crate::{image::image::ImageSizeT, image_handler::{monitor_downsampling::get_monitor_downsampling_size, optimization::ImageOptimizations}, monitor_size::MonitorSize};
+use crate::{monitor_size::MonitorSize};
 
 use super::ImageHandler;
 
 impl ImageHandler {
-    pub fn dynamic_sampling_update(&mut self, zoom_factor: &f32, monitor_size: &MonitorSize) {
+    pub(super) fn dynamic_sampling_update(&mut self, zoom_factor: &f32, monitor_size: &MonitorSize) {
+
         if let Some(image) = &self.image {
-            let is_enabled = self.image_optimizations.contains(
-                &ImageOptimizations::DynamicSampling(bool::default(), bool::default())
-            );
+            let is_enabled = self.image_optimizations.dynamic_sampling.is_some();
 
             if !is_enabled || !self.monitor_downsampling_required {
                 return;
@@ -40,15 +40,15 @@ impl ImageHandler {
                 return;
             }
 
-            let max_image_size = image.image_size;
-            let mut image_size = image.image_size;
+            let max_image_size = image.size;
+            let mut image_size = image.size;
 
             // TODO: (28/03/2025) check if we even need this now
-            if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
-                &ImageOptimizations::MonitorDownsampling(u32::default())
-            ) {
-                image_size = get_monitor_downsampling_size(&marginal_allowance, monitor_size);
-            }
+            // if let Some(ImageOptimizations::MonitorDownsampling(marginal_allowance)) = self.image_optimizations.get(
+            //     &ImageOptimizations::MonitorDownsampling(u32::default())
+            // ) {
+            //     image_size = get_monitor_downsampling_size(&marginal_allowance, monitor_size);
+            // }
 
             let new_resolution = Vec2::new(image_size.0 as f32, image_size.1 as f32) * *zoom_factor;
 
@@ -73,12 +73,14 @@ impl ImageHandler {
 
             self.accumulated_zoom_factor_change = 0.0;
         }
+
+
     }
 
     fn set_resolution_and_schedule_dynamic_sample(
         &mut self,
         upsample: bool,
-        resolution: ImageSizeT
+        resolution: ImageSize
     ) {
         let delay = match upsample {
             true => Duration::from_secs_f32(2.5),

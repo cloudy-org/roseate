@@ -1,7 +1,6 @@
 use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
 use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
-use zune_image::codecs::jpeg_xl::jxl_oxide::bitstream::BundleDefault;
 
 use crate::{about_window::AboutWindow, config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
@@ -74,7 +73,7 @@ impl eframe::App for Roseate {
         }
 
         // In roseate I prefer the central panel with zero margin.
-        let central_panel_frame = Frame::default_with_context(ctx)
+        let central_panel_frame = Frame::default()
             .inner_margin(Margin::ZERO)
             .outer_margin(Margin::ZERO)
             .fill(Color32::from_hex(&self.theme.pallet.primary.to_hex_string()).unwrap());
@@ -90,8 +89,8 @@ impl eframe::App for Roseate {
                 &self.viewport.zoom,
                 self.viewport.is_busy,
                 &self.monitor_size,
+                config.misc.experimental.get_decoding_backend(),
                 &mut self.notifier,
-                config.misc.experimental.get_image_processing_backend()
             );
 
             if self.show_settings {
@@ -128,7 +127,7 @@ impl eframe::App for Roseate {
 
                             self.viewport.show(
                                 ui,
-                                &image,
+                                &image.size,
                                 image_handler_data.clone(), // ImageHandlerData is safe to clone
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
@@ -148,10 +147,9 @@ impl eframe::App for Roseate {
                             self.selection_menu.show(
                                 ui,
                                 &mut self.image_handler,
-                                config.image.optimizations.get_optimizations(),
                                 &mut self.notifier,
                                 &self.monitor_size,
-                                config.misc.experimental.get_image_processing_backend(),
+                                config.misc.experimental.get_decoding_backend(),
                                 &self.theme.pallet.accent,
                                 config.ui.selection_menu.show_open_image_button,
                             );

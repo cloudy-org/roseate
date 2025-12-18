@@ -1,124 +1,72 @@
-use std::{fmt::{self, Display, Formatter}, path::PathBuf, result::Result as StdResult};
+use std::{io, result::Result as StdResult};
 
 use cirrus_error::v1::error::CError;
+use roseate_core::error::Error as CoreError;
+use derive_more::{Debug, Display, From};
 
 type ActualError = Option<String>;
 pub type Result<T, E = Error> = StdResult<T, E>;
 
-#[derive(Debug, Clone)]
+// I'm experimenting with "derive_more" for improved error handling all over the codebase.
+// My end goal is to cover as many errors as possible with detailed messages for the end user.
+
+#[derive(Debug, Display, From)]
 pub enum Error {
-    FileNotFound(ActualError, PathBuf, String),
-    NoFileSelected(ActualError),
-    FailedToApplyOptimizations(ActualError, String),
-    /// Failed to initially read image from path.
-    FailedToReadImage(ActualError, PathBuf, String),
-    /// String: technical reason to why the image failed to convert to pixels.
-    FailedToLoadTexture(ActualError),
-    FailedToConvertImageToPixels(ActualError, String),
-    ImageFormatNotSupported(ActualError, String),
-    MonitorNotFound(ActualError),
-    FailedToEncodeImage(ActualError, String),
-    FailedToDecodeImage(ActualError, String),
-    OSDirNotFound(ActualError, String),
-    /// PathBuf: the path that failed to be created
-    FailedToCreatePath(ActualError, PathBuf),
-    /// PathBuf: the path to the file that failed to open
-    FailedToOpenFile(ActualError, PathBuf)
+    #[display("The image file at '{path}' does not exist!")]
+    FileNotFound { path: String },
+
+    #[display("No image was selected in the file dialogue!")]
+    FileNotSelected,
+
+    #[display("We failed to open the image file for reading! \n\n Error: {error}")]
+    ImageFileOpenFailure { error: String },
+
+    #[display("We failed to perform optimizations on this image! 
+    Roseate may run slower and use more memory than usual!")]
+    ImageOptimizationFailure { reason: String },
+
+    // NOTE: this error will be removed soon.
+    #[display("No cache directory was found for your Operating 
+    System!? This should not happen, please report this!")]
+    CacheDirectoryNotFound,
+
+    // NOTE: same thing with this error, will also be removed soon.
+    #[display("Failed to create cache path at '{path}'!")]
+    CacheDirectoryCreationFailure { path: String },
+
+    // NOTE: anddddd.... this
+    #[display("Failed to read the '{file_name}' cache file!")]
+    CacheFileReadFailure { file_name: String },
+
+    #[display("Experimental SVG support has been temporary removed from 
+    Roseate! We're still working on SVG support, it will be back when it's ready.")]
+    SvgNotSupportedYet,
+
+    // External errors (some to later be handled better).
+    #[from]
+    Core(CoreError),
+    // #[from]
+    // IO(io::Error),
 }
 
 impl CError for Error {
     fn human_message(&self) -> String {
-        // the display implementation code was there way before CError in cirrus became a thing.
+        // NOTE: I play to move to the Display trait for a "human message".
         format!("{}", self)
     }
 
+    // TODO: Add some sort of button to the our notifier toast 
+    // that allows users to see the more verbose error message (debug) in the GUI.
     fn actual_error(&self) -> Option<String> {
         match self {
-            Error::FileNotFound(actual_error, _, _) => actual_error,
-            Error::NoFileSelected(actual_error) => actual_error,
-            Error::FailedToApplyOptimizations(actual_error, _) => actual_error,
-            Error::FailedToReadImage(actual_error, _, _) => actual_error,
-            Error::FailedToLoadTexture(actual_error) => actual_error,
-            Error::FailedToConvertImageToPixels(actual_error, _) => actual_error,
-            Error::ImageFormatNotSupported(actual_error, _) => actual_error,
-            Error::MonitorNotFound(actual_error) => actual_error,
-            Error::FailedToEncodeImage(actual_error, _) => actual_error,
-            Error::FailedToDecodeImage(actual_error, _) => actual_error,
-            Error::OSDirNotFound(actual_error, _) => actual_error,
-            Error::FailedToCreatePath(actual_error, _) => actual_error,
-            Error::FailedToOpenFile(actual_error, _) => actual_error,
-        }.to_owned()
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Error::FileNotFound(_, path, detail) => {
-                let message = format!(
-                    "The file path given '{}' does not exist! {}",
-                    path.to_string_lossy(),
-                    detail
-                );
-
-                write!(f, "{}", message)
-            },
-            Error::NoFileSelected(_) => write!(
-                f, "No file was selected in the file dialogue!"
-            ),
-            Error::FailedToApplyOptimizations(_, technical_reason) => write!(
-                f,
-                "Failed to apply optimizations to this image! \
-                    Roseate will run slower than usual and use a lot more memory \
-                    possibly leading to system crashes. BEWARE! \n\nTechnical Reason: {}",
-                technical_reason
-            ),
-            Error::FailedToReadImage(_, path, reason) => write!(
-                f,
-                "Failed to begin reading the image from path ({})! The image could be corrupted. \n\nReason: {}",
-                path.to_string_lossy(),
-                reason
-            ),
-            Error::FailedToLoadTexture(_) => write!(
-                f, "Egui failed to load image texture! Possible image corruption."
-            ),
-            Error::FailedToConvertImageToPixels(_, technical_reason) => write!(
-                f,
-                "Failed to transform image to pixels! The image may be corrupted. \n\nTechnical Reason: {}",
-                technical_reason
-            ),
-            Error::ImageFormatNotSupported(_, image_format) => write!(
-                f, "The image format '{}' is not supported!", image_format
-            ),
-            Error::MonitorNotFound(_) => write!(
-                f, "For some reason we couldn't detect your monitor.",
-            ),
-            Error::FailedToEncodeImage(_, technical_reason) => write!(
-                f,
-                "Image failed to encode! \n\nTechnical Reason: {}",
-                technical_reason
-            ),
-            Error::FailedToDecodeImage(_, technical_reason) => write!(
-                f,
-                "Image failed to decode! \n\nTechnical Reason: {}",
-                technical_reason
-            ),
-            Error::OSDirNotFound(_, directory_name) => write!(
-                f,
-                "No '{}' directory was found for your Operating System!? \
-                    This should not happen, please report this!",
-                directory_name
-            ),
-            Error::FailedToCreatePath(_, path) => write!(
-                f,
-                "Failed to create path at '{}'!",
-                path.to_string_lossy()
-            ),
-            Error::FailedToOpenFile(_, path) => write!(
-                f,
-                "Failed to open file at '{}'!",
-                path.to_string_lossy()
-            )
+            Error::ImageOptimizationFailure { reason } => Some(reason.into()),
+            Error::Core(error) => match error {
+                CoreError::ImageHeaderReadFailure { error, .. } => error.to_owned(),
+                CoreError::ImageEncodeFailure { reason } => Some(reason.into()),
+                _ => None
+            }
+            // Error::IO(error) => todo!(),
+            _ => None
         }
     }
 }

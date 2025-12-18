@@ -4,8 +4,9 @@ use cirrus_egui::v1::{notifier::Notifier, ui_utils::center_multi::ui_multiple_ce
 use cirrus_theming::v1::colour::Colour;
 use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
+use rfd::FileDialog;
 
-use crate::{files::get_rose_image, image::backends::ImageProcessingBackend, image_handler::{ImageHandler, optimization::ImageOptimizations}, monitor_size::MonitorSize};
+use crate::{error::{Error, Result}, files::get_rose_image, image::{Image, backend::DecodingBackend}, image_handler::ImageHandler, monitor_size::MonitorSize};
 
 pub struct ImageSelectionMenu {}
 
@@ -18,10 +19,9 @@ impl ImageSelectionMenu {
         &mut self,
         ui: &mut Ui,
         image_handler: &mut ImageHandler,
-        configured_image_optimizations: Vec<ImageOptimizations>,
         notifier: &mut Notifier,
         monitor_size: &MonitorSize,
-        image_processing_backend: ImageProcessingBackend,
+        backend: DecodingBackend,
         accent_colour: &Colour,
         show_open_image_button: bool
     ) {
@@ -59,17 +59,15 @@ impl ImageSelectionMenu {
         }).inner;
 
         if rose_or_button_response.clicked() {
-            let result = image_handler.select_image(
-                configured_image_optimizations
-            );
+            match Self::select_image() {
+                Ok(image) => {
+                    image_handler.image = Some(image);
 
-            match result {
-                Ok(_) => {
                     image_handler.load_image(
                         true,
-                        notifier,
+                        backend,
                         monitor_size,
-                        image_processing_backend
+                        notifier,
                     );
                 },
                 Err(error) => {
@@ -81,7 +79,7 @@ impl ImageSelectionMenu {
                         }
                     );
                 },
-            }
+            };
         }
 
         // TODO: drag and drop now needs re-testing.
@@ -119,6 +117,17 @@ impl ImageSelectionMenu {
                     )
                 );
             }
+        }
+    }
+
+    fn select_image() -> Result<Image> {
+        let image_path = FileDialog::new()
+            .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
+            .pick_file();
+
+        match image_path {
+            Some(path) => Ok(Image::new(path)?),
+            None => Err(Error::FileNotSelected)
         }
     }
 }

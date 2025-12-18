@@ -1,7 +1,9 @@
-use std::{fmt::Display, hash::{DefaultHasher, Hasher, Hash}};
+use roseate_core::decoded_image::ImageSize;
 
-#[derive(Debug, Clone)]
-pub enum ImageOptimizations {
+use crate::monitor_size::MonitorSize;
+
+#[derive(Default, Debug)]
+pub struct ImageOptimizations {
     /// Downsamples the image roughly to the resolution of your monitor.
     /// 
     /// Images don't always have to be displayed at their full native resolution, especially when 
@@ -14,54 +16,37 @@ pub enum ImageOptimizations {
     /// 
     /// NOTE: "The image's aspect ratio is preserved. The image is scaled to the maximum 
     /// possible size that fits within the bounds specified by the width and height." ~ Image Crate
-    MonitorDownsampling(u32),
+    pub monitor_downsampling: Option<MonitorDownsampling>,
     /// Basically `MonitorDownsampling` but the image is dynamically sampled up and down relative to the zoom factor. 
     /// When the user zooms into an image (especially one that was already downsampled via something like MonitorDownsampling) 
     /// detail in the image will be lost, so to combat this the image is dynamically upsampled to bring back that detail 
     /// when necessary (such as the user zooming in).
     /// 
     /// The opposite happens when the full detail is no longer required to save your memory.
-    DynamicSampling(bool, bool)
+    pub dynamic_sampling: Option<DynamicSampling>,
 }
 
-impl Hash for ImageOptimizations {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            ImageOptimizations::DynamicSampling(..) => "dynamic-sampling".hash(state),
-            ImageOptimizations::MonitorDownsampling(_) => "monitor-downsampling".hash(state)
-        }
+#[derive(Debug)]
+pub struct MonitorDownsampling { pub marginal_allowance: f32 }
+
+impl MonitorDownsampling {
+    pub fn get_size_relative_to_monitor(&self, monitor_size: &MonitorSize) -> ImageSize {
+        // marginal_allowance is supposed to be a f32 but instead 
+        // it's a u32 hence all it's units have been shifted forward one.
+        // 
+        // E.g. "130" is "1.3"
+        // TODO: remove the above
+
+        let (monitor_width, monitor_height) = monitor_size.get();
+
+        let (width, height) = (
+            (monitor_width as f32 * self.marginal_allowance) as u32,
+            (monitor_height as f32 * self.marginal_allowance) as u32
+        );
+
+        (width, height)
     }
 }
 
-impl PartialEq for ImageOptimizations {
-    fn eq(&self, other: &Self) -> bool {
-        let mut hasher = DefaultHasher::new();
-
-        if self.hash(&mut hasher) == other.hash(&mut hasher) {
-            return true;
-        }
-
-        false
-    }
-}
-
-impl Eq for ImageOptimizations {}
-
-impl ImageOptimizations {
-    // TODO: remove this when has_optimization is also removed.
-    pub fn id(&self) -> &str {
-        match self {
-            Self::MonitorDownsampling(_) => "monitor-downsampling",
-            Self::DynamicSampling(_, _) => "dynamic-sampling",
-        }
-    }
-}
-
-impl Display for ImageOptimizations {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::MonitorDownsampling(marginal_factor) => write!(f, "Monitor Downsampling (@ {})", marginal_factor / 100),
-            Self::DynamicSampling(_, _) => write!(f, "Dynamic Sampling"),
-        }
-    }
-}
+#[derive(Debug)]
+pub struct DynamicSampling { pub up: bool, pub down: bool }

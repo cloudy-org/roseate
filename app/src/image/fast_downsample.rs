@@ -1,10 +1,9 @@
 use rayon::prelude::*;
+use roseate_core::decoded_image::ImageSize;
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
-use super::image::ImageSizeT;
-
-// math :akko_shrug:
-// SINNNNNNN, SIN CITY WASN'T MADE FOR YOU!!! ANGLES LIKEEEEE YOUUUU!
+// math :akko_shrug: ~ Ananas
+// SINNNNNNN, SIN CITY WASN'T MADE FOR YOU!!! ANGLES LIKEEEEE YOUUUU! ~ Goldy
 fn sinc(x: f32) -> f32 {
     if x == 0.0 {
         return 1.0
@@ -35,10 +34,10 @@ fn precomputed_lanczos(window_size: f32, scale_factor: f32) -> Vec<f32> {
 
 pub(super) fn fast_downsample(
     pixels: &Vec<u8>,
-    image_size: &ImageSizeT,
+    image_size: &ImageSize,
     target_size: (u32, u32),
     has_alpha: bool
-) -> (Vec<u8>, ImageSizeT) {
+) -> (Vec<u8>, ImageSize) {
     let window_size: f32 = 3.0; // the window size that determines the level 
     // of influence the kernel has on each original pixel. Larger values result in more smoothing 
     // but may also result in slower computation time so beware.

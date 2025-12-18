@@ -2,11 +2,12 @@ use core::f32;
 use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
 use log::debug;
+use roseate_core::decoded_image::ImageSize;
 use std::hash::Hasher;
 use cirrus_egui::v1::{scheduler::Scheduler};
 use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
 
-use crate::{image::image::Image, image_handler::ImageResource};
+use crate::image_handler::resource::ImageResource;
 
 pub struct Viewport {
     pub zoom: f32,
@@ -85,7 +86,7 @@ impl Viewport {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        image: &Image,
+        image_size: &ImageSize,
         image_handler_data: ImageResource,
         padding: f32,
         zoom_into_cursor: bool,
@@ -110,7 +111,7 @@ impl Viewport {
         }
 
         let image_size = Vec2::new(
-            image.image_size.0 as f32, image.image_size.1 as f32
+            image_size.0 as f32, image_size.1 as f32
         );
         let image_size_with_padding = image_size * padding;
 
@@ -187,7 +188,7 @@ impl Viewport {
 
         let egui_image = match image_handler_data {
             ImageResource::Texture(texture) => egui::Image::from_texture(&texture),
-            ImageResource::Vector(image) => todo!(),
+            // ImageResource::Vector(image) => todo!(),
             ImageResource::AnimatedTexture(texture_handles) => todo!(),
         }.corner_radius(10.0); // TODO: config to customize image corner radius.
 

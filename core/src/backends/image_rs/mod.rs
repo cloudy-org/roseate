@@ -3,7 +3,7 @@ use std::{collections::HashSet, io::BufReader};
 use image::{AnimationDecoder, ImageDecoder, ImageError, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}, imageops::{self, FilterType}};
 use log::debug;
 
-use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
+use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, modifications::{self, ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
 
 mod colour;
 mod buffer_image;
@@ -40,7 +40,7 @@ impl DecodeBackend for ImageRSBackend {
                 log::debug!("Initializing image-rs backend decoders with buf reader...");
 
                 let error_func = |error: ImageError| { 
-                    Error::DecodingError(format!("Failed to init image-rs decoder: {}", error))
+                    Error::DecoderInitFailure { error: error.to_string() }
                 };
 
                 // TODO: Don't unwrap and handle image-rs's error 
@@ -50,7 +50,12 @@ impl DecodeBackend for ImageRSBackend {
                     ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
-                    _ => return Err(Error::UnsupportedImageFormat)
+                    unsupported_format => return Err(
+                        Error::DecoderNotSupported {
+                            image_format: unsupported_format.to_string(),
+                            backend: String::from("image-rs")
+                        }
+                    )
                 };
 
                 Ok(
@@ -112,7 +117,10 @@ impl DecodeBackend for ImageRSBackend {
         }
     }
 
-    fn modify(&mut self, modifications: Vec<ImageModification>) {
+    fn modify<I>(&mut self, modifications: I)
+    where
+        I: IntoIterator<Item = ImageModification>
+    {
         self.modifications.extend(modifications);
     }
 
@@ -208,9 +216,10 @@ impl ImageRSBackend {
 
         for frame_result in animation_decoder.into_frames() {
             let frame = frame_result.map_err(
-                |error| Error::DecodingError(
-                    format!("Image-rs decoder failed to decode animated frame: {}", error.to_string())
-                )
+                // NOTE: I might change this to a less generic error.
+                |error| Error::DecodingFailure {
+                    error: format!("Image-rs decoder failed to decode animated frame: {}", error.to_string())
+                }
             )?;
 
             let (numerator, denominator) = frame.delay().numer_denom_ms();
@@ -253,9 +262,10 @@ impl ImageRSBackend {
         if let Err(error) = image_decoder.read_image(&mut image_pixels) {
             // TODO: map extract image rs error to a roseate-core error.
             return Err(
-                Error::DecodingError(
-                    format!("Image-rs decoder failed to decode image to pixels: {}", error.to_string())
-                )
+                // NOTE: I might change this to a less generic error.
+                Error::DecodingFailure {
+                    error: format!("Image-rs decoder failed to decode image to pixels: {}", error.to_string()),
+                }
             );
         }
 

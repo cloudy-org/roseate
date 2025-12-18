@@ -5,7 +5,12 @@ edition = "2024"
 
 [dependencies]
 log = "0.4"
+imagesize = "0.14.0" # zero deps is crazy
+svg_metadata = "0.5.1"
+
+# decoder backends
 image = {version = "0.25.9", features = ["rayon", "png", "jpeg", "gif", "webp"], default-features = false}
+zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
 
 [dev-dependencies]
 env_logger = "0.11"

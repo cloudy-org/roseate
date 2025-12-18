@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use serde::{Deserialize, Deserializer, Serialize};
-use crate::{image_handler::optimization::ImageOptimizations as ImageOptimizationsEnum};
+use crate::{image_handler::optimization};
 
 #[derive(Serialize, Deserialize, Hash)]
 pub struct ImageOptimizations {
@@ -24,47 +24,46 @@ impl Default for ImageOptimizations {
 
 impl ImageOptimizations {
     /// Returns the optimizations the user has configured in config.toml.
-    pub fn get_optimizations(&self) -> Vec<ImageOptimizationsEnum> {
-        let optimizations_enums: Vec<ImageOptimizationsEnum> = match &self.mode {
+    pub fn get_optimizations(&self) -> optimization::ImageOptimizations {
+        match &self.mode {
             Some(mode) => {
                 match mode.to_lowercase().as_str() {
-                    "s" | "speed" => Vec::new(),
-                    "d" | "default" | &_ => vec![
-                        ImageOptimizationsEnum::MonitorDownsampling(
-                            (MonitorDownsampling::default().strength * 100.0) as u32
-                        ),
-                    ],
+                    "s" | "speed" => optimization::ImageOptimizations::default(), // by default it's none for now
+                    "d" | "default" | &_ => {
+                        optimization::ImageOptimizations {
+                            monitor_downsampling: Some(
+                                optimization::MonitorDownsampling {
+                                    marginal_allowance:  MonitorDownsampling::default().strength
+                                }
+                            ),
+                            ..Default::default() // everything else None
+                        }
+                    }
                 }
             },
             None => {
-                let mut optimizations = Vec::new();
-
-                // TODO: we'll need something to replace these if statements
-                // so when we scale it won't turn into yandere dev's codebase
-                // for yandere simulator.
-
-                if self.monitor_downsampling.enabled {
-                    optimizations.push(
-                        ImageOptimizationsEnum::MonitorDownsampling(
-                            (self.monitor_downsampling.strength * 100.0) as u32
-                        )
-                    );
+                // TODO: figure out a way to avoid having duplicates of optimization 
+                // structs (e.g: "optimization::MonitorDownsampling" and "MonitorDownsampling")
+                optimization::ImageOptimizations {
+                    monitor_downsampling: match self.monitor_downsampling.enabled {
+                        true => Some(
+                            optimization::MonitorDownsampling {
+                                marginal_allowance: self.monitor_downsampling.strength
+                            }
+                        ),
+                        false => None,
+                    },
+                    dynamic_sampling: match self.experimental_dynamic_sampling.enabled {
+                        true => Some(
+                            optimization::DynamicSampling {
+                                up: true, down: self.experimental_dynamic_sampling.also_downsample
+                            }
+                        ),
+                        false => None,
+                    }
                 }
-
-                if self.experimental_dynamic_sampling.enabled {
-                    optimizations.push(
-                        ImageOptimizationsEnum::DynamicSampling(
-                            true,
-                            self.experimental_dynamic_sampling.also_downsample
-                        )
-                    );
-                }
-
-                optimizations
             }
-        };
-
-        optimizations_enums
+        }
     }
 }
 

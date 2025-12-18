@@ -64,18 +64,14 @@ impl MonitorSize {
             let file = File::open(&monitor_size_file_path);
 
             if let Err(error) = file {
-                let error = Error::FailedToOpenFile(
-                    Some(error.to_string()), monitor_size_file_path
-                );
-    
-                warn!("{}", error);
+                warn!("{}", Error::CacheFileReadFailure { file_name: String::from("monitor_size") });
                 return;
             }
-    
+
             let data_result = serde_json::from_reader::<BufReader<File>, MonitorSizeCacheData>(
                 BufReader::new(file.unwrap())
             );
-    
+
             if let Ok(data) = data_result {
                 // NOTE: should we make this customizable???
                 let last_size = data.sizes.last();

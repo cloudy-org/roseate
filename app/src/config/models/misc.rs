@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::image::backends::ImageProcessingBackend;
+use crate::image::backend::DecodingBackend;
 
 #[derive(Serialize, Deserialize, Default, Hash)]
 pub struct Misc {
@@ -26,17 +26,16 @@ impl Default for Experimental {
 }
 
 impl Experimental {
-    pub fn get_image_processing_backend(&self) -> ImageProcessingBackend {
+    pub fn get_decoding_backend(&self) -> DecodingBackend {
         match &self.image_processing_backend {
             Some(backend_id) => {
                 match backend_id.as_str() {
-                    "image-rs" => ImageProcessingBackend::ImageRS,
-                    "zune-image" => ImageProcessingBackend::ZuneImage,
-                    "roseate" => ImageProcessingBackend::Roseate,
-                    _ => ImageProcessingBackend::ImageRS
+                    "image-rs" => DecodingBackend::ImageRS,
+                    "zune-image" => DecodingBackend::ZuneImage,
+                    _ => DecodingBackend::ImageRS
                 }
             },
-            None => ImageProcessingBackend::ImageRS,
+            None => DecodingBackend::ImageRS,
         }
     }
 }

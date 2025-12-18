@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 use egui::{Pos2, RichText, Ui, WidgetText};
 use eframe::egui::{self, Response};
 
-use crate::{image::image::Image, image_handler::ImageResource};
+use crate::{image::Image, image_handler::resource::ImageResource};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -19,7 +19,7 @@ struct ImageInfoData {
 
 impl ImageInfoData {
     pub fn new(image_handler_data: &ImageResource, image: &Image) -> Self {
-        let path = &image.image_path;
+        let path = &image.path;
 
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
 
@@ -109,13 +109,13 @@ impl ImageInfoWindow {
                 ui.label("Dimensions:");
                 ui.label(
                     format!(
-                        "{}x{}", image.image_size.0, image.image_size.1
+                        "{}x{}", image.size.0, image.size.1
                     )
                 );
                 ui.end_row();
 
                 ui.label("Format:");
-                ui.label(format!("{}", image.image_format));
+                ui.label(format!("{}", image.format));
                 ui.end_row();
 
                 let created_hint = "Shows the date and time the image was taken or created \

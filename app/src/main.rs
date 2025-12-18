@@ -5,16 +5,17 @@ use std::{path::Path, time::Duration};
 use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use cirrus_theming::v1::{colour::Colour, theme::Theme};
 use config::config::Config;
-use env_logger::Env;
+use env_logger::Builder;
 use image_handler::{ImageHandler};
-use log::debug;
+use log::{LevelFilter, info};
 use eframe::egui;
 use egui_notify::ToastLevel;
 use clap::{command, Parser};
 
-use error::Error;
 use app::Roseate;
 use monitor_size::MonitorSize;
+
+use crate::image::image::Image;
 
 mod app;
 mod utils;
@@ -44,10 +45,14 @@ struct Args {
 }
 
 fn main() -> eframe::Result {
-    let logger_env = Env::default()
-        .filter_or("RUST_LOG", "warn");
-
-    env_logger::init_from_env(logger_env);
+    Builder::from_default_env()
+        .filter_level(LevelFilter::Warn)
+        .filter_module("zbus", LevelFilter::Off)
+        .filter_module("sctk", LevelFilter::Off)
+        .filter_module("winit", LevelFilter::Off)
+        .filter_module("tracing", LevelFilter::Off)
+        .parse_default_env()
+        .init();
 
     // Modern GUI applications should never silently 
     // error and exit without visually notifying the user 
@@ -78,7 +83,7 @@ fn main() -> eframe::Result {
     // TODO: fill monitor size params with values from config
     let mut monitor_size = MonitorSize::new(
         None,
-        match &config.misc.override_monitor_size {
+        match &config_manager.config.misc.override_monitor_size {
             Some(size) => Some((size.width as f32, size.height as f32)),
             None => None,
         }
@@ -111,41 +116,40 @@ fn main() -> eframe::Result {
 
     let image_path = cli_args.image;
 
-    let mut image_handler = ImageHandler::new();
+    let image_optimizations = config.image.optimizations.get_optimizations();
 
-    if let Some(path) = image_path {
-        debug!("Image '{}' loading from path...", path);
+    let mut image_handler = match image_path {
+        Some(path) => {
+            info!("Image '{}' loading from path...", path);
 
-        let path = Path::new(&path).to_owned();
+            let path = Path::new(&path).to_owned();
 
-        if !path.exists() {
-            let error = Error::FileNotFound(
-                None,
-                path.to_path_buf(),
-                "That file doesn't exist!".to_string()
-            );
+            let image = match Image::new(path) {
+                Ok(image) => Some(image),
+                Err(error) => {
+                    notifier.toast(
+                        Box::new(error),
+                        ToastLevel::Error,
+                        |toast| {
+                            toast.duration(Some(Duration::from_secs(10)));
+                        }
+                    );
 
-            notifier.toast(
-                Box::new(error),
-                ToastLevel::Error,
-                |toast| {
-                    toast.duration(Some(Duration::from_secs(10)));
-                }
-            )
-        } else {
-            let configured_image_optimizations = config.image.optimizations.get_optimizations();
+                    None
+                },
+            };
 
-            let result = image_handler.init_image(path, configured_image_optimizations);
+            ImageHandler::new(image, image_optimizations)
+        },
+        None => ImageHandler::new(None, image_optimizations),
+    };
 
-            if let Err(error) = result {
-                notifier.toast(
-                    Box::new(error),
-                    ToastLevel::Error,
-                    |_| {}
-                );
-            }
-        }
-    }
+    image_handler.load_image(
+        config.image.loading.initial.lazy_loading,
+        config.misc.experimental.get_decoding_backend(),
+        &monitor_size,
+        &mut notifier,
+    );
 
     let theme = Theme::new(Some(Colour::from_hex(0xe05f78)));
 
@@ -158,16 +162,13 @@ fn main() -> eframe::Result {
                 .set_all()
                 .apply(&cc.egui_ctx);
 
-            if image_handler.image.is_some() {
-                image_handler.load_image(
-                    config_manager.config.image.loading.initial.lazy_loading,
-                    &mut notifier,
-                    &monitor_size,
-                    config_manager.config.misc.experimental.get_image_processing_backend()
-                );
-            }
-
-            let app = Roseate::new(image_handler, monitor_size, theme, notifier, config_manager);
+            let app = Roseate::new(
+                image_handler,
+                monitor_size,
+                theme,
+                notifier,
+                config_manager
+            );
 
             Ok(Box::new(app))
         }),

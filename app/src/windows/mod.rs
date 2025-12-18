@@ -1,6 +1,6 @@
 use egui::{Context, Key, Ui};
 
-use crate::{image::image::Image, image_handler::ImageResource, windows::info::ImageInfoWindow};
+use crate::{image::Image, image_handler::resource::ImageResource, windows::info::ImageInfoWindow};
 
 mod info;
 

@@ -1,405 +1,190 @@
-use std::{collections::HashSet, fs::File, hash::{DefaultHasher, Hasher}, io::{BufReader, Read}, path::{Path, PathBuf}, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fmt::Debug, fs::File, io::BufReader, path::PathBuf, sync::{Arc, Mutex}};
 
-use std::hash::Hash;
-use cirrus_egui::v1::notifier::Notifier;
-use cirrus_error::v1::error::CError;
 use log::debug;
-use svg_metadata::Metadata;
+use cirrus_egui::v1::notifier::Notifier;
+use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
 
-use crate::{error::{Error, Result}, image::decode::DecodedImage, monitor_size::MonitorSize};
-
-use super::{backends::ImageProcessingBackend, image_data::{ImageColourType, ImageData}, image_formats::ImageFormat, modifications::ImageModifications};
-
-pub type ImageSizeT = (u32, u32);
-
-// trait ReadAndSeek: Read + Seek {}
-// not to be confused with hide and seek.
-// impl<T: Read + Seek> ReadAndSeek for T {}
+use crate::{error::{Error, Result}, image::backend::DecodingBackend};
 
 #[derive(Clone)]
 pub struct Image {
-    pub image_size: ImageSizeT,
-    pub image_format: ImageFormat,
-    pub image_path: Arc<PathBuf>,
-    pub image_data: Arc<Mutex<Option<ImageData>>>,
-    // Look! I know you see that type above me but just  
-    // so you know, I'm NOT crazy... well not yet at least...
-    // 
-    // Anyways, as you can see, `image_bytes` is an `Arc<Mutex<Option<Arc<[u8]>>>>` 
-    // this is because we need to be able to manipulate this under a thread so we can load
-    // images in a background thread (see https://github.com/cloudy-org/roseate/issues/24).
-    // 
-    // The first Arc allows us to share the SAME image_bytes safely across threads even when we 
-    // image.clone() that bitch, while Mutex ensures that only one thread accesses or modifies the image 
-    // bytes and also SO THE RUST COMPILER CAN SHUT THE FUCK UP.. YES I KNOW THAT IT'S UNSAFE BECAUSE ANOTHER 
-    // THREAD CAN FUCK IT UP BUT YOU DO REALISE MY PROGRAM IS SMART ENOUGH TO NOT DO THAT... uhmmm uhmmm... anyways... 
-    // I use an Option because an image that is not yet loaded will have no bytes in memory and the second Arc is there
-    // so we can image.clone() and not be doubling the image bytes in memory and turn into the next Google Chrome web browser. 💀
-    // 
-    // Kind regards,
-    // Goldy
-    current_modifications: Arc<Mutex<HashSet<ImageModifications>>>
+    pub path: PathBuf,
+    pub size: ImageSize,
+    pub format: ImageFormat,
+    pub decoded: Arc<Mutex<Option<DecodedImage>>>,
+
+    last_modifications: ImageModifications,
 }
 
-impl Hash for Image {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        (*self.image_path).hash(state);
-
-        if let Some(image_data) = self.image_data.lock().unwrap().as_ref() {
-            match image_data {
-                ImageData::Pixels(pixels_data) => pixels_data.0.len().hash(state),
-                ImageData::StaticBytes(image_bytes) => image_bytes.len().hash(state),
-            }
-        }
+impl Debug for Image {
+    // I only want path, size, format and last modifications in the debug.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Image")
+            .field("path", &self.path)
+            .field("size", &self.size)
+            .field("format", &self.format)
+            .field("last_modifications", &self.last_modifications)
+            .finish()
     }
 }
 
 impl Image {
-    pub fn from_path(path: &Path) -> Result<Self> {
-        // Changed this to unwrap_or_default so it returns an empty 
-        // string ("") and doesn't panic if a file has no extension. I need to begin adding tests.
-        let extension = path.extension().unwrap_or_default();
+    pub fn new(path: PathBuf) -> Result<Self> {
+        if !path.exists() {
+            return Err(
+                Error::FileNotFound { path: path.to_string_lossy().to_string() }
+            );
+        }
 
-        let (image_size, image_format) = if extension == "svg" {
-            (
-                get_svg_image_size(&path),
-                ImageFormat::Svg
-            )
-        } else {
-            // I use 'imagesize' crate to get the image size and correct image
-            // format because it's A LOT faster as it only partially loads the image bytes.
+        if path.extension().unwrap_or_default() == "svg" {
+            // NOTE: this is experimental stuff, not final.
+            // let size = determine_svg_size(&path);
 
-            let mut buffer = [0u8; 16];
-            let number_of_bytes_read = File::open(&path)
-                .expect("Failed to open file to get image type!") // we can expect here as we currently already check if the file exists prior.
-                .read(&mut buffer)
-                .unwrap(); // should we unwrap, I think this has a likelihood of failing.
+            // return Ok(
+            //     Self {
+            //         path,
+            //         size,
+            //         format: ImageFormat::Svg,
+            //         decoded: None
+            //     }
+            // );
 
-            let image_format = match imagesize::image_type(&buffer[..number_of_bytes_read]) {
-                Ok(image_size_image_type) => {
-                    match ImageFormat::try_from(image_size_image_type) {
-                        Ok(value) => value,
-                        Err(error) => {
-                            return Err(
-                                Error::FailedToReadImage(
-                                    Some(error.human_message()), path.to_path_buf(), error.human_message()
-                                )
-                            )
-                        },
-                    }
-                },
-                Err(error) => {
-                    return Err(
-                        Error::FailedToReadImage(
-                            Some(error.to_string()),
-                            path.to_path_buf(),
-                            "Failed to retrieve image type!".to_string()
-                        )
-                    )
-                },
-            };
+            // We can't support SVG at all now as we no longer work with 
+            // egui's image loader. https://github.com/cloudy-org/roseate/issues/89
+            // 
+            // I'm planning to create our own SVG renderer in the viewport by 
+            // reading into egui's implementation of it in their loader.
+            return Err(Error::SvgNotSupportedYet);
+        }
 
-            let image_size = match imagesize::size(&path) {
-                Ok(value) => value,
-                Err(error) => {
-                    return Err(
-                        Error::FailedToReadImage(
-                            Some(error.to_string()),
-                            path.to_path_buf(),
-                            "Failed to retrieve image dimensions!".to_string()
-                        )
-                    );
-                },
-            };
-
-            ((image_size.width as u32, image_size.height as u32), image_format)
-        };
+        let (format, size) = determine_image_format_and_size_from_header(&path)?;
 
         Ok(
             Self {
-                image_size,
-                image_format,
-                image_path: Arc::new(path.to_owned()),
-                image_data: Arc::new(Mutex::new(None)),
-                current_modifications: Arc::new(Mutex::new(HashSet::new()))
+                path,
+                size,
+                format,
+                decoded: Arc::new(Mutex::new(None)),
+                last_modifications: HashSet::default(),
             }
         )
     }
 
-    /// Reloads image pretty fast by using image_bytes in memory when possible.
-    /// Falls back to disk if the modifications make it impossible to load from memory.
-    pub fn reload_image(
-        &mut self,
-        notifier: &mut Notifier,
-        modifications: HashSet<ImageModifications>,
-        image_processing_backend: &ImageProcessingBackend
-    ) -> Result<()> {
-        if self.are_modifications_the_same(&modifications, &self.current_modifications.lock().unwrap()) {
+    pub fn load(&mut self, modifications: ImageModifications, backend: &DecodingBackend, reload: bool, notifier: &mut Notifier) -> Result<()> {
+        notifier.set_loading(
+            Some(
+                format!(
+                    "Preparing to {} image...",
+                    match reload { true => "reload", false => "load" }
+                )
+            )
+        );
+
+        if reload && self.are_mods_the_same(&modifications) {
             debug!(
-                "Modifications were the same so there's no \
-                reason to reload this image hence we are skipping..."
+                "Image modifications were the same, rejecting reload..."
             );
 
             return Ok(());
         }
 
-        let load_from_disk = self.are_modifications_outside_memory_bounds(&modifications);
-
-        notifier.set_loading(
-            Some("Preparing image to be reloaded...".into())
-        );
-
-        let current_modifications = modifications.clone();
-
-        let arc_pixels: (Arc<[u8]>, ImageSizeT, ImageColourType) = match load_from_disk {
-            false => {
-                debug!("Reloading image from memory... at the spweed of a spwinting c-cat meow :3 (wait WTF!?!?)...");
-
-                let image_data_mutex = self.image_data.lock().unwrap();
-
-                let image_data = image_data_mutex
-                    .as_ref()
-                    .expect(
-                        "Image has no image data loaded in memory so we \
-                        cannot reload the image! This is a logic error, report this!"
-                    );
-
-                match image_data {
-                    ImageData::Pixels(pixels) => pixels.clone(),
-                    // images loaded into memory as bytes will never be called to reload as they will never have modifications.
-                    ImageData::StaticBytes(_) => {
-                        debug!(
-                            "Image got reloaded but there's no reason to reload this image as it \
-                                is a static type (StaticBytes) hence we will skip this image reload."
-                        );
-                        return Ok(());
-                    },
-                }
-            },
-            true => {
-                debug!("Reloading image from disk...");
-
-                // clear memory as we aren't going to use that any more.
-                // *self.image_bytes.lock().unwrap() = None;
-
-                let image_file = self.get_image_file()?;
-
-                let mut image_buf_reader = BufReader::new(image_file);
-
-                let mut decoded_image = self.decode_image(
-                    image_processing_backend,
-                    &mut image_buf_reader,
-                    notifier
-                )?;
-
-                if let DecodedImage::Egui = decoded_image {
-                    let mut buffer = Vec::new();
-                    // TODO: handle error
-                    image_buf_reader.read_to_end(&mut buffer).unwrap();
-
-                    *self.image_data.lock().unwrap() = Some(
-                        ImageData::StaticBytes(Arc::from(buffer.as_slice()))
-                    );
-        
-                    return Ok(());
-                }
-
-                if !modifications.is_empty() {
-                    decoded_image = self.modify_decoded_image(
-                        modifications,
-                        decoded_image,
-                        notifier
-                    )?;
-                }
-
-                let (pixels, image_size, image_colour_type) = self.decoded_image_to_pixels(
-                    decoded_image
-                )?;
-
-                (Arc::from(pixels.as_slice()), image_size, image_colour_type)
-            },
+        let load_fresh_from_disk = match reload {
+            true => self.are_mods_out_of_mem_bounds(&modifications),
+            false => true,
         };
 
-        *self.current_modifications.lock().unwrap() = current_modifications;
-        *self.image_data.lock().unwrap() = Some(ImageData::Pixels(arc_pixels));
+        // if we have already loaded this image and we can use the image in memory, the image reader will contain decoded image.
+        let image_reader_data = self.get_image_reader_data(load_fresh_from_disk, notifier)?;
+        let image_reader = ImageReader::new(image_reader_data, self.format.clone());
+
+        notifier.set_loading(Some("Initializing decoder to use for decoding..."));
+        let mut backend = backend.init_decoder(image_reader)?;
+
+        notifier.set_loading(Some("Passing image modifications to decoder..."));
+        self.last_modifications = modifications.clone();
+        backend.modify(modifications);
+
+        notifier.set_loading(Some("Decoding image..."));
+        *self.decoded.lock().unwrap() = Some(backend.decode()?);
+
+        debug!("Done decoding image!");
+
+        notifier.unset_loading();
 
         Ok(())
     }
 
-    pub fn load_image(
-        &mut self,
-        notifier: &mut Notifier,
-        monitor_size: &MonitorSize,
-        modifications: HashSet<ImageModifications>,
-        image_processing_backend: &ImageProcessingBackend
-    ) -> Result<()> {
-        notifier.set_loading(Some("Opening file...".into()));
-        debug!("Opening file into buf reader to prepare for reading...");
+    /// Returns already decoded image from memory if it exists and if a fresh 
+    /// image from disk is not required. Otherwise, in the case `fresh_from_disk` 
+    /// is true or decoded image doesn't exist, a buf reader to the fresh image 
+    /// on the disk is returned for us to decode later.
+    fn get_image_reader_data(&mut self, fresh_from_disk: bool, notifier: &mut Notifier) -> Result<ImageReaderData> {
+        if !fresh_from_disk {
+            if let Some(decoded_image) = self.decoded.lock().unwrap().take() {
+                return Ok(ImageReaderData::DecodedImage(decoded_image));
+            }
 
-        let image_file = self.get_image_file()?;
-
-        let mut image_buf_reader = BufReader::new(image_file); // apparently this is faster for larger files as 
-        // it avoids loading files line by line hence less system calls to the disk. (EDIT: I'm defiantly noticing a speed difference)
-
-        notifier.set_loading(Some("Decoding image...".into()));
-
-        let mut decoded_image = self.decode_image(
-            image_processing_backend, &mut image_buf_reader, notifier
-        )?;
-
-        if let DecodedImage::Egui = decoded_image {
-            let mut buffer = Vec::new();
-            // TODO: handle error
-            image_buf_reader.read_to_end(&mut buffer).unwrap();
-
-            *self.image_data.lock().unwrap() = Some(
-                ImageData::StaticBytes(Arc::from(buffer.as_slice()))
-            );
-
-            return Ok(());
+            debug!("Decoded image is not currently loaded in memory, falling back to loading from disk...");
         }
 
-        let current_modifications = modifications.clone();
+        notifier.set_loading(Some("Opening image's file for reading..."));
 
-        if !modifications.is_empty() {
-            decoded_image = self.modify_decoded_image(
-                modifications,
-                decoded_image,
-                notifier
+        let file = File::open(&self.path)
+            .map_err(
+                |error| Error::ImageFileOpenFailure { error: error.to_string() }
             )?;
-        }
 
-        let image_pixels_result = self.decoded_image_to_pixels(decoded_image);
+        notifier.unset_loading();
 
-        match image_pixels_result {
-            Ok((image_pixels, image_size, image_colour_type)) => {
-                *self.current_modifications.lock().unwrap() = current_modifications;
+        debug!("Boxing image onto the heap to pass to buf reader...");
 
-                *self.image_data.lock().unwrap() = Some(
-                    ImageData::Pixels((Arc::from(image_pixels), image_size, image_colour_type))
-                );
-
-                Ok(())
-            },
-            Err(error) => {
-                let error = Error::FailedToApplyOptimizations(
-                    Some(error.to_string()),
-                    "Failed to decode and load image to apply modifications!".to_string()
-                );
-
-                // warn the user that modifications failed to apply.
-                notifier.toast(
-                    Box::new(error),
-                    egui_notify::ToastLevel::Error,
-                    |_| {}
-                );
-    
-                // load image without modifications
-                // TODO: this needs to go when we move to "image_pixels" with 
-                // #57 (https://github.com/cloudy-org/roseate/issues/57) and also 
-                // when #58 (https://github.com/cloudy-org/roseate/issues/58) is completed.
-                self.load_image(
-                    notifier,
-                    monitor_size,
-                    HashSet::new(),
-                    image_processing_backend
-                )
-            },
-        }
+        Ok(ImageReaderData::BufReader(BufReader::new(Box::new(file))))
     }
 
-    fn get_image_file(&self) -> Result<File> {
-        match File::open(self.image_path.as_ref()) {
-            Ok(file) => Ok(file),
-            Err(error) => {
-                Err(
-                    Error::FileNotFound(
-                        Some(error.to_string()),
-                        self.image_path.to_path_buf(),
-                        "The file we're trying to load does not exist any more!
-                        This might suggest that the image got deleted between the
-                        time you opened it and roseate was ready to load it.".to_string()
-                    )
-                )
-            },
-        }
+    fn are_mods_out_of_mem_bounds(&mut self, modifications: &ImageModifications) -> bool {
+        let require_resize = modifications.iter().find_map(|modification| {
+            #[warn(irrefutable_let_patterns)]
+            if let ImageModification::Resize(width, height) = modification {
+                Some((*width, *height))
+            } else {
+                None
+            }
+        });
+
+        let is_out_of_bounds = self.last_modifications.iter().any(|last_modification| {
+            match last_modification {
+                ImageModification::Resize(width, height) => {
+                    match require_resize {
+                        Some((new_width, new_height)) => {
+                            // If this statement evaluates to true this 
+                            // means we are being asked to resize the image upwards 
+                            // to data we do not have in memory, hence we cannot use what's 
+                            // in memory (these modifications are outside the memory bounds).
+                            new_width > *width || new_height > *height
+                        }
+                        None => false,
+                    }
+                }
+            }
+        });
+
+        debug!("Are any modifications out of memory bounds: {}", is_out_of_bounds);
+
+        is_out_of_bounds
     }
 
-    /// Check if modifications in both hash sets are the same by deep comparing them.
-    fn are_modifications_the_same(&self, a: &HashSet<ImageModifications>, b: &HashSet<ImageModifications>) -> bool {
-        if a.len() != b.len() {
+    /// Check if modifications in both hash sets are the same.
+    fn are_mods_the_same(&self, modifications: &ImageModifications) -> bool {
+        if modifications.len() != self.last_modifications.len() {
             return false;
         }
 
-        fn hash_modification(m: &ImageModifications) -> u64 {
-            let mut hasher = DefaultHasher::new();
-
-            match m {
-                ImageModifications::Resize((width, height)) => {
-                    width.hash(&mut hasher);
-                    height.hash(&mut hasher);
-                },
-            }
-
-            hasher.finish()
-        }
-
-        let a_hashes: HashSet<u64> = a.iter().map(hash_modification).collect();
-        let b_hashes: HashSet<u64> = b.iter().map(hash_modification).collect();
-
-        a_hashes == b_hashes
-    }
-
-    fn are_modifications_outside_memory_bounds(&self, modifications_to_apply: &HashSet<ImageModifications>) -> bool {
-        let current_modifications = self.current_modifications.lock().unwrap();
-
-        for current_modification in current_modifications.iter() {
-            match (modifications_to_apply.get(&current_modification), current_modification) {
-                (
-                    Some(ImageModifications::Resize((width, height))),
-                    ImageModifications::Resize((current_width, current_height))
-                ) => {
-                    // If this "if" statement evaluates to true this 
-                    // means we are being asked to resize the image upwards 
-                    // to data we do not have in memory, hence we cannot use what's 
-                    // in memory / these modifications are outside the memory bounds.
-                    if (width > current_width) | (height > current_height) {
-                        return true;
-                    }
-                },
-                (None, ImageModifications::Resize(_)) => {
-                    return true;
-                },
+        for modification in modifications {
+            if !self.last_modifications.iter().any(|last_mod| modification == last_mod) {
+                return false;
             }
         }
 
-        return false;
+        true
     }
-
-}
-
-fn get_svg_image_size(path: &Path) -> ImageSizeT {
-    let metadata = Metadata::parse_file(path).expect(
-        "Failed to parse metadata of the svg file!"
-    );
-
-    let width = metadata.width().expect("Failed to get SVG width");
-    let height = metadata.height().expect("Failed to get SVG height");
-
-    // let display_info = get_primary_display_info();
-
-    // let image_to_display_ratio = Vec2::new(width as f32, height as f32) /
-    //    Vec2::new(display_info.width as f32, display_info.height as f32);
-
-    // Temporary solution to give svg images a little bit higher quality.
-    // ImageSize {
-    //     width: (width * (1.0 + (1.0 - image_to_display_ratio.x)) as f64) as usize,
-    //     height: (height * (1.0 + (1.0 - image_to_display_ratio.y)) as f64) as usize 
-    // }
-
-    // NOTE: Commented out the above lines as we are no longer using display-info crate.
-    // Sadly this means svg images now will be even broken and worse image quality.
-    // too bad... deal with it... *for now*
-
-    (width as u32, height as u32)
 }

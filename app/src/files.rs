@@ -35,7 +35,7 @@ pub fn get_cache_path() -> Result<PathBuf> {
     let cache_dir = match dirs::cache_dir() {
         Some(cache_dir) => cache_dir.join("cloudy").join("roseate"),
         None => {
-            return Err(Error::OSDirNotFound(None, "cache".into()))
+            return Err(Error::CacheDirectoryNotFound)
         }
     };
 
@@ -44,7 +44,7 @@ pub fn get_cache_path() -> Result<PathBuf> {
 
         if let Err(error) = fs::create_dir_all(&cache_dir) {
             return Err(
-                Error::FailedToCreatePath(Some(error.to_string()), cache_dir)
+                Error::CacheDirectoryCreationFailure { path: cache_dir.to_string_lossy().to_string() }
             );
         };
 
