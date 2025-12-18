@@ -9,7 +9,11 @@ pub struct ImageOptimizations {
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
     pub monitor_downsampling: MonitorDownsampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub experimental_dynamic_sampling: DynamicSampling
+    pub free_memory_after_gpu_upload: FreeMemoryAfterGPUUpload,
+    #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
+    pub experimental_dynamic_sampling: DynamicSampling,
+    #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
+    pub experimental_multi_threaded_sampling: MultiThreadedSampling,
 }
 
 impl Default for ImageOptimizations {
@@ -17,7 +21,9 @@ impl Default for ImageOptimizations {
         Self {
             mode: None,
             monitor_downsampling: MonitorDownsampling::default(),
-            experimental_dynamic_sampling: DynamicSampling::default()
+            free_memory_after_gpu_upload: FreeMemoryAfterGPUUpload::default(),
+            experimental_dynamic_sampling: DynamicSampling::default(),
+            experimental_multi_threaded_sampling: MultiThreadedSampling::default(),
         }
     }
 }
@@ -32,9 +38,7 @@ impl ImageOptimizations {
                     "d" | "default" | &_ => {
                         optimization::ImageOptimizations {
                             monitor_downsampling: Some(
-                                optimization::MonitorDownsampling {
-                                    marginal_allowance:  MonitorDownsampling::default().strength
-                                }
+                                optimization::MonitorDownsampling::default()
                             ),
                             ..Default::default() // everything else None
                         }
@@ -53,11 +57,18 @@ impl ImageOptimizations {
                         ),
                         false => None,
                     },
+                    free_memory_after_gpu_upload: self.free_memory_after_gpu_upload.enabled,
                     dynamic_sampling: match self.experimental_dynamic_sampling.enabled {
                         true => Some(
                             optimization::DynamicSampling {
                                 up: true, down: self.experimental_dynamic_sampling.also_downsample
                             }
+                        ),
+                        false => None,
+                    },
+                    multi_threaded_sampling: match self.experimental_multi_threaded_sampling.enabled {
+                        true => Some(
+                            optimization::MultiThreadedSampling {}
                         ),
                         false => None,
                     }
@@ -106,8 +117,47 @@ impl Hash for MonitorDownsampling {
 }
 
 fn monitor_downsampling_strength_default() -> f32 {
-    1.4 // if our monitor is 1920x1080, this strength will 
+    optimization::MonitorDownsampling::default().marginal_allowance
+    // (default: 1.4) if our monitor is 1920x1080, this strength will 
     // allow images up to 1512x1512 until it decides to downsample
+}
+
+
+#[derive(Serialize, Deserialize, Hash)]
+pub struct FreeMemoryAfterGPUUpload {
+    #[serde(default = "super::true_default")]
+    pub enabled: bool,
+}
+
+impl Default for FreeMemoryAfterGPUUpload {
+    fn default() -> Self {
+        Self::default_with_enabled(true)
+    }
+}
+
+impl DefaultWithEnabled for FreeMemoryAfterGPUUpload {
+    fn default_with_enabled(enabled: bool) -> Self {
+        Self { enabled }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Hash)]
+pub struct MultiThreadedSampling {
+    #[serde(default = "super::false_default")]
+    pub enabled: bool,
+}
+
+impl Default for MultiThreadedSampling {
+    fn default() -> Self {
+        Self::default_with_enabled(false)
+    }
+}
+
+impl DefaultWithEnabled for MultiThreadedSampling {
+    fn default_with_enabled(enabled: bool) -> Self {
+        Self { enabled }
+    }
 }
 
 
@@ -135,7 +185,7 @@ impl DefaultWithEnabled for DynamicSampling {
 }
 
 
-trait DefaultWithEnabled {
+trait DefaultWithEnabled: Default {
     fn default_with_enabled(enabled: bool) -> Self;
 }
 

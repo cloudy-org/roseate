@@ -75,6 +75,10 @@ impl ImageHandler {
                 };
             }
 
+            if self.image_optimizations.free_memory_after_gpu_upload {
+                *image.decoded.lock().unwrap() = None;
+            }
+
             *self.load_image_texture.lock().unwrap() = false;
             self.image_loading = false;
         }

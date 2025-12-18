@@ -26,7 +26,7 @@ impl DecodingBackend {
     pub fn init_decoder(&self, image_reader: ImageReader) -> Result<impl DecodeBackend> {
         let decoder = match self {
             DecodingBackend::ImageRS => ImageRSBackend::from_reader(image_reader)?,
-            DecodingBackend::ZuneImage => todo!(),
+            DecodingBackend::ZuneImage => todo!("The ZuneImage backend is not yet implemented in roseate-core!"),
         };
 
         Ok(decoder)

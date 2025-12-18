@@ -146,7 +146,7 @@ fn main() -> eframe::Result {
 
     image_handler.load_image(
         config.image.loading.initial.lazy_loading,
-        config.misc.experimental.get_decoding_backend(),
+        config.image.backend.get_decoding_backend(),
         &monitor_size,
         &mut notifier,
     );

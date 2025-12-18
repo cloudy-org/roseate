@@ -4,42 +4,69 @@ version = 1
 
 [image.loading]
 # Setting this to "true" will make the image load on a separate thread to the GUI initially. This 
-# means the GUI may load up before the image is ready to display itself. Will this improve load times? idk 🤷
+# means the GUI may load up before the image is ready to display itself. This will have an impact 
+# on peak memory hence it's "false" by default.
 initial.lazy_loading = false
 
-# Lazy loading but this is now for when you open and load an image from the GUI.
+# Same as the above but this is now for when you select and load an image from the GUI.
 # For example: Picking an image from the file picker or dropping an image into the window.
+# Not setting this to "true" will avoid spawning a separate thread for image loading but will 
+# cause the GUI to freeze up (or appear as if it's not responding) until the image has been loaded.
 gui.lazy_loading = true
 
+[image.backend]
+# Setting this to "zune-image" will tell roseate-core to decode images with the zune-image backend, 
+# the implementation of this backend in Roseate is experimental and WIP, but it can be faster than image-rs  
+# while also having lower memory usage.
+# 
+# However we default to "image-rs" due to it's wider support and stability in Roseate.
+decoder = "image-rs"
+
 [image.optimizations]
-# Comment this out if you would like to customize the optimization settings below.
-# NOTE: The optimizations that are defaulted to within "mode" will always take priority over 
-# the optimizations specified below.
+# Comment this out if you would like to customize the optimizations below.
+# PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below it will not apply.
 mode = "default"
 
 # Downsamples the image roughly to the resolution of your monitor.
 # 
 # Images don't always have to be displayed at their full native resolution, especially when 
-# the image is significantly bigger than your monitor can even display, so to save memory 
-# we downsample the image. Downsampling decreases the amount of memory eaten up by the image 
-# at the cost of CPU time wasted actually resizing the image. The bigger the image the more time 
-# it will take to downsample but we think memory savings are more valuable in this circumstance.
+# the image is significantly bigger than your monitor can even display, so to save GPU memory 
+# we downsample the image. Downsampling decreases the amount of GPU memory eaten up by the image 
+# at the cost of CPU time wasted actually resizing the image (depending on the decoder).
+# The bigger the image, the more time it will take to downsample but we think the memory savings 
+# from doing so are more valuable for most users. Also some decoders have the capability 
+# of decoding a specific size of an image (thumbnail) from the get go, which means CPU time is 
+# actually never wasted but rather significantly reduced (making image loading even faster with 
+# monitor downsampling enabled).
 # 
-# If you do not wish for such memory savings and you prefer faster image load time disable 
-# this optimization.
+# If you do not wish for such memory savings (like those with a beefy GPU) and 
+# you prefer overall faster image load times disable this optimization.
 # 
 # If you want your image quality back when zooming into your image, 
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Setting this to true will enable the new but extremely experimental 
-# dynamic sampling feature that upsamples your image when you zoom into it 
-# to bring back the detail lost from monitor downsampling.
+# Enabling this frees the decoded image from memory after it has 
+# been uploaded to the GPU saving your memory. Defaults to enabled (true).
 # 
-# When this feature is more complete it will be named without the "experimental_" prefix.
+# This optimization is disabled if you enable "dynamic_sampling".
+free_memory_after_gpu_upload = true
+
+# Enabling this will enable the extremely experimental 
+# dynamic sampling feature that upsamples your image when you zoom in 
+# to bring back the detail lost from monitor downsampling when necessary.
 # 
-# Again, this is VERY experimental and incomplete! Expect a very broken implementation and bugs.
+# Disabled if "monitor_downsampling" is not enabled.
+# 
+# Again, this is VERY experimental, incomplete and untested! 
+# Expect a very broken implementation and bugs.
 experimental_dynamic_sampling = {enabled = false, also_downsample = true}
+
+# If you enable this Roseate will use it's fast 
+# multi-threaded function when downsampling images.
+# 
+# This is VERY experimental and can break.
+experimental_multi_threaded_sampling = {enabled = true}
 
 [ui]
 
@@ -86,11 +113,3 @@ ui_controls.toggle = "C"
 # used by the wider user audience. This exists for the sole purpose of testing.
 # 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
-
-# Setting this to "zune-image" will use zune-image to decode images WHICH IS VERY EXPERIMENTAL 
-# and will enable the experimental lanczos Roseate image processing backend for downsampling 
-# which is faster than the image-rs backend but may result in buggy / blocky images.
-# The zune-image backend also sometimes results in lower memory usage.
-# 
-# Set this back to it's default, "image-rs" if the image looks weird or you want stability.
-image_processing_backend = "image-rs"

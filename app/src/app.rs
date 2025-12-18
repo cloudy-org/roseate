@@ -89,7 +89,7 @@ impl eframe::App for Roseate {
                 &self.viewport.zoom,
                 self.viewport.is_busy,
                 &self.monitor_size,
-                config.misc.experimental.get_decoding_backend(),
+                config.image.backend.get_decoding_backend(),
                 &mut self.notifier,
             );
 
@@ -149,7 +149,7 @@ impl eframe::App for Roseate {
                                 &mut self.image_handler,
                                 &mut self.notifier,
                                 &self.monitor_size,
-                                config.misc.experimental.get_decoding_backend(),
+                                config.image.backend.get_decoding_backend(),
                                 &self.theme.pallet.accent,
                                 config.ui.selection_menu.show_open_image_button,
                             );
