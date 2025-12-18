@@ -5,8 +5,10 @@ pub type Result<T, E = Error> = StdResult<T, E>;
 #[derive(Debug)]
 pub enum Error {
     IOError(io::Error),
-    AnimationCheckError(String),
+
     UnsupportedColourType,
+
+    DecoderAnimationCheckFailure { error: String },
 
     DecodingFailure { error: String },
     DecoderInitFailure { error: String },
@@ -26,9 +28,13 @@ impl Display for Error {
                 f,
                 "Decoder failed to decode the image! The image could be corrupted."
             ),
-            Error::DecoderInitFailure { .. } => write!(
+            Error::DecoderInitFailure { error } => write!(
                 f,
-                "Failed to a initialize decoder!"
+                "Failed to a initialize decoder! \n\nError: {error}"
+            ),
+            Error::DecoderAnimationCheckFailure { error } => write!(
+                f,
+                "The backend's decoder unexpectedly failed to check if the image was animated! \n\nError: {error}",
             ),
             Error::DecoderNotSupported { image_format, backend } => write!(
                 f,
@@ -46,7 +52,8 @@ impl Display for Error {
             ),
             Error::ImageFormatNotSupported { image_format } => write!(
                 f,
-                "The image format '{image_format}' is not supported!" // TODO: test this.
+                "The image format '{image_format}' is not supported! \
+                However support may be added in the near future."
             ),
             Error::ImageEncodeFailure { .. } => write!(
                 f,

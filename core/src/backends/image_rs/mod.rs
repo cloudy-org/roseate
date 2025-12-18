@@ -129,12 +129,11 @@ impl DecodeBackend for ImageRSBackend {
             Source::Decoder(decoder) => {
                 match decoder {
                     Decoder::Png(png_decoder) => {
-                        let has_animation = png_decoder.is_apng().map_err(|error| Error::AnimationCheckError(
-                            format!(
-                                "The upstream image-rs png decoder unexpectedly failed to check if the image was animated: {}",
-                                error.to_string()
-                            )
-                        ))?;
+                        let has_animation = png_decoder.is_apng().map_err(
+                            |error| Error::DecoderAnimationCheckFailure {
+                                error: error.to_string()
+                            }
+                        )?;
 
                         match has_animation {
                             true => {

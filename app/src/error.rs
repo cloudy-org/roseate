@@ -21,12 +21,12 @@ pub enum Error {
     #[display("We failed to open the image file for reading! \n\n Error: {error}")]
     ImageFileOpenFailure { error: String },
 
-    #[display("We failed to perform optimizations on this image! 
+    #[display("We failed to perform optimizations on this image! \
     Roseate may run slower and use more memory than usual!")]
     ImageOptimizationFailure { reason: String },
 
     // NOTE: this error will be removed soon.
-    #[display("No cache directory was found for your Operating 
+    #[display("No cache directory was found for your Operating \
     System!? This should not happen, please report this!")]
     CacheDirectoryNotFound,
 
@@ -38,7 +38,7 @@ pub enum Error {
     #[display("Failed to read the '{file_name}' cache file!")]
     CacheFileReadFailure { file_name: String },
 
-    #[display("Experimental SVG support has been temporary removed from 
+    #[display("Experimental SVG support has been temporary removed from \
     Roseate! We're still working on SVG support, it will be back when it's ready.")]
     SvgNotSupportedYet,
 

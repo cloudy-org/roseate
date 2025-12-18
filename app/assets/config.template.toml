@@ -30,7 +30,7 @@ mode = "default"
 # 
 # If you want your image quality back when zooming into your image, 
 # you might want to also enable the "dynamic_sampling" image optimization too.
-monitor_downsampling = {enabled = true, strength = 1.3}
+monitor_downsampling = {enabled = true, strength = 1.4}
 
 # Setting this to true will enable the new but extremely experimental 
 # dynamic sampling feature that upsamples your image when you zoom into it 
