@@ -46,8 +46,10 @@ mode = "default"
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Enabling this frees the decoded image from memory after it has 
-# been uploaded to the GPU saving your memory. Defaults to enabled (true).
+# Enabling this frees the decoded image from memory after it 
+# has been uploaded to the GPU saving your memory. Disabling this 
+# keeps the decoded image loaded in memory in case Roseate needs 
+# it again for anything. Defaults to enabled (true).
 # 
 # This optimization is disabled if you enable "dynamic_sampling".
 free_memory_after_gpu_upload = true
