@@ -75,7 +75,9 @@ impl ImageHandler {
                 };
             }
 
-            if self.image_optimizations.free_memory_after_gpu_upload {
+            let optimizations = &self.image_optimizations;
+
+            if optimizations.free_memory_after_gpu_upload && !optimizations.dynamic_sampling.is_some() {
                 *image.decoded.lock().unwrap() = None;
             }
 
