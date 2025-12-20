@@ -2,7 +2,7 @@ use std::{alloc, sync::Arc};
 
 use cap::Cap;
 use chrono::{DateTime, Local};
-use egui::{Pos2, RichText, Ui, WidgetText};
+use egui::{Pos2, RichText, TextureHandle, Ui, WidgetText};
 use eframe::egui::{self, Response};
 
 use crate::{image::Image, image_handler::resource::ImageResource};
@@ -253,11 +253,19 @@ impl ImageInfoWindow {
 
                         match show_extra {
                             true => {
-                                // NOTE: ImageHandlerData::EguiImage doesn't work for some reason.
-                                // ImageHandlerData::EguiImage will be entirely removed sometime anyways (https://github.com/cloudy-org/roseate/issues/89).
-                                if let ImageResource::Texture(texture_handle) = image_handler_data {
+                                let texture_handle: Option<&TextureHandle> = match image_handler_data {
+                                    ImageResource::Texture(texture_handle) => Some(texture_handle),
+                                    ImageResource::AnimatedTexture(frames) => {
+                                        frames.get(0)
+                                            .and_then(
+                                                |(texture_handle,_)| Some(texture_handle)
+                                            )
+                                    }
+                                };
+
+                                if let Some(texture) = texture_handle {
                                     ui.add(
-                                        egui::Image::from_texture(texture_handle)
+                                        egui::Image::from_texture(texture)
                                             .max_height(100.0)
                                     );
 

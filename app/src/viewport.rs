@@ -23,10 +23,12 @@ pub struct Viewport {
     offset_first_pass: bool,
 
     zoom_offset_reset_schedule: Scheduler,
-
     // we use a scheduler for fit to window 
     // animation so we can have a nice delay effect.
     fit_to_window_animate_schedule: Scheduler,
+
+    animated_image_index: usize,
+    animated_image_schedule: Option<Scheduler>,
 
     last_window_size: Vec2,
     last_fit_to_window_image_scale: f32,
@@ -45,8 +47,10 @@ impl Viewport {
             offset_first_pass: true,
 
             zoom_offset_reset_schedule: Scheduler::UNSET,
-
             fit_to_window_animate_schedule: Self::get_fit_to_window_animation_schedule(),
+
+            animated_image_index: 0,
+            animated_image_schedule: None,
 
             last_window_size: Vec2::ZERO,
             last_fit_to_window_image_scale: 1.0,
@@ -189,7 +193,42 @@ impl Viewport {
         let egui_image = match image_handler_data {
             ImageResource::Texture(texture) => egui::Image::from_texture(&texture),
             // ImageResource::Vector(image) => todo!(),
-            ImageResource::AnimatedTexture(texture_handles) => todo!(),
+            ImageResource::AnimatedTexture(texture_handles) => {
+                let frame = texture_handles.get(self.animated_image_index);
+
+                let (texture, delay) = match frame {
+                    Some(frame) => frame,
+                    None => {
+                        self.animated_image_index = 0;
+
+                        let frame = texture_handles.get(0)
+                            .expect("what! this animated image has no frames!?!?");
+
+                        frame
+                    },
+                };
+
+                ui.ctx().request_repaint_after_secs(delay / 4.0);
+
+                match &mut self.animated_image_schedule {
+                    Some(schedule) => {
+                        if schedule.update().is_some() {
+                            self.animated_image_index += 1;
+                            self.animated_image_schedule = None;
+                        }
+                    },
+                    None => {
+                        self.animated_image_schedule = Some(
+                            Scheduler::new(
+                                || {},
+                                Duration::from_secs_f32(*delay)
+                            )
+                        )
+                    },
+                }
+
+                egui::Image::from_texture(texture)
+            },
         }.corner_radius(10.0); // TODO: config to customize image corner radius.
 
         // // Drawing the image to the viewport.
