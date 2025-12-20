@@ -3789,7 +3789,6 @@ dependencies = [
  "fs2",
  "log",
  "rand 0.9.2",
- "rayon",
  "re_format",
  "rfd",
  "roseate-core",
@@ -3809,6 +3808,7 @@ dependencies = [
  "image",
  "imagesize 0.14.0",
  "log",
+ "rayon",
  "svg_metadata",
  "zune-image",
 ]

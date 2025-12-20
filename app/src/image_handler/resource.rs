@@ -1,3 +1,4 @@
+use cirrus_egui::v1::notifier::Notifier;
 use egui::{Context, TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::DecodedImageContent};
@@ -12,7 +13,7 @@ pub enum ImageResource {
 }
 
 impl ImageHandler {
-    pub(super) fn load_resource_update(&mut self, ctx: &Context) {
+    pub(super) fn load_resource_update(&mut self, ctx: &Context, notifier: &mut Notifier) {
         if let Some(image) = &self.image {
             let reload_texture = match self.load_image_texture.try_lock() {
                 Ok(load_image_texture_mutex) => *load_image_texture_mutex,
@@ -36,6 +37,7 @@ impl ImageHandler {
                         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
                         debug!("Handing image texture to egui's backend to upload to the GPU...");
+                        notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
 
                         let texture = ctx.load_texture(
                             "static_image",
@@ -70,6 +72,8 @@ impl ImageHandler {
                         // image selection menu and all other images from memory.
 
                         self.resource = Some(ImageResource::Texture(texture));
+
+                        notifier.unset_loading();
                     },
                     DecodedImageContent::Animated(frames) => todo!(),
                 };

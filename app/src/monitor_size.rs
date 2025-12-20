@@ -64,7 +64,10 @@ impl MonitorSize {
             let file = File::open(&monitor_size_file_path);
 
             if let Err(error) = file {
-                warn!("{}", Error::CacheFileReadFailure { file_name: String::from("monitor_size") });
+                warn!("{}", Error::CacheFileReadFailure {
+                    file_name: String::from("monitor_size"),
+                    error: error.to_string()
+                });
                 return;
             }
 

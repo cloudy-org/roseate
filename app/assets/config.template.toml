@@ -72,8 +72,15 @@ experimental_dynamic_sampling = {enabled = false, also_downsample = true}
 # If you enable this Roseate will use it's fast 
 # multi-threaded function when downsampling images.
 # 
+# If you want to limit or increase the amount of threads used for parallelisation, 
+# you may with the "threads" key. Otherwise please leave the key undefined, Roseate 
+# will consult with your operating system on how many threads it may use and it will 
+# always use two threads less than it's allowed.
+# 
+# experimental_multi_threaded_sampling = {enabled = false, threads = 8}
+# 
 # This is VERY experimental and can break.
-experimental_multi_threaded_sampling = {enabled = true}
+experimental_multi_threaded_sampling = false
 
 [ui]
 

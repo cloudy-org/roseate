@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 log = "0.4"
+rayon = "1.11.0"
 imagesize = "0.14.0" # zero deps is crazy
 svg_metadata = "0.5.1"
 

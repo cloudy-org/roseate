@@ -143,7 +143,7 @@ impl Image {
 
     fn are_mods_out_of_mem_bounds(&mut self, modifications: &ImageModifications) -> bool {
         let require_resize = modifications.iter().find_map(|modification| {
-            #[warn(irrefutable_let_patterns)]
+            #[allow(irrefutable_let_patterns)]
             if let ImageModification::Resize(width, height) = modification {
                 Some((*width, *height))
             } else {

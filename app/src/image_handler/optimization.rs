@@ -49,4 +49,4 @@ impl MonitorDownsampling {
 pub struct DynamicSampling { pub up: bool, pub down: bool }
 
 #[derive(Debug)]
-pub struct MultiThreadedSampling {}
+pub struct MultiThreadedSampling { pub number_of_threads: Option<usize> }

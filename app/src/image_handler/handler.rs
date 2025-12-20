@@ -52,7 +52,7 @@ impl ImageHandler {
         backend: DecodingBackend,
         notifier: &mut Notifier,
     ) {
-        self.load_resource_update(ctx);
+        self.load_resource_update(ctx, notifier);
         self.dynamic_sampling_update(zoom_factor, monitor_size);
 
         if self.image.is_some() {
@@ -97,18 +97,26 @@ impl ImageHandler {
         }
 
         if let Some(image) = self.image.clone() {
-            let image_modifications = self.get_image_modifications(
+            let mut image_modifications = self.get_image_modifications(
                 &image.size,
                 monitor_size,
             );
+
+            let image_modifications_debug = format!("{:?}", image_modifications);
+
+            let use_experimental_multi_threaded_downsampling = match &self.image_optimizations.multi_threaded_sampling {
+                Some(multi_threaded_sampling) => {
+                    Self::snatch_resize_modification_and_get_size(&mut image_modifications)
+                        .and_then(|target_size| Some((target_size, multi_threaded_sampling.number_of_threads)))
+                },
+                None => None,
+            };
 
             self.image_loading = true;
 
             notifier.set_loading(
                 Some("Gathering necessary image modifications...")
             );
-
-            let image_modifications_debug = format!("{:?}", image_modifications);
 
             // Our svg implementation is very experimental. 
             // Also broken! https://github.com/cloudy-org/roseate/issues/66 
@@ -174,6 +182,16 @@ impl ImageHandler {
 
                 match result {
                     Ok(()) => {
+                        if let Some((target_size, number_of_threads)) = use_experimental_multi_threaded_downsampling {
+                            notifier_clone.set_loading(Some("Performing fast multi-threaded downsampling..."));
+                            Self::perform_multi_threaded_downsample(
+                                target_size,
+                                &mut image_clone,
+                                number_of_threads
+                            );
+                            notifier_clone.unset_loading();
+                        }
+
                         *load_image_texture_clone.lock().unwrap() = true;
 
                         debug!("Image debug: {:?}", image_clone);

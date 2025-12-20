@@ -5,3 +5,4 @@ pub mod backends;
 pub mod colour_type;
 pub mod decoded_image;
 pub mod modifications;
+pub mod fast_downsample;

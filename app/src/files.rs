@@ -14,21 +14,6 @@ pub fn get_rose_image<'a>() -> ImageSource<'a> {
     return egui::include_image!("../assets/rose_emojis/google_noto.png");
 }
 
-// TODO: move get path functionality to cirrus.
-
-// TODO: make this return result and also handle creating path if it doesn't exist
-// just like the function below basically.
-pub fn get_local_config_path() -> Option<PathBuf> {
-    debug!("Finding operating system's configuration local directory...");
-
-    match dirs::config_local_dir() {
-        Some(local_config_dir) => Some(
-            local_config_dir.join("cloudy").join("roseate")
-        ),
-        None => None
-    }
-}
-
 pub fn get_cache_path() -> Result<PathBuf> {
     debug!("Finding operating system's cache directory...");
 
@@ -44,7 +29,10 @@ pub fn get_cache_path() -> Result<PathBuf> {
 
         if let Err(error) = fs::create_dir_all(&cache_dir) {
             return Err(
-                Error::CacheDirectoryCreationFailure { path: cache_dir.to_string_lossy().to_string() }
+                Error::CacheDirectoryCreationFailure {
+                    path: cache_dir.to_string_lossy().to_string(),
+                    error: error.to_string()
+                }
             );
         };
 

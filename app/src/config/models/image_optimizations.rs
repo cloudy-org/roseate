@@ -1,4 +1,5 @@
-use std::hash::Hash;
+use std::{hash::Hash, thread::available_parallelism};
+use log::warn;
 use serde::{Deserialize, Deserializer, Serialize};
 use crate::{image_handler::optimization};
 
@@ -68,7 +69,9 @@ impl ImageOptimizations {
                     },
                     multi_threaded_sampling: match self.experimental_multi_threaded_sampling.enabled {
                         true => Some(
-                            optimization::MultiThreadedSampling {}
+                            optimization::MultiThreadedSampling {
+                                number_of_threads: self.experimental_multi_threaded_sampling.threads
+                            }
                         ),
                         false => None,
                     }
@@ -119,7 +122,7 @@ impl Hash for MonitorDownsampling {
 fn monitor_downsampling_strength_default() -> f32 {
     optimization::MonitorDownsampling::default().marginal_allowance
     // (default: 1.4) if our monitor is 1920x1080, this strength will 
-    // allow images up to 1512x1512 until it decides to downsample
+    // allow images up to 2688x1512 until it decides to downsample
 }
 
 
@@ -146,6 +149,8 @@ impl DefaultWithEnabled for FreeMemoryAfterGPUUpload {
 pub struct MultiThreadedSampling {
     #[serde(default = "super::false_default")]
     pub enabled: bool,
+    #[serde(default = "multi_threaded_sampling_threads_default")]
+    pub threads: Option<usize>,
 }
 
 impl Default for MultiThreadedSampling {
@@ -156,7 +161,20 @@ impl Default for MultiThreadedSampling {
 
 impl DefaultWithEnabled for MultiThreadedSampling {
     fn default_with_enabled(enabled: bool) -> Self {
-        Self { enabled }
+        Self { enabled, threads: multi_threaded_sampling_threads_default() }
+    }
+}
+
+fn multi_threaded_sampling_threads_default() -> Option<usize> {
+    match available_parallelism() {
+        Ok(non_zero) => Some((non_zero.get().saturating_sub(2)).max(2)),
+        Err(error) => {
+            warn!(
+                "Failed to retrieve available threads for parallelism from the OS! Error: {}", error.to_string()
+            );
+
+            None
+        },
     }
 }
 
