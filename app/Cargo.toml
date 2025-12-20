@@ -1,6 +1,6 @@
 [package]
 name = "roseate"
-edition = "2021"
+edition = "2024"
 version = "0.1.0-alpha.17"
 description = "A fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform."
 authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
@@ -29,7 +29,6 @@ env_logger = "0.11.8"
 re_format = "0.27.3"
 cap = "0.1.2"
 clap = {version = "4.5.37", features = ["derive"]}
-rand = "0.9"
 textwrap = "0.16.2"
 dirs = "6.0.0"
 fs2 = "0.4.3"

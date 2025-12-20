@@ -3788,7 +3788,6 @@ dependencies = [
  "env_logger",
  "fs2",
  "log",
- "rand 0.9.2",
  "re_format",
  "rfd",
  "roseate-core",
