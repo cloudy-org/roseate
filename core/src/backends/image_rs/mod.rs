@@ -43,8 +43,6 @@ impl DecodeBackend for ImageRSBackend {
                     Error::DecoderInitFailure { error: error.to_string() }
                 };
 
-                // TODO: Don't unwrap and handle image-rs's error 
-                // properly by mapping it correctly to roseate-core's Error enum.
                 let image_decoder = match image_reader.image_format {
                     ImageFormat::Gif => Decoder::Gif(GifDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
@@ -71,7 +69,6 @@ impl DecodeBackend for ImageRSBackend {
 
                 match decoded_image.content {
                     DecodedImageContent::Static(pixels) => {
-                        // TODO: Handle results
                         // If we're coming from a decoded image it won't support any other pixel variants other than u8.
                         let image_buffer = BufferImage::from_u8_pixels(
                             pixels,
