@@ -208,6 +208,9 @@ impl Viewport {
                     },
                 };
 
+                // If frame delay is 1 second we'll request a repaint 
+                // every 0.25 seconds. This should be enough not to repaint 
+                // excessively while maintaining a smooth playback.
                 ui.ctx().request_repaint_after_secs(delay / 4.0);
 
                 match &mut self.animated_image_schedule {
