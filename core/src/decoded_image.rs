@@ -7,8 +7,8 @@ pub type Pixels<Channel = u8> = Vec<Channel>;
 pub enum DecodedImageContent {
     // NOTE: we do not support outputting channels higher than a u8 yet so 
     // there's no point of storing a decoded image in RAM as anything bigger than a u8
-    Static(Pixels<u8>),
-    Animated(Vec<(Pixels<u8>, f32)>),
+    Static(Pixels),
+    Animated(Vec<(Pixels, f32)>),
 }
 
 // TODO: Pass more info about the image itself like EXIF tags 

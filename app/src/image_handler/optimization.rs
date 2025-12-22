@@ -6,7 +6,7 @@ use crate::monitor_size::MonitorSize;
 pub struct ImageOptimizations {
     pub monitor_downsampling: Option<MonitorDownsampling>,
     pub dynamic_sampling: Option<DynamicSampling>,
-    pub free_memory_after_gpu_upload: bool,
+    pub consume_pixels_during_gpu_upload: bool,
     pub multi_threaded_sampling: Option<MultiThreadedSampling>,
 }
 
@@ -15,7 +15,7 @@ impl Default for ImageOptimizations {
         Self {
             monitor_downsampling: Some(MonitorDownsampling::default()),
             dynamic_sampling: None,
-            free_memory_after_gpu_upload: true,
+            consume_pixels_during_gpu_upload: true,
             multi_threaded_sampling: None
         }
     }

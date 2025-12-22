@@ -10,7 +10,7 @@ pub struct ImageOptimizations {
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
     pub monitor_downsampling: MonitorDownsampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub free_memory_after_gpu_upload: FreeMemoryAfterGPUUpload,
+    pub consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
     pub experimental_dynamic_sampling: DynamicSampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
@@ -22,7 +22,7 @@ impl Default for ImageOptimizations {
         Self {
             mode: None,
             monitor_downsampling: MonitorDownsampling::default(),
-            free_memory_after_gpu_upload: FreeMemoryAfterGPUUpload::default(),
+            consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload::default(),
             experimental_dynamic_sampling: DynamicSampling::default(),
             experimental_multi_threaded_sampling: MultiThreadedSampling::default(),
         }
@@ -58,7 +58,7 @@ impl ImageOptimizations {
                         ),
                         false => None,
                     },
-                    free_memory_after_gpu_upload: self.free_memory_after_gpu_upload.enabled,
+                    consume_pixels_during_gpu_upload: self.consume_pixels_during_gpu_upload.enabled,
                     dynamic_sampling: match self.experimental_dynamic_sampling.enabled {
                         true => Some(
                             optimization::DynamicSampling {
@@ -125,20 +125,19 @@ fn monitor_downsampling_strength_default() -> f32 {
     // allow images up to 2688x1512 until it decides to downsample
 }
 
-
 #[derive(Serialize, Deserialize, Hash)]
-pub struct FreeMemoryAfterGPUUpload {
+pub struct ConsumePixelsDuringGPUUpload {
     #[serde(default = "super::true_default")]
     pub enabled: bool,
 }
 
-impl Default for FreeMemoryAfterGPUUpload {
+impl Default for ConsumePixelsDuringGPUUpload {
     fn default() -> Self {
         Self::default_with_enabled(true)
     }
 }
 
-impl DefaultWithEnabled for FreeMemoryAfterGPUUpload {
+impl DefaultWithEnabled for ConsumePixelsDuringGPUUpload {
     fn default_with_enabled(enabled: bool) -> Self {
         Self { enabled }
     }

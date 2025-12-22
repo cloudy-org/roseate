@@ -46,18 +46,17 @@ mode = "default"
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Enabling this frees the decoded image from memory after it has 
-# been uploaded to the GPU saving your memory, at the cost of Roseate 
-# potentially having to reload the image again from disk (more technically, 
-# your cost is disk I/O). The bigger the image is, the more memory you will 
-# save with this enabled. If you already have "monitor_downsampling" enabled 
-# it's probably best to keep this disabled because the memory gains will be 
-# marginal (as "monitor_downsampling" will already make your image smaller).
+# Enabling this allows Roseate to upload RGBA decoded images directly 
+# to the GPU without duplicating it's memory (zero-copy). If the image is 
+# RGBA, peak heap memory (on the CPU side) will be almost HALVED, it's very 
+# memory efficient.
 # 
-# TLDR: Enable if you are really strict on memory. Defaults to disabled (false).
+# If your image is not in the RGBA colour format, zero-copy will NOT be possible 
+# (memory will peak for a very short moment), however you will still benefit as 
+# memory for the decoded image will still be immediately freed AFTER GPU upload.
 # 
 # This optimization is disabled if you enable "dynamic_sampling".
-free_memory_after_gpu_upload = false
+consume_pixels_during_gpu_upload = true
 
 # Enabling this will enable the extremely experimental 
 # dynamic sampling feature that upsamples your image when you zoom in 
