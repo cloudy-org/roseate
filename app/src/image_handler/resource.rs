@@ -38,8 +38,6 @@ impl ImageHandler {
                     mipmap_mode: None,
                 };
 
-                println!("-> {:?}", decoded_image.colour_type);
-
                 let is_rgba = matches!(
                     decoded_image.colour_type,
                     ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F
@@ -47,37 +45,9 @@ impl ImageHandler {
 
                 self.resource = match can_free_memory_or_consume && is_rgba {
                     true => Some(
-                        Self::rgba_decoded_image_direct_consume_to_resource(ctx, decoded_image, texture_options)
+                        Self::rgba_zero_copy_decoded_image_to_resource(ctx, decoded_image, texture_options)
                     ),
-                    false => {
-                        match &decoded_image.content {
-                            DecodedImageContent::Static(pixels) => {
-                                debug!("Handing image texture to egui's backend to upload to the GPU...");
-
-                                let texture = Self::decoded_image_pixels_to_egui_texture(
-                                    ctx, decoded_image, &pixels, texture_options
-                                );
-
-                                Some(ImageResource::Texture(texture))
-                            },
-                            DecodedImageContent::Animated(frames) => {
-                                debug!("Handing animated image textures to egui's backend to upload to the GPU...");
-
-                                let mut textures: Vec<(TextureHandle, f32)> = Vec::new();
-
-                                for (pixels, delay) in frames {
-                                    textures.push(
-                                        (
-                                            Self::decoded_image_pixels_to_egui_texture(ctx, decoded_image, &pixels, texture_options),
-                                            *delay
-                                        )
-                                    );
-                                }
-
-                                Some(ImageResource::AnimatedTexture(textures))
-                            },
-                        }
-                    },
+                    false => Some(Self::decoded_image_to_resource(ctx, &decoded_image, texture_options)),
                 };
 
                 // Texture handle doesn't need forgetting like egui::Image 
@@ -100,10 +70,44 @@ impl ImageHandler {
         }
     }
 
+    fn decoded_image_to_resource(
+        ctx: &Context,
+        decoded_image: &DecodedImage,
+        texture_options: TextureOptions
+    ) -> ImageResource {
+        debug!("Copying image's '{}' pixels into RGBA egui texture...", decoded_image.colour_type);
+
+        match &decoded_image.content {
+            DecodedImageContent::Static(pixels) => {
+                debug!("Handing image texture to egui's backend to upload to the GPU...");
+
+                let texture = Self::decoded_image_pixels_to_egui_texture(
+                    ctx, decoded_image, &pixels, texture_options
+                );
+
+                ImageResource::Texture(texture)
+            },
+            DecodedImageContent::Animated(frames) => {
+                debug!("Handing animated image textures to egui's backend to upload to the GPU...");
+
+                let mut textures: Vec<(TextureHandle, f32)> = Vec::new();
+
+                for (pixels, delay) in frames {
+                    textures.push(
+                        (
+                            Self::decoded_image_pixels_to_egui_texture(ctx, decoded_image, &pixels, texture_options),
+                            *delay
+                        )
+                    );
+                }
+
+                ImageResource::AnimatedTexture(textures)
+            },
+        }
+    }
+
     fn decoded_image_pixels_to_egui_texture(ctx: &Context, decoded_image: &DecodedImage, pixels: &Pixels, texture_options: TextureOptions) -> TextureHandle {
         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
-
-        debug!("Converting image's '{}' pixels into RGBA egui texture...", decoded_image.colour_type);
 
         let texture = ctx.load_texture(
             "static_image",
@@ -125,7 +129,7 @@ impl ImageHandler {
         texture
     }
 
-    fn rgba_decoded_image_direct_consume_to_resource(
+    fn rgba_zero_copy_decoded_image_to_resource(
         ctx: &Context,
         decoded_image: &mut DecodedImage,
         texture_options: TextureOptions

@@ -10,7 +10,7 @@ pub struct ImageOptimizations {
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
     pub monitor_downsampling: MonitorDownsampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
+    pub experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
     pub experimental_dynamic_sampling: DynamicSampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
@@ -22,7 +22,7 @@ impl Default for ImageOptimizations {
         Self {
             mode: None,
             monitor_downsampling: MonitorDownsampling::default(),
-            consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload::default(),
+            experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload::default(),
             experimental_dynamic_sampling: DynamicSampling::default(),
             experimental_multi_threaded_sampling: MultiThreadedSampling::default(),
         }
@@ -58,7 +58,7 @@ impl ImageOptimizations {
                         ),
                         false => None,
                     },
-                    consume_pixels_during_gpu_upload: self.consume_pixels_during_gpu_upload.enabled,
+                    consume_pixels_during_gpu_upload: self.experimental_consume_pixels_during_gpu_upload.enabled,
                     dynamic_sampling: match self.experimental_dynamic_sampling.enabled {
                         true => Some(
                             optimization::DynamicSampling {

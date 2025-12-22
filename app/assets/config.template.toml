@@ -56,7 +56,7 @@ monitor_downsampling = {enabled = true, strength = 1.4}
 # memory for the decoded image will still be immediately freed AFTER GPU upload.
 # 
 # This optimization is disabled if you enable "dynamic_sampling".
-consume_pixels_during_gpu_upload = true
+experimental_consume_pixels_during_gpu_upload = true
 
 # Enabling this will enable the extremely experimental 
 # dynamic sampling feature that upsamples your image when you zoom in 
