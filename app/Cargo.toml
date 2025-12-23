@@ -39,6 +39,12 @@ serde = {version = "1.0", features = ["derive"]}
 chrono = "0.4.42"
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
 # 
 # THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
