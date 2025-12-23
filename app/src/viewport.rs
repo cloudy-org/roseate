@@ -91,7 +91,7 @@ impl Viewport {
         &mut self,
         ui: &mut Ui,
         image_size: &ImageSize,
-        image_handler_data: ImageResource,
+        image_resource: ImageResource,
         padding: f32,
         zoom_into_cursor: bool,
         fit_to_window: bool,
@@ -190,7 +190,7 @@ impl Viewport {
         // the viewport is busy if the user is interacting with it (scrolling, zooming, etc).
         self.is_busy = response.dragged() || response.hovered() && scroll.abs() > 0.0;
 
-        let egui_image = match image_handler_data {
+        let egui_image = match image_resource {
             ImageResource::Texture(texture) => egui::Image::from_texture(&texture),
             // ImageResource::Vector(image) => todo!(),
             ImageResource::AnimatedTexture(texture_handles) => {

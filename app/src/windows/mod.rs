@@ -1,6 +1,6 @@
 use egui::{Context, Key, Ui};
 
-use crate::{image::Image, image_handler::resource::ImageResource, windows::info::ImageInfoWindow};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::ImageInfoWindow};
 
 mod info;
 
@@ -31,13 +31,14 @@ impl WindowsManager {
         }
     }
 
-    pub fn show(&mut self, ui: &mut Ui, image_handler_data: &ImageResource, image: &Image) {
+    pub fn show(&mut self, ui: &mut Ui, image_resource: &ImageResource, image_optimizations: &ImageOptimizations, image: &Image) {
         if self.show_info {
             self.info_window.show(
                 ui,
-                image_handler_data,
+                image_resource,
+                image_optimizations,
                 image,
-                self.show_extra_info
+                self.show_extra_info,
             );
         }
     }

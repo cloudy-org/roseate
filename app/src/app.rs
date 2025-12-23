@@ -115,11 +115,11 @@ impl eframe::App for Roseate {
             match (self.image_handler.image.as_ref(), self.image_handler.resource.as_ref()) {
                 // TODO: in the future we'll have some sort of value 
                 // that tells use that the image exists and is loading.
-                (Some(image), Some(image_handler_data))=> {
+                (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             // TODO: Draw and manage all windows in a separate struct.
-                            self.windows_manager.show(ui, image_handler_data, image);
+                            self.windows_manager.show(ui, image_resource, &self.image_handler.image_optimizations, image);
                             self.ui_controls_manager.show(ui, &mut self.viewport);
 
                             let config_padding = config.ui.viewport.padding;
@@ -128,7 +128,7 @@ impl eframe::App for Roseate {
                             self.viewport.show(
                                 ui,
                                 &image.size,
-                                image_handler_data.clone(), // ImageHandlerData is safe to clone
+                                image_resource.clone(), // ImageHandlerData is safe to clone
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
                                 config.ui.viewport.fit_to_window,

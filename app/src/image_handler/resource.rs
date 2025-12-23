@@ -61,7 +61,7 @@ impl ImageHandler {
             }
 
             if can_free_memory_or_consume {
-                debug!("Freeing decided image from memory...");
+                debug!("Freeing decoded image from memory...");
                 *image.decoded.lock().unwrap() = None;
             }
 

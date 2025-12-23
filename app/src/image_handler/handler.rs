@@ -13,7 +13,7 @@ pub struct ImageHandler {
 
     pub image_loading: bool,
 
-    pub(super) image_optimizations: ImageOptimizations,
+    pub image_optimizations: ImageOptimizations,
     pub(super) dynamic_sample_schedule: Option<Scheduler>,
     pub(super) last_zoom_factor: f32,
     pub(super) dynamic_sampling_new_resolution: ImageSize,
