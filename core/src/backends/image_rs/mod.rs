@@ -1,11 +1,9 @@
 use std::{collections::HashSet, io::BufReader};
 
 use image::{
-    AnimationDecoder, ImageDecoder, ImageError,
-    codecs::{
+    AnimationDecoder, ImageDecoder, ImageError, codecs::{
         gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, tiff::TiffDecoder, webp::WebPDecoder,
-    },
-    imageops::{self, FilterType},
+    }, imageops::{self, FilterType}
 };
 use log::debug;
 
