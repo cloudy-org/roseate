@@ -1,8 +1,16 @@
-use std::{io::Cursor};
+use std::io::Cursor;
 
-use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, format::ImageFormat, colour_type::ImageColourType, modifications::ImageModification, reader::ImageReader};
+use roseate_core::{
+    self,
+    backends::{backend::DecodeBackend, image_rs::ImageRSBackend},
+    colour_type::ImageColourType,
+    error::Result,
+    format::ImageFormat,
+    modifications::ImageModification,
+    reader::ImageReader,
+};
 
-use crate::backends::{save_image_as_rgba};
+use crate::backends::save_image_as_rgba;
 
 #[test]
 fn init() {
@@ -98,9 +106,8 @@ fn test_png_modify_already_decoded_image_1() -> Result<()> {
     assert_eq!(decoded_image.size, (1920, 1080));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    let mut backend = ImageRSBackend::from_reader(
-        ImageReader::new(decoded_image, ImageFormat::Png)
-    )?;
+    let mut backend =
+        ImageRSBackend::from_reader(ImageReader::new(decoded_image, ImageFormat::Png))?;
 
     backend.modify(vec![ImageModification::Resize(500, 500)]);
     let decoded_image = backend.decode()?;
@@ -126,9 +133,8 @@ fn test_png_modify_already_decoded_image_2() -> Result<()> {
     assert_eq!(decoded_image.size, (1920, 1080));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    let mut backend = ImageRSBackend::from_reader(
-        ImageReader::new(decoded_image, ImageFormat::Png)
-    )?;
+    let mut backend =
+        ImageRSBackend::from_reader(ImageReader::new(decoded_image, ImageFormat::Png))?;
 
     backend.modify(vec![ImageModification::Resize(250, 250)]);
     let decoded_image = backend.decode()?;
@@ -177,6 +183,26 @@ fn test_gif_decode_and_modify() -> Result<()> {
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "small_and_squished_sailor_moon.gif");
+
+    Ok(())
+}
+
+#[test]
+fn test_tiff_decode_and_modify() -> Result<()> {
+    let image_bytes = include_bytes!("../terror_in_resonace_backdrop.tiff");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Tiff);
+
+    let mut backend = ImageRSBackend::from_reader(image_reader)?;
+    backend.modify(vec![ImageModification::Resize(960, 381)]);
+
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (960, 381));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+
+    save_image_as_rgba(decoded_image, "resized_terror_in_resonace_backdrop.tiff");
 
     Ok(())
 }
