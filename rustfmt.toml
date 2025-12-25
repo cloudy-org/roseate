@@ -1,0 +1,13 @@
+hard_tabs = false
+tab_spaces = 4
+newline_style = "Unix"
+indent_style = "Block"
+
+reorder_imports = false
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+
+# for now I want the formatter disabled, I'll re-enable it in the 
+# future with some of the configs I set above as I learn more about 
+# it and can trust it.
+disable_all_formatting = true

@@ -106,8 +106,9 @@ fn test_png_modify_already_decoded_image_1() -> Result<()> {
     assert_eq!(decoded_image.size, (1920, 1080));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    let mut backend =
-        ImageRSBackend::from_reader(ImageReader::new(decoded_image, ImageFormat::Png))?;
+    let mut backend = ImageRSBackend::from_reader(
+        ImageReader::new(decoded_image, ImageFormat::Png)
+    )?;
 
     backend.modify(vec![ImageModification::Resize(500, 500)]);
     let decoded_image = backend.decode()?;
@@ -133,8 +134,9 @@ fn test_png_modify_already_decoded_image_2() -> Result<()> {
     assert_eq!(decoded_image.size, (1920, 1080));
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
 
-    let mut backend =
-        ImageRSBackend::from_reader(ImageReader::new(decoded_image, ImageFormat::Png))?;
+    let mut backend = ImageRSBackend::from_reader(
+        ImageReader::new(decoded_image, ImageFormat::Png)
+    )?;
 
     backend.modify(vec![ImageModification::Resize(250, 250)]);
     let decoded_image = backend.decode()?;

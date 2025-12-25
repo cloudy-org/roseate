@@ -59,21 +59,11 @@ impl DecodeBackend for ImageRSBackend {
                 };
 
                 let image_decoder = match image_reader.image_format {
-                    ImageFormat::Gif => {
-                        Decoder::Gif(GifDecoder::new(buf_reader).map_err(error_func)?)
-                    }
-                    ImageFormat::Png => {
-                        Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?)
-                    }
-                    ImageFormat::Jpeg => {
-                        Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?)
-                    }
-                    ImageFormat::Webp => {
-                        Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?)
-                    }
-                    ImageFormat::Tiff => {
-                        Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?)
-                    }
+                    ImageFormat::Gif => Decoder::Gif(GifDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?),
                     unsupported_format => {
                         return Err(Error::DecoderNotSupported {
                             image_format: unsupported_format.to_string(),
@@ -119,15 +109,19 @@ impl DecodeBackend for ImageRSBackend {
                             animated_buffers.push((image_buffer, delay));
                         }
 
-                        Ok(Self {
-                            source: Source::Buffer(Buffer::Animation((
-                                animated_buffers,
-                                decoded_image.size,
-                                decoded_image.colour_type,
-                            ))),
-                            modifications: HashSet::new(),
-                            image_format: image_reader.image_format,
-                        })
+                        Ok(
+                            Self {
+                                source: Source::Buffer(
+                                    Buffer::Animation((
+                                        animated_buffers,
+                                        decoded_image.size,
+                                        decoded_image.colour_type
+                                    ))
+                                ),
+                                modifications: HashSet::new(),
+                                image_format: image_reader.image_format
+                            }
+                        )
                     }
                 }
             }
@@ -194,10 +188,7 @@ impl DecodeBackend for ImageRSBackend {
 
                 match buffer {
                     Buffer::Image(mut buffer_image) => {
-                        Self::apply_modifications_to_buffer_image(
-                            self.modifications,
-                            &mut buffer_image,
-                        );
+                        Self::apply_modifications_to_buffer_image(self.modifications, &mut buffer_image);
 
                         let (pixels, size, colour_type) = buffer_image.to_u8_pixels();
 
@@ -211,9 +202,7 @@ impl DecodeBackend for ImageRSBackend {
                     Buffer::Animation((buffer_image_frames, image_size, image_colour_type)) => {
                         let mut animated_pixels = Vec::new();
 
-                        for (index, (mut buffer_image, delay)) in
-                            buffer_image_frames.into_iter().enumerate()
-                        {
+                        for (index, (mut buffer_image, delay)) in buffer_image_frames.into_iter().enumerate() {
                             debug!("Applying modifications to frame {}...", index);
 
                             Self::apply_modifications_to_buffer_image(
@@ -333,8 +322,9 @@ impl ImageRSBackend {
             "We have image modifications. Constructing image-rs image buffer to apply modifications..."
         );
 
-        let mut buffer_image =
-            BufferImage::from_u8_pixels(image_pixels, image_size, image_colour_type)?;
+        let mut buffer_image = BufferImage::from_u8_pixels(
+            image_pixels, image_size, image_colour_type
+        )?;
 
         log::debug!("Image buffer constructed, applying modifications...");
 
@@ -352,10 +342,7 @@ impl ImageRSBackend {
         ))
     }
 
-    fn apply_modifications_to_buffer_image(
-        modifications: HashSet<ImageModification>,
-        buffer_image: &mut BufferImage,
-    ) {
+    fn apply_modifications_to_buffer_image(modifications: HashSet<ImageModification>, buffer_image: &mut BufferImage) {
         // cloning shouldn't be too expensive, if that changes in the future we adjust this
         for modification in modifications {
             match modification {
@@ -370,12 +357,9 @@ impl ImageRSBackend {
                             BufferImage::GreyA8(image_buffer) => BufferImage::GreyA8(
                                 imageops::resize(image_buffer, width, height, FilterType::Lanczos3),
                             ),
-                            BufferImage::Rgb8(image_buffer) => BufferImage::Rgb8(imageops::resize(
-                                image_buffer,
-                                width,
-                                height,
-                                FilterType::Lanczos3,
-                            )),
+                            BufferImage::Rgb8(image_buffer) => BufferImage::Rgb8(
+                                imageops::resize(image_buffer, width, height, FilterType::Lanczos3)
+                            ),
                             BufferImage::Rgba8(image_buffer) => BufferImage::Rgba8(
                                 imageops::resize(image_buffer, width, height, FilterType::Lanczos3),
                             ),

@@ -29,11 +29,9 @@ impl Display for ImageFormat {
 }
 
 /// Only reads the header of an image and determines it's image format and size from that.
-///
+/// 
 /// *It's blazzing fast... 🔥*
-pub fn determine_image_format_and_size_from_header(
-    path: &PathBuf,
-) -> Result<(ImageFormat, ImageSize)> {
+pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(ImageFormat, ImageSize)> {
     // TODO: figure out how we can share the same buf reader used
     // for image decoding to improve speed and save on I/O calls.
     let mut buffer = [0u8; 1024];
@@ -70,10 +68,11 @@ pub fn determine_image_format_and_size_from_header(
     };
 
     // TODO: when we switch to shared buf reader we should stop using path
-    let image_size = imagesize::size(path).map_err(|error| Error::ImageHeaderReadFailure {
-        stage: "Failed to retrieve image dimensions!".into(),
-        error: Some(error.to_string()),
-    })?;
+    let image_size = imagesize::size(path)
+        .map_err(|error| Error::ImageHeaderReadFailure {
+            stage: "Failed to retrieve image dimensions!".into(),
+            error: Some(error.to_string()),
+        })?;
 
     Ok((
         image_format,
