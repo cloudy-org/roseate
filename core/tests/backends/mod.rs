@@ -10,12 +10,12 @@ pub const IMAGE_DUMP_PATH: &str = "./tests-image-dump";
 pub fn save_image_as_rgba(decoded_image: DecodedImage, name: &str) {
     let _ = fs::create_dir(IMAGE_DUMP_PATH);
 
-    let (width, height) = decoded_image.size;
+    let (width, height) = decoded_image.info.size;
 
     match decoded_image.content {
         DecodedImageContent::Static(pixels) => {
             let image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
-                decoded_image.size.0, decoded_image.size.1, pixels
+                decoded_image.info.size.0, decoded_image.info.size.1, pixels
             ).unwrap();
 
             image.save(Path::new(IMAGE_DUMP_PATH).join(name)).unwrap();
@@ -29,7 +29,7 @@ pub fn save_image_as_rgba(decoded_image: DecodedImage, name: &str) {
                 let (file_name, prefix) = name.split_once(".")
                     .unwrap_or((
                         name,
-                        match decoded_image.image_format {
+                        match decoded_image.info.format {
                             ImageFormat::Png => "png",
                             ImageFormat::Jpeg => "jpeg",
                             ImageFormat::Svg => "svg",

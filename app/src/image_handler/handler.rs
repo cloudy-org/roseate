@@ -3,13 +3,14 @@ use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::{Duration, Ins
 use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use egui::Context;
 use log::{debug, info, warn};
-use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
+use roseate_core::{decoded_image::{DecodedImageInfo, ImageSize}, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
 use crate::{image::{Image, backend::DecodingBackend}, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize};
 
 pub struct ImageHandler {
     pub image: Option<Image>,
     pub resource: Option<ImageResource>,
+    pub decoded_image_info: Option<DecodedImageInfo>,
 
     pub image_loading: bool,
 
@@ -31,6 +32,7 @@ impl ImageHandler {
 
             resource: None,
             image_loading: false,
+            decoded_image_info: None,
 
             dynamic_sample_schedule: None,
             last_zoom_factor: 1.0,

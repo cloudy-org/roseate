@@ -22,11 +22,11 @@ impl ImageHandler {
         if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
             match &mut decoded_image.content {
                 DecodedImageContent::Static(pixels) => {
-                    (*pixels, decoded_image.size) = experimental_fast_downsample(
+                    (*pixels, decoded_image.info.size) = experimental_fast_downsample(
                         pixels,
                         target_size,
-                        &decoded_image.size,
-                        &decoded_image.colour_type,
+                        &decoded_image.info.size,
+                        &decoded_image.info.colour_type,
                         number_of_threads
                     );
                 },
@@ -36,12 +36,12 @@ impl ImageHandler {
                     for (pixels, _) in frames {
                         debug!("Downsampling frame {}...", index);
 
-                        // This will need testing.
-                        (*pixels, decoded_image.size) = experimental_fast_downsample(
+                        // NOTE: This will need testing.
+                        (*pixels, decoded_image.info.size) = experimental_fast_downsample(
                             pixels,
                             target_size,
-                            &decoded_image.size,
-                            &decoded_image.colour_type,
+                            &decoded_image.info.size,
+                            &decoded_image.info.colour_type,
                             number_of_threads
                         );
 

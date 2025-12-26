@@ -119,7 +119,14 @@ impl eframe::App for Roseate {
                     egui::Frame::NONE
                         .show(ui, |ui| {
                             // TODO: Draw and manage all windows in a separate struct.
-                            self.windows_manager.show(ui, image_resource, &self.image_handler.image_optimizations, image);
+                            self.windows_manager.show(
+                                ui,
+                                image_resource,
+                                &self.image_handler.image_optimizations,
+                                image,
+                                // leaving this unwrap here for now, I'll defiantly improve this soon
+                                self.image_handler.decoded_image_info.as_ref().unwrap()
+                            );
                             self.ui_controls_manager.show(ui, &mut self.viewport);
 
                             let config_padding = config.ui.viewport.padding;

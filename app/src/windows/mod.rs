@@ -1,4 +1,5 @@
 use egui::{Context, Key, Ui};
+use roseate_core::decoded_image::DecodedImageInfo;
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::ImageInfoWindow};
 
@@ -31,13 +32,21 @@ impl WindowsManager {
         }
     }
 
-    pub fn show(&mut self, ui: &mut Ui, image_resource: &ImageResource, image_optimizations: &ImageOptimizations, image: &Image) {
+    pub fn show(
+        &mut self,
+        ui: &mut Ui,
+        image_resource: &ImageResource,
+        image_optimizations: &ImageOptimizations,
+        image: &Image,
+        decoded_image_info: &DecodedImageInfo
+    ) {
         if self.show_info {
             self.info_window.show(
                 ui,
                 image_resource,
                 image_optimizations,
                 image,
+                decoded_image_info,
                 self.show_extra_info,
             );
         }

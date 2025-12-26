@@ -19,8 +19,8 @@ fn test_png_decode_1() -> Result<()> {
     let backend = ImageRSBackend::from_reader(image_reader)?;
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (750, 250));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (750, 250));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "mov-cli.png");
 
@@ -37,8 +37,8 @@ fn test_png_decode_2() -> Result<()> {
     let backend = ImageRSBackend::from_reader(image_reader)?;
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (1920, 1080));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (1920, 1080));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "normal_mia.png");
 
@@ -57,8 +57,8 @@ fn test_png_modify_and_decode_1() -> Result<()> {
 
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (1280, 720));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (1280, 720));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "smaller_mia.png");
 
@@ -77,8 +77,8 @@ fn test_png_modify_and_decode_2() -> Result<()> {
 
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (540, 270));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (540, 270));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "tiny_mia.png");
 
@@ -95,8 +95,8 @@ fn test_png_modify_already_decoded_image_1() -> Result<()> {
     let backend = ImageRSBackend::from_reader(image_reader)?;
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (1920, 1080));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (1920, 1080));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     let mut backend = ImageRSBackend::from_reader(
         ImageReader::new(decoded_image, ImageFormat::Png)
@@ -105,8 +105,8 @@ fn test_png_modify_already_decoded_image_1() -> Result<()> {
     backend.modify(vec![ImageModification::Resize(500, 500)]);
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (500, 500));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (500, 500));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "squished_mia.png");
 
@@ -123,8 +123,8 @@ fn test_png_modify_already_decoded_image_2() -> Result<()> {
     let backend = ImageRSBackend::from_reader(image_reader)?;
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (1920, 1080));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (1920, 1080));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     let mut backend = ImageRSBackend::from_reader(
         ImageReader::new(decoded_image, ImageFormat::Png)
@@ -133,8 +133,8 @@ fn test_png_modify_already_decoded_image_2() -> Result<()> {
     backend.modify(vec![ImageModification::Resize(250, 250)]);
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (250, 250));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (250, 250));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "tiny_squished_mia.png");
 
@@ -153,8 +153,8 @@ fn test_animated_png_decode_and_modify() -> Result<()> {
 
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (50, 50));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (50, 50));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "tiny_animated_png");
 
@@ -173,8 +173,8 @@ fn test_gif_decode_and_modify() -> Result<()> {
 
     let decoded_image = backend.decode()?;
 
-    assert_eq!(decoded_image.size, (300, 300));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.info.size, (300, 300));
+    assert_eq!(decoded_image.info.colour_type, ImageColourType::Rgba8);
 
     save_image_as_rgba(decoded_image, "small_and_squished_sailor_moon.gif");
 
