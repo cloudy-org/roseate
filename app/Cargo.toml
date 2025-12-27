@@ -13,6 +13,7 @@ cirrus_egui = { path = "../cirrus/egui" }
 cirrus_error = { path = "../cirrus/error" }
 cirrus_config = { path = "../cirrus/config" }
 cirrus_theming = { path = "../cirrus/theming" }
+cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 
 roseate-core = { path = "../core" }
 

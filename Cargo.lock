@@ -879,6 +879,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cirrus_softbinds"
+version = "0.1.0"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "cirrus_theming"
 version = "0.1.0"
 dependencies = [
@@ -3785,6 +3792,7 @@ dependencies = [
  "cirrus_config",
  "cirrus_egui",
  "cirrus_error",
+ "cirrus_softbinds",
  "cirrus_theming",
  "clap",
  "derive_more",
