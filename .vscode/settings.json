@@ -1,8 +1,9 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./Cargo.toml",
+        "./app/Cargo.toml",
+        "./core/Cargo.toml",
         "./cirrus/egui/Cargo.toml",
-        "./cirrus/theming/Cargo.toml"
+        "./cirrus/theming/Cargo.toml",
     ],
     "cSpell.words": [
         "rect"
