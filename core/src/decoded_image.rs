@@ -19,8 +19,7 @@ pub struct DecodedImageInfo {
     pub metadata: ImageMetadata,
 }
 
-// TODO: Pass more info about the image itself like EXIF tags 
-// and what camera was used from the decoder to DecodedImage.
+// TODO: Add back size to decoded image
 pub struct DecodedImage {
     pub info: DecodedImageInfo,
     pub content: DecodedImageContent,
