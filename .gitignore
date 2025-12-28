@@ -1,4 +1,5 @@
 target
+tests-image-dump
 
 # Just in case you switch from the web version branch.
 dist
