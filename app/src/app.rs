@@ -2,7 +2,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets
 use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 
-use crate::{about_window::AboutWindow, config::config::Config, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
+use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -17,6 +17,7 @@ pub struct Roseate {
     about_window: AboutWindow<'static>,
     windows_manager: WindowsManager,
     ui_controls_manager: UIControlsManager,
+    context_menu: ContextMenu,
 
     show_settings: bool,
     show_about: bool,
@@ -36,6 +37,7 @@ impl Roseate {
         let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
         let ui_controls_manager = UIControlsManager::new();
+        let context_menu = ContextMenu::new();
 
         Self {
             theme,
@@ -49,6 +51,7 @@ impl Roseate {
             windows_manager,
             ui_controls_manager,
             config_manager,
+            context_menu,
 
             show_settings: false,
             show_about: false,
@@ -94,7 +97,7 @@ impl eframe::App for Roseate {
             );
 
             if self.show_settings {
-                // we only want to run the config manager's 
+                // we only want to run the config manager's
                 // update loop when were are in the settings menu
                 self.config_manager.update(ctx, &mut self.notifier);
 
@@ -113,13 +116,25 @@ impl eframe::App for Roseate {
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
             match (self.image_handler.image.as_ref(), self.image_handler.resource.as_ref()) {
-                // TODO: in the future we'll have some sort of value 
+                // TODO: in the future we'll have some sort of value
                 // that tells use that the image exists and is loading.
                 (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            // TODO: Draw and manage all windows in a separate struct.
-                            self.windows_manager.show(ui, image_resource, &self.image_handler.image_optimizations, image);
+                            // handle inputs here that you do not 
+                            // want toggling outside the viewport
+                            self.context_menu.handle_input(&ctx, &self.windows_manager);
+
+                            self.windows_manager.show(
+                                ui,
+                                image_resource,
+                                &self.image_handler.image_optimizations,
+                                image,
+                                // leaving this unwrap here for now, I'll defiantly improve this soon
+                                self.image_handler.decoded_image_info.as_ref().unwrap()
+                            );
+
+                            self.context_menu.show(ui, &mut self.windows_manager);
                             self.ui_controls_manager.show(ui, &mut self.viewport);
 
                             let config_padding = config.ui.viewport.padding;
@@ -137,8 +152,8 @@ impl eframe::App for Roseate {
                             );
                         });
 
-                    ctx.request_repaint_after_secs(0.5); // We need to request repaints just in 
-                    // just in case one doesn't happen when the window is resized in a certain circumstance 
+                    ctx.request_repaint_after_secs(0.5); // We need to request repaints just in
+                    // just in case one doesn't happen when the window is resized in a certain circumstance
                     // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
                 },
                 _ => {
@@ -158,7 +173,7 @@ impl eframe::App for Roseate {
             }
         });
 
-        // This is deliberately placed after the central panel so the central panel 
+        // This is deliberately placed after the central panel so the central panel
         // can take up all the space essentially ignoring the space this panel would otherwise take.
         // Check out the egui docs for more clarification: https://docs.rs/egui/0.32.3/egui/containers/panel/struct.CentralPanel.html
         egui::TopBottomPanel::bottom("status_bar")

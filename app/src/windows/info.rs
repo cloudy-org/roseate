@@ -2,26 +2,34 @@ use std::{alloc, sync::Arc};
 
 use cap::Cap;
 use chrono::{DateTime, Local};
-use egui::{Label, Pos2, RichText, TextureHandle, Ui, WidgetText};
+use egui::{Color32, Label, Pos2, RichText, TextureHandle, Ui, WidgetText};
 use eframe::egui::{self, Response};
-use roseate_core::colour_type::ImageColourType;
+use roseate_core::image_info::info::ImageInfo;
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
 
-struct ImageInfoData {
+macro_rules! rich_text_or_unknown {
+    ($fmt:literal, $opt:expr) => {
+        match &$opt {
+            Some(string) => RichText::new(format!($fmt, string)),
+            None => RichText::new("Unknown").weak(),
+        }
+    };
+}
+
+struct ExpensiveData {
     pub file_name: String,
     pub file_size: Option<f64>,
     pub file_relative_path: String,
-    pub image_colour_type: Option<ImageColourType>,
     pub image_created_time: Option<String>,
     pub file_modified_time: Option<String>,
     pub memory_allocated_for_image: f64,
 }
 
-impl ImageInfoData {
+impl ExpensiveData {
     pub fn new(image_resource: &ImageResource, image: &Image) -> Self {
         let path = &image.path;
 
@@ -38,14 +46,6 @@ impl ImageInfoData {
 
                 None
             },
-        };
-
-        // TODO: this won't work as decoded image won't exist with the consume pixels optimizations 
-        // so we'll have to collect info like colour type and exif tags before we clear decoded image 
-        // in image loader. 
-        let image_colour_type = match image.decoded.lock().unwrap().as_ref() {
-            Some(decoded_image) => Some(decoded_image.colour_type),
-            None => None,
         };
 
         let mut file_size = None;
@@ -87,7 +87,6 @@ impl ImageInfoData {
             file_name,
             file_size,
             file_relative_path,
-            image_colour_type,
             image_created_time,
             file_modified_time,
             memory_allocated_for_image: match image_resource {
@@ -107,45 +106,68 @@ impl ImageInfoData {
 }
 
 pub struct ImageInfoWindow {
-    data: Option<ImageInfoData>,
+    data: Option<ExpensiveData>,
 }
 
 impl ImageInfoWindow {
     pub fn new() -> Self {
         Self {
-            data: None,
+            data: None
         }
     }
 
     fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations) {
-        ui.add_space(5.0);
-
-        egui::Grid::new("image_optimizations_grid")
-            .max_col_width(150.0)
-            .striped(true)
+        egui::Frame::default()
+            .inner_margin(8)
+            .corner_radius(8)
+            .fill(Color32::BLACK.gamma_multiply(0.2))
             .show(ui, |ui| {
-                ui_non_select_label(ui, "Monitor downsampling:");
-                ui.label(format!("{}", image_optimizations.monitor_downsampling.is_some()));
-                ui.end_row();
 
-                ui_non_select_label(ui, "Dynamic sampling:");
-                ui.label(format!("{}", image_optimizations.dynamic_sampling.is_some()));
-                ui.end_row();
+                egui::Grid::new("image_optimizations_grid")
+                    .max_col_width(120.0)
+                    .striped(false)
+                    .show(ui, |ui| {
+                        // I'm using let Some() because in the future
+                        // I'll actually make use of the struct inside.
 
-                ui_non_select_label(ui, "Consume pixels during GPU upload:");
-                ui.label(format!("{}", image_optimizations.consume_pixels_during_gpu_upload));
-                ui.end_row();
+                        if let Some(_) = image_optimizations.monitor_downsampling {
+                            ui_non_select_label(ui, "Monitor downsampling:");
+                            ui.label("applied");
+                            ui.end_row();
+                        }
 
-                ui_non_select_label(ui, "Multi threaded sampling:");
-                ui.label(format!("{}", image_optimizations.multi_threaded_sampling.is_some()));
-                ui.end_row();
+                        if let Some(_) = image_optimizations.dynamic_sampling {
+                            ui_non_select_label(ui, "Dynamic sampling:");
+                            ui.label("enabled");
+                            ui.end_row();
+                        }
+
+                        if image_optimizations.consume_pixels_during_gpu_upload {
+                            ui_non_select_label(ui, "Consume pixels during GPU upload:");
+                            ui.label("enabled");
+                            ui.end_row();
+                        }
+
+                        if let Some(multi_threaded_sampling) = &image_optimizations.multi_threaded_sampling {
+                            ui_non_select_label(ui, "Multi threaded downsampling:");
+                            ui.label(
+                                match multi_threaded_sampling.number_of_threads {
+                                    Some(threads) => format!("{} threads", threads),
+                                    None => "auto".into(),
+                                }
+                            );
+                            ui.end_row();
+                        }
+                    });
+
             });
     }
 
     fn show_image_info_grid(
         ui: &mut Ui,
-        image_info_data: &ImageInfoData,
+        expensive_data: &ExpensiveData,
         image: &Image,
+        image_info: &ImageInfo,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
         show_extra: bool
@@ -155,8 +177,8 @@ impl ImageInfoWindow {
             .max_col_width(max_grid_width)
             .show(ui, |ui| {
                 ui_non_select_label(ui, "Name:");
-                ui.label(&image_info_data.file_name)
-                    .on_hover_text(&image_info_data.file_relative_path);
+                ui.label(&expensive_data.file_name)
+                    .on_hover_text(&expensive_data.file_relative_path);
                 ui.end_row();
 
                 ui_non_select_label(ui, "Dimensions:");
@@ -173,12 +195,7 @@ impl ImageInfoWindow {
 
                 if show_extra {
                     ui_non_select_label(ui, "Colour:");
-                    ui.label(
-                        match &image_info_data.image_colour_type {
-                            Some(colour_type) => format!("{}", colour_type).into(),
-                            None => RichText::new("Unknown").weak(),
-                        }
-                    );
+                    ui.label(format!("{}", image_info.colour_type));
                     ui.end_row();
                 }
 
@@ -188,7 +205,7 @@ impl ImageInfoWindow {
 
                 ui_non_select_label(ui, "Created:").on_hover_text(created_hint);
                 ui.label(
-                    match &image_info_data.image_created_time {
+                    match &expensive_data.image_created_time {
                         Some(time_string) => RichText::new(time_string),
                         None => RichText::new("Unknown").weak(),
                     }
@@ -198,7 +215,7 @@ impl ImageInfoWindow {
                 if show_extra {
                     ui_non_select_label(ui, "File Modified:");
                     ui.label(
-                        match &image_info_data.file_modified_time {
+                        match &expensive_data.file_modified_time {
                             Some(time_string) => RichText::new(time_string),
                             None => RichText::new("Unknown").weak(),
                         }
@@ -208,7 +225,7 @@ impl ImageInfoWindow {
 
                 ui_non_select_label(ui, "File size:");
                 ui.label(
-                    match image_info_data.file_size {
+                    match expensive_data.file_size {
                         Some(size) => RichText::new(re_format::format_bytes(size)),
                         None => RichText::new("Unknown").weak(),
                     }
@@ -216,24 +233,24 @@ impl ImageInfoWindow {
                 ui.end_row();
 
                 if show_extra {
-                    ui_non_select_label(ui, "Camera:"); // 📷
-                    ui.label(soon_text.clone());
+                    ui_non_select_label(ui, "Camera:");
+                    ui.label(rich_text_or_unknown!("{}", &image_info.metadata.model));
                     ui.end_row();
 
                     ui_non_select_label(ui, "ISO:");
-                    ui.label(soon_text.clone());
+                    ui.label(rich_text_or_unknown!("{}", &image_info.metadata.iso));
                     ui.end_row();
 
-                    ui_non_select_label(ui, "Aperture:"); // ƒ
-                    ui.label(soon_text.clone());
+                    ui_non_select_label(ui, "Aperture:");
+                    ui.label(rich_text_or_unknown!("ƒ/{}", &image_info.metadata.aperture));
                     ui.end_row();
 
                     ui_non_select_label(ui, "Focal Length:");
-                    ui.label(soon_text.clone());
+                    ui.label(rich_text_or_unknown!("{}mm", &image_info.metadata.focal_length));
                     ui.end_row();
 
                     ui_non_select_label(ui, "Exposure Time:");
-                    ui.label(soon_text.clone());
+                    ui.label(rich_text_or_unknown!("{}s", &image_info.metadata.exposure_time));
                     ui.end_row();
                 }
             });
@@ -241,8 +258,9 @@ impl ImageInfoWindow {
 
     fn show_misc_info_grid(
         ui: &mut Ui,
-        image_info_data: &ImageInfoData,
+        expensive_data: &ExpensiveData,
         image: &Image,
+        image_info: &ImageInfo,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
         app_memory_allocated: f64,
@@ -266,7 +284,7 @@ impl ImageInfoWindow {
                     .on_hover_text(mem_allocation_by_image_hint);
                 ui.label(
                     RichText::new(re_format::format_bytes(
-                        image_info_data.memory_allocated_for_image)
+                        expensive_data.memory_allocated_for_image)
                     )
                 ).on_hover_text(mem_allocation_by_image_hint);
                 ui.end_row();
@@ -279,10 +297,11 @@ impl ImageInfoWindow {
         image_resource: &ImageResource,
         image_optimizations: &ImageOptimizations,
         image: &Image,
+        image_info: &ImageInfo,
         show_extra: bool
     ) -> Response {
         let image_info_data = self.data.get_or_insert_with(
-            || ImageInfoData::new(image_resource, image)
+            || ExpensiveData::new(image_resource, image)
         );
 
         let main_frame = egui::Frame::group(&ui.style())
@@ -344,11 +363,20 @@ impl ImageInfoWindow {
                                     if let Some(texture) = texture_handle {
                                         ui.add(
                                             egui::Image::from_texture(texture)
-                                                .max_height(100.0)
+                                                // 16 is the padding from
+                                                // the image optimizations grid
+                                                .max_size([220.0 + 16.0, 140.0].into())
+                                                .corner_radius(8)
                                         );
                                     }
 
-                                    Self::show_image_optimizations_grid(ui, image_optimizations);
+                                    ui.add_space(5.0);
+
+                                    egui::ScrollArea::vertical()
+                                        .min_scrolled_height(150.0)
+                                        .show(ui, |ui| {
+                                            Self::show_image_optimizations_grid(ui, image_optimizations);
+                                        });
                                 });
 
                                 ui.add(egui::Separator::default().grow(4.0));
@@ -358,6 +386,7 @@ impl ImageInfoWindow {
                                         ui,
                                         image_info_data,
                                         image,
+                                        image_info,
                                         180.0,
                                         soon_text.clone(),
                                         show_extra
@@ -369,6 +398,7 @@ impl ImageInfoWindow {
                                         ui,
                                         image_info_data,
                                         image,
+                                        image_info,
                                         180.0,
                                         soon_text.clone(),
                                         app_memory_allocated as f64,
@@ -378,7 +408,7 @@ impl ImageInfoWindow {
                             false => {
                                 ui.vertical(|ui| {
                                     Self::show_image_info_grid(
-                                        ui, image_info_data, image, 160.0, soon_text, show_extra
+                                        ui, image_info_data, image, image_info, 160.0, soon_text, show_extra
                                     );
                                 });
                             },

@@ -107,13 +107,14 @@ animate_reset = true
 show_open_image_button = true
 
 [key_binds]
-info_box.toggle = "I"
-about_box.toggle = "A"
+show_image_info = "I"
+show_extra_image_info = "CTRL+I"
+show_app_about = "CTRL+A"
 # Key bind to reset the image pan 
 # position and zoom scale back to default.
-image.reset_pos = "R"
+reset_viewport = "R"
 # Key bind to toggle all your UI controls like the magnification panel.
-ui_controls.toggle = "C"
+show_ui_controls = "C"
 
 [misc]
 # All other configs that don't yet have a specific place or are experimental.

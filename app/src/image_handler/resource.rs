@@ -24,12 +24,12 @@ impl ImageHandler {
                 return;
             }
 
-            let optimizations = &self.image_optimizations;
-
-            let can_free_memory_or_consume = optimizations.consume_pixels_during_gpu_upload && !optimizations.dynamic_sampling.is_some();
+            let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
 
             if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
                 notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
+
+                self.decoded_image_info = Some(decoded_image.info.clone());
 
                 let texture_options = TextureOptions {
                     magnification: TextureFilter::Linear,
@@ -39,7 +39,7 @@ impl ImageHandler {
                 };
 
                 let is_rgba = matches!(
-                    decoded_image.colour_type,
+                    decoded_image.info.colour_type,
                     ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F
                 );
 
@@ -75,7 +75,7 @@ impl ImageHandler {
         decoded_image: &DecodedImage,
         texture_options: TextureOptions
     ) -> ImageResource {
-        debug!("Copying image's '{}' pixels into RGBA egui texture...", decoded_image.colour_type);
+        debug!("Copying image's '{}' pixels into RGBA egui texture...", decoded_image.info.colour_type);
 
         match &decoded_image.content {
             DecodedImageContent::Static(pixels) => {
@@ -111,7 +111,7 @@ impl ImageHandler {
 
         let texture = ctx.load_texture(
             "static_image",
-            match decoded_image.colour_type {
+            match decoded_image.info.colour_type {
                 ImageColourType::Grey8 | ImageColourType::Grey16 | ImageColourType::Grey32F | 
                 ImageColourType::GreyA8 | ImageColourType::GreyA16 | ImageColourType::GreyA32F => {
                     egui::ColorImage::from_gray(image_size, &pixels)
@@ -139,7 +139,7 @@ impl ImageHandler {
         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
         assert!(
-            matches!(decoded_image.colour_type, ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F),
+            matches!(decoded_image.info.colour_type, ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F),
             "Wrong into egui texture function was called, this is a logic error!"
         );
 
@@ -148,7 +148,7 @@ impl ImageHandler {
             DecodedImageContent::Static(Vec::new()),
         );
 
-        debug!("Zero-copying image's '{}' pixels into RGBA egui texture...", decoded_image.colour_type);
+        debug!("Zero-copying image's '{}' pixels into RGBA egui texture...", decoded_image.info.colour_type);
 
         match content {
             DecodedImageContent::Static(pixels) => {

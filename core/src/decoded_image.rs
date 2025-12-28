@@ -1,4 +1,4 @@
-use crate::{colour_type::ImageColourType, format::ImageFormat};
+use crate::{colour_type::ImageColourType, format::ImageFormat, image_info::{info::ImageInfo, metadata::ImageMetadata}};
 
 pub type ImageSize = (u32, u32);
 pub type Pixels<Channel = u8> = Vec<Channel>;
@@ -11,27 +11,37 @@ pub enum DecodedImageContent {
     Animated(Vec<(Pixels, f32)>),
 }
 
-// TODO: Pass more info about the image itself like EXIF tags 
-// and what camera was used from the decoder to DecodedImage.
+// TODO: Add back size to decoded image
 pub struct DecodedImage {
+    pub info: ImageInfo,
+
+    /// The actual size of the decoded image right now. 
+    /// NOT the original image size (see `info.size` for that).
     pub size: ImageSize,
-    pub content: DecodedImageContent,
     pub colour_type: ImageColourType,
-    pub image_format: ImageFormat,
+    pub content: DecodedImageContent,
 }
 
 impl DecodedImage {
     pub fn new(
-        content: DecodedImageContent,
+        size: ImageSize,
+        format: ImageFormat,
         colour_type: ImageColourType,
-        image_format: ImageFormat,
-        size: ImageSize
+        metadata: ImageMetadata,
+        content: DecodedImageContent,
     ) -> Self {
+        let info = ImageInfo {
+            size: size.clone(),
+            format: format.clone(),
+            colour_type: colour_type.clone(),
+            metadata: metadata.clone(),
+        };
+
         Self {
-            content,
+            info,
+            size,
             colour_type,
-            image_format,
-            size
+            content
         }
     }
 }

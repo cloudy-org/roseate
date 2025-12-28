@@ -8,6 +8,7 @@ log = "0.4"
 rayon = "1.11.0"
 imagesize = "0.14.0" # zero deps is crazy
 svg_metadata = "0.5.1"
+kamadak-exif = "0.6.1"
 
 # decoder backends
 image = {version = "0.25.9", features = ["rayon", "png", "jpeg", "gif", "webp", "tiff"], default-features = false}

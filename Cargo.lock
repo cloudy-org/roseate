@@ -879,6 +879,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cirrus_softbinds"
+version = "0.1.0"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "cirrus_theming"
 version = "0.1.0"
 dependencies = [
@@ -2448,6 +2455,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kamadak-exif"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1130d80c7374efad55a117d715a3af9368f0fa7a2c54573afc15a188cd984837"
+dependencies = [
+ "mutate_once",
+]
+
+[[package]]
 name = "khronos-egl"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3776,6 +3792,7 @@ dependencies = [
  "cirrus_config",
  "cirrus_egui",
  "cirrus_error",
+ "cirrus_softbinds",
  "cirrus_theming",
  "clap",
  "derive_more",
@@ -3806,6 +3823,7 @@ dependencies = [
  "env_logger",
  "image",
  "imagesize 0.14.0",
+ "kamadak-exif 0.6.1",
  "log",
  "rayon",
  "svg_metadata",
@@ -5895,7 +5913,7 @@ dependencies = [
  "bytemuck",
  "jpeg-encoder",
  "jxl-oxide",
- "kamadak-exif",
+ "kamadak-exif 0.5.5",
  "zune-core 0.4.12",
  "zune-jpeg 0.4.21",
  "zune-jpegxl",

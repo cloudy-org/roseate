@@ -8,15 +8,19 @@ pub enum Error {
 
     UnsupportedColourType,
 
-    DecoderAnimationCheckFailure { error: String },
+    ExifReaderImageMetadataParseFailure { error: String },
 
     DecodingFailure { error: String },
     DecoderInitFailure { error: String },
+    DecoderRetrieveExifFailure { error: String },
     DecoderNotSupported { image_format: String, backend: String },
+    DecoderAnimationCheckFailure { error: String },
 
     ImageHeaderReadFailure { stage: String, error: Option<String> },
     ImageFormatNotSupported { image_format: String },
     ImageEncodeFailure { reason: String },
+
+    AnimatedImageHasNoFrames,
 }
 
 // CError doesn't implement Display yet so I'm implementing it myself so 
@@ -31,6 +35,10 @@ impl Display for Error {
             Error::DecoderInitFailure { error } => write!(
                 f,
                 "Failed to a initialize decoder! \n\nError: {error}"
+            ),
+            Error::DecoderRetrieveExifFailure { error } => write!(
+                f,
+                "Decoder failed to retrieve image exif chunk! \n\nError: {error}"
             ),
             Error::DecoderAnimationCheckFailure { error } => write!(
                 f,
@@ -55,9 +63,18 @@ impl Display for Error {
                 "The image format '{image_format}' is not supported! \
                 However support may be added in the near future."
             ),
+            Error::ExifReaderImageMetadataParseFailure { error} => write!(
+                f,
+                "Exif reader failed to parse image exif tags! \n\nError: {error}"
+            ),
             Error::ImageEncodeFailure { .. } => write!(
                 f,
                 "Failed to encode image, the image may be corrupted!"
+            ),
+            Error::AnimatedImageHasNoFrames => write!(
+                f,
+                "This animated image looks to be corrupted, it has no frames! \
+                Are you sure this image is sound? Perhaps try another image."
             ),
             _ => todo!()
         }
