@@ -1,15 +1,18 @@
-use egui::{Context, Key, Ui};
+use egui::{Context, Key, Rect, Ui};
 use roseate_core::decoded_image::DecodedImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::ImageInfoWindow};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}};
 
 mod info;
+pub use info::ImageInfoWindow;
 
 pub struct WindowsManager {
     info_window: ImageInfoWindow,
 
-    show_info: bool,
-    show_extra_info: bool,
+    pub show_info: bool,
+    pub show_extra_info: bool,
+
+    pub rect: Rect
 }
 
 impl WindowsManager {
@@ -21,6 +24,8 @@ impl WindowsManager {
 
             show_info: false,
             show_extra_info: false,
+
+            rect: Rect::NOTHING
         }
     }
 
@@ -38,10 +43,12 @@ impl WindowsManager {
         image_resource: &ImageResource,
         image_optimizations: &ImageOptimizations,
         image: &Image,
-        decoded_image_info: &DecodedImageInfo
+        decoded_image_info: &DecodedImageInfo,
     ) {
+        let mut new_rect: Rect = Rect::NOTHING;
+
         if self.show_info {
-            self.info_window.show(
+            let response = self.info_window.show(
                 ui,
                 image_resource,
                 image_optimizations,
@@ -49,6 +56,10 @@ impl WindowsManager {
                 decoded_image_info,
                 self.show_extra_info,
             );
+
+            new_rect = new_rect.union(response.rect);
         }
+
+        self.rect = new_rect;
     }
 }

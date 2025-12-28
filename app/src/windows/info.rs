@@ -107,12 +107,16 @@ impl ExpensiveData {
 
 pub struct ImageInfoWindow {
     data: Option<ExpensiveData>,
+
+    pub set_to_show: Option<(bool, bool)>
 }
 
 impl ImageInfoWindow {
     pub fn new() -> Self {
         Self {
             data: None,
+
+            set_to_show: None
         }
     }
 
@@ -127,7 +131,7 @@ impl ImageInfoWindow {
                     .max_col_width(120.0)
                     .striped(false)
                     .show(ui, |ui| {
-                        // I'm using let Some() because in the future 
+                        // I'm using let Some() because in the future
                         // I'll actually make use of the struct inside.
 
                         if let Some(_) = image_optimizations.monitor_downsampling {
@@ -291,6 +295,10 @@ impl ImageInfoWindow {
             });
     }
 
+    pub fn set_to_show(&mut self, tuple: (bool, bool)) {
+        self.set_to_show = Some(tuple);
+    }
+
     pub fn show(
         &mut self,
         ui: &Ui,
@@ -364,7 +372,7 @@ impl ImageInfoWindow {
 
                                         ui.add(
                                             egui::Image::from_texture(texture)
-                                                // 16 is the padding from 
+                                                // 16 is the padding from
                                                 // the image optimizations grid
                                                 .max_size([200.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)

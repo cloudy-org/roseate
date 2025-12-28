@@ -31,6 +31,7 @@ mod image_selection_menu;
 mod monitor_size;
 mod viewport;
 mod settings;
+mod context_menu;
 
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
@@ -54,8 +55,8 @@ fn main() -> eframe::Result {
         .parse_default_env()
         .init();
 
-    // Modern GUI applications should never silently 
-    // error and exit without visually notifying the user 
+    // Modern GUI applications should never silently
+    // error and exit without visually notifying the user
     // hence I have brought toasts outside the scope of app::Roseate
     // so we can queue up notifications when things go wrong here.
     let mut notifier = Notifier::new();
