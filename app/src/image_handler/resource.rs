@@ -107,7 +107,7 @@ impl ImageHandler {
     }
 
     fn decoded_image_pixels_to_egui_texture(ctx: &Context, decoded_image: &DecodedImage, pixels: &Pixels, texture_options: TextureOptions) -> TextureHandle {
-        let image_size = [decoded_image.info.size.0 as usize, decoded_image.info.size.1 as usize];
+        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
         let texture = ctx.load_texture(
             "static_image",
@@ -136,7 +136,7 @@ impl ImageHandler {
     ) -> ImageResource {
         debug!("Image pixels will be directly consumed and uploaded to gpu to avoid memory spike...");
 
-        let image_size = [decoded_image.info.size.0 as usize, decoded_image.info.size.1 as usize];
+        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
         assert!(
             matches!(decoded_image.info.colour_type, ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F),

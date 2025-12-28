@@ -1,6 +1,6 @@
 use image::{ImageBuffer, Luma, LumaA, Rgb, Rgba};
 
-use crate::{colour_type::ImageColourType, decoded_image::{DecodedImageInfo, Pixels}, error::Result};
+use crate::{colour_type::ImageColourType, decoded_image::{ImageSize, Pixels}, error::Result};
 
 pub enum BufferImageVariant {
     // BufferImage doesn't contain u16 and f32 variants 
@@ -13,16 +13,17 @@ pub enum BufferImageVariant {
 
 /// Wrapper around different variants of image-rs image buffers.
 pub struct BufferImage {
-    pub info: DecodedImageInfo,
+    pub size: ImageSize,
+    pub colour_type: ImageColourType,
     pub variant: BufferImageVariant,
 }
 
 impl BufferImage {
-    pub fn from_u8_pixels(pixels: Pixels<u8>, decoded_image_info: DecodedImageInfo) -> Result<Self> {
-        let (width, height) = decoded_image_info.size;
+    pub fn from_u8_pixels(pixels: Pixels<u8>, size: ImageSize, colour_type: ImageColourType) -> Result<Self> {
+        let (width, height) = size;
 
         // TODO: handle result properly
-        let variant = match decoded_image_info.colour_type {
+        let variant = match colour_type {
             ImageColourType::Grey8 | ImageColourType::Grey16 | ImageColourType::Grey32F => BufferImageVariant::Grey8(
                 ImageBuffer::from_raw(width, height, pixels).unwrap()
             ),
@@ -38,12 +39,13 @@ impl BufferImage {
         };
 
         Ok(Self {
-            info: decoded_image_info,
+            size,
+            colour_type,
             variant
         })
     }
 
-    pub fn to_u8_pixels(self) -> (Pixels<u8>, DecodedImageInfo) {
+    pub fn to_u8_pixels(self) -> (Pixels<u8>, ImageSize, ImageColourType) {
         let size: (u32, u32) = match &self.variant {
             BufferImageVariant::Grey8(image_buffer) => image_buffer.dimensions(),
             BufferImageVariant::GreyA8(image_buffer) => image_buffer.dimensions(),
@@ -51,21 +53,18 @@ impl BufferImage {
             BufferImageVariant::Rgba8(image_buffer) => image_buffer.dimensions(),
         };
 
-        let mut decoded_image_info = self.info;
-        decoded_image_info.size = size;
-
         match self.variant {
             BufferImageVariant::Grey8(image_buffer) => {
-                (image_buffer.into_raw(), decoded_image_info)
+                (image_buffer.into_raw(), size, self.colour_type)
             },
             BufferImageVariant::GreyA8(image_buffer) => {
-                (image_buffer.into_raw(), decoded_image_info)
+                (image_buffer.into_raw(), size, self.colour_type)
             },
             BufferImageVariant::Rgb8(image_buffer) => {
-                (image_buffer.into_raw(), decoded_image_info)
+                (image_buffer.into_raw(), size, self.colour_type)
             },
             BufferImageVariant::Rgba8(image_buffer) => {
-                (image_buffer.into_raw(), decoded_image_info)
+                (image_buffer.into_raw(), size, self.colour_type)
             },
         }
     }

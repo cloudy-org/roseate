@@ -1,5 +1,5 @@
 use egui::{Context, Key, Rect, Ui};
-use roseate_core::decoded_image::DecodedImageInfo;
+use roseate_core::image_info::info::ImageInfo;
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}};
 
@@ -43,7 +43,7 @@ impl WindowsManager {
         image_resource: &ImageResource,
         image_optimizations: &ImageOptimizations,
         image: &Image,
-        decoded_image_info: &DecodedImageInfo,
+        image_info: &ImageInfo,
     ) {
         let mut new_rect: Rect = Rect::NOTHING;
 
@@ -53,7 +53,7 @@ impl WindowsManager {
                 image_resource,
                 image_optimizations,
                 image,
-                decoded_image_info,
+                image_info,
                 self.show_extra_info,
             );
 

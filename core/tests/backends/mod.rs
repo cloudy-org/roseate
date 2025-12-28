@@ -1,28 +1,28 @@
 use std::{fs, path::Path};
 
-use image::{ImageBuffer, Rgba};
+use image::ImageBuffer;
 use roseate_core::{format::ImageFormat, decoded_image::{DecodedImage, DecodedImageContent}};
 
 mod test_image_rs_backend;
 
 pub const IMAGE_DUMP_PATH: &str = "./tests-image-dump";
 
-pub fn save_image_as_rgba(decoded_image: DecodedImage, name: &str) {
+pub fn save_image<P: image::Pixel<Subpixel = u8> + image::PixelWithColorType>(decoded_image: DecodedImage, name: &str) {
     let _ = fs::create_dir(IMAGE_DUMP_PATH);
 
-    let (width, height) = decoded_image.info.size;
+    let (width, height) = decoded_image.size;
 
     match decoded_image.content {
         DecodedImageContent::Static(pixels) => {
-            let image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
-                decoded_image.info.size.0, decoded_image.info.size.1, pixels
+            let image: ImageBuffer<P, _> = ImageBuffer::from_raw(
+                decoded_image.size.0, decoded_image.size.1, pixels
             ).unwrap();
 
             image.save(Path::new(IMAGE_DUMP_PATH).join(name)).unwrap();
         },
         DecodedImageContent::Animated(frames) => {
             for (index, (frame_pixels, _)) in frames.into_iter().enumerate() {
-                let frame_image: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
+                let frame_image: ImageBuffer<P, _> = ImageBuffer::from_raw(
                     width, height, frame_pixels
                 ).unwrap();
 
