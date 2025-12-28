@@ -37,7 +37,7 @@ impl Roseate {
         let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
         let ui_controls_manager = UIControlsManager::new();
-        let context_menu = ContextMenu::new(windows_manager.get_info_window());
+        let context_menu = ContextMenu::new();
 
         Self {
             theme,
@@ -70,7 +70,6 @@ impl eframe::App for Roseate {
 
         self.windows_manager.handle_input(&ctx);
         self.ui_controls_manager.handle_input(&ctx);
-        self.context_menu.handle_input(&ctx);
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
             self.show_about = !self.show_about;
@@ -122,7 +121,10 @@ impl eframe::App for Roseate {
                 (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            // TODO: Draw and manage all windows in a separate struct.
+                            // handle inputs here that you do not 
+                            // want toggling outside the viewport
+                            self.context_menu.handle_input(&ctx, &self.windows_manager);
+
                             self.windows_manager.show(
                                 ui,
                                 image_resource,
@@ -132,7 +134,7 @@ impl eframe::App for Roseate {
                                 self.image_handler.decoded_image_info.as_ref().unwrap()
                             );
 
-                            self.context_menu.show(ui);
+                            self.context_menu.show(ui, &mut self.windows_manager);
                             self.ui_controls_manager.show(ui, &mut self.viewport);
 
                             let config_padding = config.ui.viewport.padding;

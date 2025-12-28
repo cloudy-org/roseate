@@ -1,81 +1,73 @@
-use egui::{Context, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, Response, RichText, Ui};
-use std::sync::{Arc, Mutex};
+use egui::{Context, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
 
-use roseate_core::decoded_image::DecodedImageInfo;
-
-use crate::{Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::{ImageInfoWindow, WindowsManager}};
+use crate::windows::WindowsManager;
 
 pub struct ContextMenu {
-    info_window: Arc<Mutex<ImageInfoWindow>>,
-
-    ignore_close: bool,
-    pointer_pos: Option<PopupAnchor>,
-
-    show_menu: bool
+    show_menu: Option<Pos2>
 }
 
 impl ContextMenu {
-    pub fn new(info_window: Arc<Mutex<ImageInfoWindow>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            info_window,
-
-            ignore_close: false,
-            pointer_pos: None,
-
-            show_menu: false,
+            show_menu: None,
         }
     }
 
-    fn reset(&mut self) {
-        self.show_menu = false;
-        self.ignore_close = false;
-        self.pointer_pos = None;
-    }
-
-    pub fn handle_input(&mut self, ctx: &Context) {
+    pub fn handle_input(&mut self, ctx: &Context, windows_manager: &WindowsManager) {
         if ctx.input(|i| i.pointer.secondary_released()) {
-            self.show_menu = true;
-
-            if self.pointer_pos.is_some() {
-                self.ignore_close = true;
-            }
-
-            let pos2 = ctx.pointer_latest_pos().unwrap();
-            self.pointer_pos = Some(PopupAnchor::Position(pos2));
-        }
-    }
-
-    pub fn show(
-        &mut self,
-        ui: &mut Ui,
-    ) {
-        if self.show_menu {
-            let anchor = self.pointer_pos.unwrap();
-
-            let id = Id::new("context_menu");
-            let response = Popup::new(id, ui.ctx().clone(), anchor, LayerId::new(egui::Order::Foreground, id))
-                .close_behavior(PopupCloseBehavior::CloseOnClick)
-                .show(|pop_ui| {
-                    pop_ui.heading(RichText::new("Context menu"));
-                    pop_ui.add_space(10.0);
-
-                    if pop_ui.button("Image info").clicked() {
-                        let mut info_window = self.info_window.lock().expect("Info window lock is poisoned");
-                        info_window.set_to_show((true, false));
-                    }
-
-                    if pop_ui.button("Image info with extra").clicked() {
-                        let mut info_window = self.info_window.lock().expect("Info window lock is poisoned");
-                        info_window.set_to_show((true, true));
-                    }
-                });
-
-            if let Some(response) = response {
-                if response.response.should_close() && !self.ignore_close {
-                    self.reset();
+            if let Some(mouse_position) = ctx.pointer_latest_pos() {
+                // I want to follow gnome's behaviour of 
+                // another right-click hides the context menu.
+                if self.show_menu.is_some() {
+                    self.show_menu = None;
+                    return;
                 }
 
-                self.ignore_close = false;
+                // content menu should not display in windows.
+                if !windows_manager.rect.contains(mouse_position) {
+                    self.show_menu = Some(mouse_position);
+                }
+            }
+        }
+    }
+
+    pub fn show(&mut self, ui: &mut Ui, windows_manager: &mut WindowsManager) {
+        if let Some(mouse_position) = self.show_menu {
+            let id = Id::new("context_menu");
+
+            // NOTE: for some reason Popup::content_menu or Popup::menu does not work 
+            // so most of the code below here are to recreate their behaviours and looks.
+            let response = Popup::new(
+                id,
+                ui.ctx().clone(),
+                PopupAnchor::Position(mouse_position),
+                LayerId::new(egui::Order::Foreground, id)
+            ).kind(PopupKind::Menu)
+                .style(egui::containers::menu::menu_style)
+                // doesn't work, just trying to disable "CloseOnClick"
+                .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
+                .show(|pop_ui| {
+                    if pop_ui.button("Toggle Image Info").clicked() {
+                        windows_manager.show_info = !windows_manager.show_info;
+                        self.show_menu = None;
+                    }
+
+                    if pop_ui.button("Toggle extra Image Info").clicked() {
+                        windows_manager.show_info = !windows_manager.show_info;
+
+                        windows_manager.show_extra_info = true;
+                        self.show_menu = None;
+                    }
+                }).unwrap().response;
+
+            // We wouldn't have to do this if "Popup::content_menu" or 
+            // ".close_behavior(PopupCloseBehavior::CloseOnClickOutside)" just worked.
+            if ui.input(|i| i.pointer.primary_clicked()) {
+                if let Some(current_mouse_position) = ui.ctx().pointer_latest_pos() {
+                    if !response.rect.contains(current_mouse_position) {
+                        self.show_menu = None;
+                    }
+                }
             }
         }
     }
