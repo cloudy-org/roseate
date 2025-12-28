@@ -3,18 +3,12 @@ use std::{collections::HashSet, io::BufReader};
 use image::{
     AnimationDecoder, ImageDecoder, ImageError, codecs::{
         gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, tiff::TiffDecoder, webp::WebPDecoder,
-    }, imageops::{self, FilterType}
+    },
 };
 use log::debug;
 
 use crate::{
-    backends::{backend::DecodeBackend, image_rs::buffer_image::BufferImage},
-    colour_type::ImageColourType,
-    decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels},
-    error::{Error, Result},
-    format::ImageFormat,
-    modifications::{ImageModification, ImageModifications},
-    reader::{ImageReader, ImageReaderData, ReadSeek},
+    backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}
 };
 
 mod colour;

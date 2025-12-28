@@ -215,9 +215,9 @@ fn test_tiff_decode_and_modify() -> Result<()> {
     let decoded_image = backend.decode()?;
 
     assert_eq!(decoded_image.size, (960, 381));
-    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba8);
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba16);
 
-    save_image_as_rgba(decoded_image, "resized_terror_in_resonace_backdrop.tiff");
+    save_image::<Rgba<u8>>(decoded_image, "resized_terror_in_resonace_backdrop.tiff");
 
     Ok(())
 }
