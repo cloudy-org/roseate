@@ -117,7 +117,8 @@ fn main() -> eframe::Result {
 
     let image_path = cli_args.image;
 
-    let image_optimizations = config.image.optimizations.get_optimizations();
+    let image_optimizations = config.image.optimizations.get_optimizations()
+        .normalize();
 
     let mut image_handler = match image_path {
         Some(path) => {

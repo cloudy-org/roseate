@@ -24,9 +24,7 @@ impl ImageHandler {
                 return;
             }
 
-            let optimizations = &self.image_optimizations;
-
-            let can_free_memory_or_consume = optimizations.consume_pixels_during_gpu_upload && !optimizations.dynamic_sampling.is_some();
+            let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
 
             if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
                 notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
