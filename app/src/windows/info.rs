@@ -2,7 +2,7 @@ use std::{alloc, fmt::{self, Formatter}, sync::Arc};
 
 use cap::Cap;
 use chrono::{DateTime, Local, NaiveDateTime};
-use egui::{AtomExt, Color32, Label, Pos2, RichText, Stroke, TextureHandle, Ui, Vec2, WidgetText};
+use egui::{AtomExt, Color32, Label, OpenUrl, Pos2, RichText, Stroke, TextureHandle, Ui, Vec2, WidgetText};
 use eframe::egui::{self, Response};
 use roseate_core::{decoded_image::DecodedImageInfo, metadata::ImageMetadata};
 
@@ -20,6 +20,24 @@ macro_rules! rich_text_or_unknown {
     };
 }
 
+macro_rules! dms_to_decimal {
+    ($dms_str:expr) => {{
+        let numbers: Vec<f64> = $dms_str
+            .split(|c: char| !c.is_ascii_digit() && c != '.' && c != '-')
+            .filter(|s| !s.is_empty())
+            .filter_map(|s| s.parse::<f64>().ok())
+            .collect();
+
+        match numbers.len() {
+            3 => numbers[0] + numbers[1] / 60.0 + numbers[2] / 3600.0,
+            2 => numbers[0] + numbers[1] / 60.0,
+            1 => numbers[0],
+            _ => 0.0,
+        }
+    }};
+}
+
+
 struct ExpensiveData {
     pub file_name: String,
     pub file_size: Option<f64>,
@@ -27,6 +45,8 @@ struct ExpensiveData {
     pub image_created_time: Option<String>,
     pub file_modified_time: Option<String>,
     pub memory_allocated_for_image: f64,
+
+    pub location: Option<(String, String)>
 }
 
 impl ExpensiveData {
@@ -51,11 +71,11 @@ impl ExpensiveData {
         let mut file_size = None;
         let mut image_created_time = None;
         let mut file_modified_time = None;
+        let mut location = None;
 
         let date_format = "%d/%m/%Y %H:%M %p";
 
         if let Some(time) = &image_metadata.originally_created {
-            log::debug!("originally created: {}", time);
             match NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S") {
                 Ok(datetime) => {
                     image_created_time = Some(datetime.format(date_format).to_string());
@@ -64,6 +84,25 @@ impl ExpensiveData {
                     log::warn!("Failed to retrieve image file created date! Error: {}", err);
                 }
             }
+        }
+
+        if let Some(latitude) = &image_metadata.location.latitude
+            && let Some(longitude) = &image_metadata.location.longitude {
+            let geocoder = reverse_geocoder::ReverseGeocoder::new();
+
+            let latitude = dms_to_decimal!(latitude);
+            let longitude = dms_to_decimal!(longitude);
+            log::debug!("converted dms to decimal: {}, {}", latitude, longitude);
+
+            let result = geocoder.search((latitude, longitude));
+
+            let country_name = country_emoji::name(&result.record.cc).unwrap(); // this should always exist ~ ananas
+
+            let formatted_location = format!("{}, {}", result.record.name, country_name);
+            // TODO: add possiblity to change the default map to google maps or custom one by formatting.
+            let url = format!("https://www.openstreetmap.org?mlat={}&mlon={}#map=18/{}/{}", latitude, longitude, latitude, longitude);
+
+            location = Some((formatted_location, url));
         }
 
         if let Some(metadata) = file_metadata {
@@ -99,7 +138,8 @@ impl ExpensiveData {
 
                     size as f64
                 },
-            }
+            },
+            location
         }
     }
 }
@@ -251,6 +291,15 @@ impl ImageInfoWindow {
                     ui_non_select_label(ui, "Exposure Time:");
                     ui.label(rich_text_or_unknown!("{}s", &decoded_image_info.metadata.exposure_time));
                     ui.end_row();
+
+                    if let Some(location) = &expensive_data.location {
+                        ui_non_select_label(ui, "Location:");
+                        if ui.button(&location.0).clicked() {
+                            ui.ctx().open_url(
+                                OpenUrl::new_tab(&location.1)
+                            );
+                        }
+                    }
                 }
             });
     }

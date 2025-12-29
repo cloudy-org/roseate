@@ -40,12 +40,15 @@ serde = {version = "1.0", features = ["derive"]}
 chrono = "0.4.42"
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
+reverse_geocoder = "4.1.1"
+country-emoji = "0.3.2"
+
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
-# 
-# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
+#
+# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH
 # SLOWER ON DEV BUILDS COMPARED TO RELEASE BUILDS
-# 
+#
 # So with that said ALWAYS compile release unless you are developing Roseate.
-# 
+#
 #[profile.dev.package."*"]
 #opt-level = 3
