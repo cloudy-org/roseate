@@ -20,12 +20,15 @@ gui.lazy_loading = true
 # while also having lower memory usage.
 # 
 # However we default to "image-rs" due to it's wider support and stability in Roseate.
-decoder = "image-rs"
+decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)! 
 
 [image.optimizations]
-# Comment this out if you would like to customize the optimizations below.
-# PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below it will not apply.
-mode = "default"
+# The optimization mode controls and defines what 
+# image optimizations should be enabled or disabled.
+# 
+# Default: A decent balance between low memory usage and speed.
+# Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+mode = "default" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
 
 # Downsamples the image roughly to the resolution of your monitor.
 # 
