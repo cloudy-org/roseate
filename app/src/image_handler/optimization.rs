@@ -1,3 +1,4 @@
+use log::warn;
 use roseate_core::decoded_image::ImageSize;
 
 use crate::monitor_size::MonitorSize;
@@ -8,6 +9,31 @@ pub struct ImageOptimizations {
     pub dynamic_sampling: Option<DynamicSampling>,
     pub consume_pixels_during_gpu_upload: bool,
     pub multi_threaded_sampling: Option<MultiThreadedSampling>,
+}
+
+impl ImageOptimizations {
+    pub fn speed() -> Self {
+        Self {
+            consume_pixels_during_gpu_upload: true,
+            dynamic_sampling: None,
+            multi_threaded_sampling: None,
+            monitor_downsampling: None,
+        }
+    }
+
+    // might move this into something like 
+    // 'ImageOptimizations::from_config()' in the future.
+    pub fn normalize(mut self) -> Self {
+        if self.dynamic_sampling.is_some() {
+            self.consume_pixels_during_gpu_upload = false;
+            warn!(
+                "Consume pixels during GPU upload optimization was disabled \
+                because dynamic sampling optimization was enabled! Pick one of them."
+            );
+        }
+
+        self
+    }
 }
 
 impl Default for ImageOptimizations {

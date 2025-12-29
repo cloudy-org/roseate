@@ -3,7 +3,7 @@ use std::{collections::HashSet, io::BufReader};
 use image::{AnimationDecoder, ImageDecoder, ImageError, codecs::{gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder}};
 use log::debug;
 
-use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, DecodedImageInfo, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
+use crate::{backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::{self, ImageColourType}, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
 
 mod colour;
 mod buffer_image;
@@ -20,7 +20,7 @@ enum Decoder {
 
 enum Buffer {
     Image(BufferImage),
-    Animation((Vec<(BufferImage, f32)>, DecodedImageInfo))
+    Animation((Vec<(BufferImage, f32)>, ImageSize, ImageColourType))
 }
 
 enum Source {
@@ -82,7 +82,8 @@ impl DecodeBackend for ImageRSBackend {
                         // If we're coming from a decoded image it won't support any other pixel variants other than u8.
                         let image_buffer = BufferImage::from_u8_pixels(
                             pixels,
-                            decoded_image.info
+                            decoded_image.size,
+                            decoded_image.colour_type
                         )?;
 
                         Ok(
@@ -101,7 +102,8 @@ impl DecodeBackend for ImageRSBackend {
                         for (pixels, delay) in frames {
                             let image_buffer = BufferImage::from_u8_pixels(
                                 pixels,
-                                decoded_image.info.clone()
+                                decoded_image.size,
+                                decoded_image.colour_type
                             )?;
 
                             animated_buffers.push((image_buffer, delay));
@@ -111,7 +113,7 @@ impl DecodeBackend for ImageRSBackend {
                             Self {
                                 source: Source::Buffer(
                                     Buffer::Animation(
-                                        (animated_buffers, decoded_image.info)
+                                        (animated_buffers, decoded_image.size, decoded_image.colour_type)
                                     )
                                 ),
                                 modifications: HashSet::new(),
@@ -200,16 +202,19 @@ impl DecodeBackend for ImageRSBackend {
                     Buffer::Image(mut buffer_image) => {
                         Self::apply_modifications_to_buffer_image(self.modifications, &mut buffer_image);
 
-                        let (pixels, decoded_image_info) = buffer_image.to_u8_pixels();
+                        let (pixels, size, colour_type) = buffer_image.to_u8_pixels();
 
                         Ok(
                             DecodedImage::new(
-                                decoded_image_info,
+                                size,
+                                self.image_format,
+                                colour_type,
+                                Self::get_decoded_image_metadata(self.image_exif_chunk),
                                 DecodedImageContent::Static(pixels),
                             )
                         )
                     },
-                    Buffer::Animation((buffer_image_frames, decoded_image_info)) => {
+                    Buffer::Animation((buffer_image_frames, size, colour_type)) => {
                         let mut animated_pixels = Vec::new();
 
                         for (index, (mut buffer_image, delay)) in buffer_image_frames.into_iter().enumerate() {
@@ -217,14 +222,17 @@ impl DecodeBackend for ImageRSBackend {
 
                             Self::apply_modifications_to_buffer_image(self.modifications.clone(), &mut buffer_image);
 
-                            let (pixels, _) = buffer_image.to_u8_pixels();
+                            let (pixels, _, _) = buffer_image.to_u8_pixels();
 
                             animated_pixels.push((pixels, delay));
                         }
 
                         Ok(
                             DecodedImage::new(
-                                decoded_image_info,
+                                size,
+                                self.image_format,
+                                colour_type,
+                                Self::get_decoded_image_metadata(self.image_exif_chunk),
                                 DecodedImageContent::Animated(animated_pixels),
                             )
                         )
@@ -242,15 +250,10 @@ impl ImageRSBackend {
         image_format: ImageFormat,
         image_exif_chunk: Option<Vec<u8>>,
     ) -> Result<DecodedImage> {
-        let mut decoded_image_info: Option<DecodedImageInfo> = None;
+        let mut image_size_and_metadata: Option<(ImageSize, ImageMetadata)> = None;
 
-        let init_decoded_image_info_fn = |size: ImageSize| DecodedImageInfo {
-            size: size,
-            format: image_format.clone(),
-            // TODO: I need to double check but I remember reading 
-            // somewhere that image-rs will always return rgba8 for animated image.
-            colour_type: ImageColourType::Rgba8,
-            metadata: Self::get_decoded_image_metadata(image_exif_chunk.to_owned()),
+        let init_size_and_metadata = |size: ImageSize| -> (ImageSize, ImageMetadata) {
+            (size, Self::get_decoded_image_metadata(image_exif_chunk.to_owned()))
         };
 
         let mut image_pixels: Vec<(Pixels, f32)> = Vec::new();
@@ -270,12 +273,11 @@ impl ImageRSBackend {
 
             let image_buffer = frame.into_buffer();
 
-            decoded_image_info.get_or_insert_with(
-                || init_decoded_image_info_fn(image_buffer.dimensions())
-            );
+            let size = image_buffer.dimensions();
 
             let mut buffer_image = BufferImage {
-                info: decoded_image_info.clone().unwrap(),
+                size,
+                colour_type: ImageColourType::Rgba8,
                 variant: BufferImageVariant::Rgba8(image_buffer),
             };
 
@@ -283,17 +285,26 @@ impl ImageRSBackend {
                 Self::apply_modifications_to_buffer_image(modifications.clone(), &mut buffer_image);
             }
 
-            let (pixels, _) = buffer_image.to_u8_pixels();
+            let (pixels, size, _) = buffer_image.to_u8_pixels();
+
+            image_size_and_metadata.get_or_insert_with(
+                || init_size_and_metadata(size)
+            );
 
             image_pixels.push((pixels, delay_seconds));
         }
 
+        let (info, metadata) = match image_size_and_metadata {
+            Some(value) => value,
+            None => return Err(Error::AnimatedImageHasNoFrames),
+        };
+
         Ok(
             DecodedImage::new(
-                match decoded_image_info {
-                    Some(info) => info,
-                    None => return Err(Error::AnimatedImageHasNoFrames),
-                },
+                info,
+                image_format,
+                ImageColourType::Rgba8,
+                metadata,
                 DecodedImageContent::Animated(image_pixels),
             )
         )
@@ -324,12 +335,7 @@ impl ImageRSBackend {
 
         log::debug!("Image-rs decoder successfully decoded to pixels...");
 
-        let decoded_image_info = DecodedImageInfo {
-            size: image_size,
-            format: image_format,
-            colour_type: image_colour_type,
-            metadata: Self::get_decoded_image_metadata(image_exif_chunk),
-        };
+        let metadata = Self::get_decoded_image_metadata(image_exif_chunk);
 
         if modifications.is_empty() {
             log::debug!(
@@ -338,7 +344,10 @@ impl ImageRSBackend {
 
             return Ok(
                 DecodedImage::new(
-                    decoded_image_info,
+                    image_size,
+                    image_format,
+                    image_colour_type,
+                    metadata,
                     DecodedImageContent::Static(image_pixels),
                 )
             );
@@ -349,7 +358,9 @@ impl ImageRSBackend {
         );
 
         let mut buffer_image = BufferImage::from_u8_pixels(
-            image_pixels, decoded_image_info
+            image_pixels,
+            image_size,
+            image_colour_type,
         )?;
 
         log::debug!("Image buffer constructed, applying modifications...");
@@ -358,11 +369,14 @@ impl ImageRSBackend {
 
         log::debug!("Converting image buffer back to pixels to construct into decoded image...");
 
-        let (image_pixels, decoded_image_info) = buffer_image.to_u8_pixels();
+        let (image_pixels, image_size, image_colour_type) = buffer_image.to_u8_pixels();
 
         Ok(
             DecodedImage::new(
-                decoded_image_info,
+                image_size,
+                image_format,
+                image_colour_type,
+                metadata,
                 DecodedImageContent::Static(image_pixels),
             )
         )

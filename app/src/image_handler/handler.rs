@@ -3,14 +3,14 @@ use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::{Duration, Ins
 use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
 use egui::Context;
 use log::{debug, info, warn};
-use roseate_core::{decoded_image::{DecodedImageInfo, ImageSize}, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
+use roseate_core::{decoded_image::ImageSize, format::ImageFormat, image_info::info::ImageInfo, modifications::{ImageModification, ImageModifications}};
 
 use crate::{image::{Image, backend::DecodingBackend}, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize};
 
 pub struct ImageHandler {
     pub image: Option<Image>,
     pub resource: Option<ImageResource>,
-    pub decoded_image_info: Option<DecodedImageInfo>,
+    pub decoded_image_info: Option<ImageInfo>,
 
     pub image_loading: bool,
 
@@ -233,12 +233,15 @@ impl ImageHandler {
         let mut image_modifications = HashSet::new();
 
         if let Some(monitor_downsampling) = &self.image_optimizations.monitor_downsampling {
-            let (width, height) = monitor_downsampling.get_size_relative_to_monitor(&monitor_size);
+            let (max_width, max_height) = monitor_downsampling.get_size_relative_to_monitor(&monitor_size);
+            let scale = (max_width as f32 / image_size.0 as f32).min(max_height as f32 / image_size.1 as f32);
 
             // If the image is a lot bigger than the user's 
             // monitor then apply monitor downsample, if not we shouldn't.
-            if image_size.0 > width && image_size.1 > height {
+            if scale < 1.0 {
                 self.monitor_downsampling_required = true;
+
+                let (width, height) = (image_size.0 as f32 * scale, image_size.1 as f32 * scale);
 
                 debug!(
                     "Image is significantly bigger than system's \
@@ -260,7 +263,9 @@ impl ImageHandler {
                     monitor_downsampling.marginal_allowance, width, height
                 );
 
-                image_modifications.replace(ImageModification::Resize(width, height));
+                image_modifications.replace(
+                    ImageModification::Resize(width.round() as u32, height.round() as u32)
+                );
             }
         }
 

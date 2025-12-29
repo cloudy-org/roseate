@@ -1,10 +1,10 @@
-use std::{alloc, fmt::{self, Formatter}, sync::Arc};
+use std::{alloc, sync::Arc};
 
 use cap::Cap;
 use chrono::{DateTime, Local, NaiveDateTime};
-use egui::{AtomExt, Color32, Label, OpenUrl, Pos2, RichText, Stroke, TextureHandle, Ui, Vec2, WidgetText};
+use egui::{Color32, Label, OpenUrl, Pos2, RichText, TextureHandle, Ui, WidgetText};
 use eframe::egui::{self, Response};
-use roseate_core::{decoded_image::DecodedImageInfo, metadata::ImageMetadata};
+use roseate_core::image_info::{info::ImageInfo, metadata::ImageMetadata};
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}};
 
@@ -151,7 +151,7 @@ pub struct ImageInfoWindow {
 impl ImageInfoWindow {
     pub fn new() -> Self {
         Self {
-            data: None,
+            data: None
         }
     }
 
@@ -206,7 +206,7 @@ impl ImageInfoWindow {
         ui: &mut Ui,
         expensive_data: &ExpensiveData,
         image: &Image,
-        decoded_image_info: &DecodedImageInfo,
+        image_info: &ImageInfo,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
         show_extra: bool
@@ -234,7 +234,7 @@ impl ImageInfoWindow {
 
                 if show_extra {
                     ui_non_select_label(ui, "Colour:");
-                    ui.label(format!("{}", decoded_image_info.colour_type));
+                    ui.label(format!("{}", image_info.colour_type));
                     ui.end_row();
                 }
 
@@ -273,23 +273,23 @@ impl ImageInfoWindow {
 
                 if show_extra {
                     ui_non_select_label(ui, "Camera:");
-                    ui.label(rich_text_or_unknown!("{}", &decoded_image_info.metadata.model));
+                    ui.label(rich_text_or_unknown!("{}", &image_info.metadata.model));
                     ui.end_row();
 
                     ui_non_select_label(ui, "ISO:");
-                    ui.label(rich_text_or_unknown!("{}", &decoded_image_info.metadata.iso));
+                    ui.label(rich_text_or_unknown!("{}", &image_info.metadata.iso));
                     ui.end_row();
 
                     ui_non_select_label(ui, "Aperture:");
-                    ui.label(rich_text_or_unknown!("ƒ/{}", &decoded_image_info.metadata.aperture));
+                    ui.label(rich_text_or_unknown!("ƒ/{}", &image_info.metadata.aperture));
                     ui.end_row();
 
                     ui_non_select_label(ui, "Focal Length:");
-                    ui.label(rich_text_or_unknown!("{}mm", &decoded_image_info.metadata.focal_length));
+                    ui.label(rich_text_or_unknown!("{}mm", &image_info.metadata.focal_length));
                     ui.end_row();
 
                     ui_non_select_label(ui, "Exposure Time:");
-                    ui.label(rich_text_or_unknown!("{}s", &decoded_image_info.metadata.exposure_time));
+                    ui.label(rich_text_or_unknown!("{}s", &image_info.metadata.exposure_time));
                     ui.end_row();
 
                     if let Some(location) = &expensive_data.location {
@@ -308,7 +308,7 @@ impl ImageInfoWindow {
         ui: &mut Ui,
         expensive_data: &ExpensiveData,
         image: &Image,
-        decoded_image_info: &DecodedImageInfo,
+        image_info: &ImageInfo,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
         app_memory_allocated: f64,
@@ -345,11 +345,11 @@ impl ImageInfoWindow {
         image_resource: &ImageResource,
         image_optimizations: &ImageOptimizations,
         image: &Image,
-        decoded_info_image: &DecodedImageInfo,
+        image_info: &ImageInfo,
         show_extra: bool
     ) -> Response {
         let image_info_data = self.data.get_or_insert_with(
-            || ExpensiveData::new(image_resource, &decoded_info_image.metadata, image)
+            || ExpensiveData::new(image_resource, &image_info.metadata, image)
         );
 
         let main_frame = egui::Frame::group(&ui.style())
@@ -409,19 +409,22 @@ impl ImageInfoWindow {
 
                                 ui.vertical(|ui| {
                                     if let Some(texture) = texture_handle {
-
                                         ui.add(
                                             egui::Image::from_texture(texture)
                                                 // 16 is the padding from
                                                 // the image optimizations grid
-                                                .max_size([200.0 + 16.0, 140.0].into())
+                                                .max_size([220.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)
                                         );
                                     }
 
                                     ui.add_space(5.0);
 
-                                    Self::show_image_optimizations_grid(ui, image_optimizations);
+                                    egui::ScrollArea::vertical()
+                                        .min_scrolled_height(150.0)
+                                        .show(ui, |ui| {
+                                            Self::show_image_optimizations_grid(ui, image_optimizations);
+                                        });
                                 });
 
                                 ui.add(egui::Separator::default().grow(4.0));
@@ -431,7 +434,7 @@ impl ImageInfoWindow {
                                         ui,
                                         image_info_data,
                                         image,
-                                        decoded_info_image,
+                                        image_info,
                                         180.0,
                                         soon_text.clone(),
                                         show_extra
@@ -443,7 +446,7 @@ impl ImageInfoWindow {
                                         ui,
                                         image_info_data,
                                         image,
-                                        decoded_info_image,
+                                        image_info,
                                         180.0,
                                         soon_text.clone(),
                                         app_memory_allocated as f64,
@@ -453,7 +456,7 @@ impl ImageInfoWindow {
                             false => {
                                 ui.vertical(|ui| {
                                     Self::show_image_info_grid(
-                                        ui, image_info_data, image, decoded_info_image, 160.0, soon_text, show_extra
+                                        ui, image_info_data, image, image_info, 160.0, soon_text, show_extra
                                     );
                                 });
                             },

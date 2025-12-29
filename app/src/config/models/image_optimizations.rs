@@ -35,15 +35,8 @@ impl ImageOptimizations {
         match &self.mode {
             Some(mode) => {
                 match mode.to_lowercase().as_str() {
-                    "s" | "speed" => optimization::ImageOptimizations::default(), // by default it's none for now
-                    "d" | "default" | &_ => {
-                        optimization::ImageOptimizations {
-                            monitor_downsampling: Some(
-                                optimization::MonitorDownsampling::default()
-                            ),
-                            ..Default::default() // everything else None
-                        }
-                    }
+                    "s" | "speed" => optimization::ImageOptimizations::speed(),
+                    "d" | "default" | &_ => optimization::ImageOptimizations::default(),
                 }
             },
             None => {
