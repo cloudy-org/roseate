@@ -1,10 +1,10 @@
 use std::{alloc, fmt::{self, Formatter}, sync::Arc};
 
 use cap::Cap;
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, NaiveDateTime};
 use egui::{AtomExt, Color32, Label, Pos2, RichText, Stroke, TextureHandle, Ui, Vec2, WidgetText};
 use eframe::egui::{self, Response};
-use roseate_core::{decoded_image::DecodedImageInfo};
+use roseate_core::{decoded_image::DecodedImageInfo, metadata::ImageMetadata};
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}};
 
@@ -30,7 +30,7 @@ struct ExpensiveData {
 }
 
 impl ExpensiveData {
-    pub fn new(image_resource: &ImageResource, image: &Image) -> Self {
+    pub fn new(image_resource: &ImageResource, image_metadata: &ImageMetadata, image: &Image) -> Self {
         let path = &image.path;
 
         let file_name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -52,22 +52,21 @@ impl ExpensiveData {
         let mut image_created_time = None;
         let mut file_modified_time = None;
 
+        let date_format = "%d/%m/%Y %H:%M %p";
+
+        if let Some(time) = &image_metadata.originally_created {
+            log::debug!("originally created: {}", time);
+            match NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S") {
+                Ok(datetime) => {
+                    image_created_time = Some(datetime.format(date_format).to_string());
+                },
+                Err(err) => {
+                    log::warn!("Failed to retrieve image file created date! Error: {}", err);
+                }
+            }
+        }
+
         if let Some(metadata) = file_metadata {
-            let date_format = "%d/%m/%Y %H:%M %p";
-
-            // TODO: prioritize using time picture was taken from EXIF tag instead of file created date.
-            image_created_time = match metadata.created() {
-                Ok(time) => {
-                    let datetime: DateTime<Local> = time.into();
-                    Some(datetime.format(date_format).to_string())
-                },
-                Err(error) => {
-                    log::warn!("Failed to retrieve image file created date! Error: {}", error);
-
-                    None
-                },
-            };
-
             file_modified_time = match metadata.modified() {
                 Ok(time) => {
                     let datetime: DateTime<Local> = time.into();
@@ -127,7 +126,7 @@ impl ImageInfoWindow {
                     .max_col_width(120.0)
                     .striped(false)
                     .show(ui, |ui| {
-                        // I'm using let Some() because in the future 
+                        // I'm using let Some() because in the future
                         // I'll actually make use of the struct inside.
 
                         if let Some(_) = image_optimizations.monitor_downsampling {
@@ -301,7 +300,7 @@ impl ImageInfoWindow {
         show_extra: bool
     ) -> Response {
         let image_info_data = self.data.get_or_insert_with(
-            || ExpensiveData::new(image_resource, image)
+            || ExpensiveData::new(image_resource, &decoded_info_image.metadata, image)
         );
 
         let main_frame = egui::Frame::group(&ui.style())
@@ -364,7 +363,7 @@ impl ImageInfoWindow {
 
                                         ui.add(
                                             egui::Image::from_texture(texture)
-                                                // 16 is the padding from 
+                                                // 16 is the padding from
                                                 // the image optimizations grid
                                                 .max_size([200.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)

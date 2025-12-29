@@ -17,7 +17,7 @@ impl ImageMetadata {
     pub fn new(exif_chunk: Vec<u8>) -> Result<Self> {
         debug!("Reading and parsing exif chunk...");
 
-        // TODO: use the same buf reader we use for the decoder with 
+        // TODO: use the same buf reader we use for the decoder with
         // 'exif_reader.read_from_container' to save performance and reduce memory duplication.
         let exif_reader = Reader::new();
         let exif = exif_reader.read_raw(exif_chunk)
