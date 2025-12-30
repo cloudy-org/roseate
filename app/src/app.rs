@@ -68,8 +68,10 @@ impl eframe::App for Roseate {
             &mut self.show_settings
         );
 
+        let config = &self.config_manager.config;
+
         self.windows_manager.handle_input(&ctx);
-        self.ui_controls_manager.handle_input(&ctx);
+        self.ui_controls_manager.handle_input(&ctx, config.ui.controls.hide);
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
             self.show_about = !self.show_about;

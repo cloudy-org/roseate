@@ -10,11 +10,20 @@ pub struct Misc {
 
 
 #[derive(Serialize, Deserialize, Hash)]
-pub struct Experimental {}
+pub struct Experimental {
+    #[serde(default = "super::true_default")]
+    show_ui_modes_popup: bool
+}
 
 impl Default for Experimental {
     fn default() -> Self {
-        Self {}
+        Self {
+            // if the whole config fails to parse or something 
+            // I don't want users being bombarded with popups
+            // 
+            // TODO: move to some alternative config outside config.toml.
+            show_ui_modes_popup: false
+        }
     }
 }
 

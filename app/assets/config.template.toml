@@ -86,7 +86,12 @@ experimental_multi_threaded_sampling = false
 
 [ui]
 
-[ui.magnification_panel]
+[ui.controls]
+# Whether we should show or hide ui controls by default.
+hide = true
+
+magnification = true
+
 # Setting this to "true" will enable the magnification panel by default.
 enabled_default = false
 
@@ -130,3 +135,5 @@ show_ui_controls = "C"
 # used by the wider user audience. This exists for the sole purpose of testing.
 # 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
+
+show_ui_modes_popup = true

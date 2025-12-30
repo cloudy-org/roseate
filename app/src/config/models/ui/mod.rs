@@ -2,29 +2,19 @@ use std::hash::Hash;
 
 use serde::{Serialize, Deserialize};
 
+use crate::config::models::ui::controls::Controls;
+
+pub mod controls;
+pub(self) use super::true_default;
+
 #[derive(Serialize, Deserialize, Default, Hash)]
 pub struct UI {
     #[serde(default)]
-    pub magnification_panel: MagnificationPanel,
+    pub controls: Controls,
     #[serde(default)]
     pub viewport: Viewport,
     #[serde(default)]
     pub selection_menu: SelectionMenu
-}
-
-
-#[derive(Serialize, Deserialize, Hash)]
-pub struct MagnificationPanel {
-    #[serde(default = "super::true_default")]
-    pub enabled_default: bool,
-}
-
-impl Default for MagnificationPanel {
-    fn default() -> Self {
-        Self {
-            enabled_default: false
-        }
-    }
 }
 
 
