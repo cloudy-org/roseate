@@ -1,4 +1,4 @@
-use std::{alloc, sync::Arc};
+use std::{alloc, sync::{Arc, Mutex}};
 
 use cap::Cap;
 use chrono::{DateTime, Local, NaiveDateTime};
@@ -18,15 +18,48 @@ macro_rules! rich_text_or_unknown {
             None => RichText::new("Unknown").weak(),
         }
     };
+
+    ($opt:expr) => {
+        match &$opt {
+            Some(string) => RichText::new(string),
+            None => RichText::new("Unknown").weak(),
+        }
+    };
+}
+
+macro_rules! rich_text_or_init {
+    ($data:expr, $arg:literal) => {
+        match &$data {
+            Some(data) => rich_text_or_unknown!(data.get($arg)),
+            None => RichText::new("Initializing...").weak(),
+        }
+    };
 }
 
 macro_rules! dms_to_decimal {
     ($dms_str:expr) => {{
-        let numbers: Vec<f64> = $dms_str
-            .split(|c: char| !c.is_ascii_digit() && c != '.' && c != '-')
+        let parts: Vec<&str> = $dms_str
+            .split(|c: char| !c.is_ascii_digit() && c != '.' && c != '/')
             .filter(|s| !s.is_empty())
-            .filter_map(|s| s.parse::<f64>().ok())
             .collect();
+
+        let mut numbers = Vec::new();
+
+        for part in parts {
+            if part.contains("/") {
+                let (first, second) = part.split_once("/").unwrap();
+                if let (Ok(first), Ok(second)) = (
+                    first.parse::<f64>(),
+                    second.parse::<f64>()
+                ) {
+                    numbers.push(first / second);
+                } else {
+                    log::warn!("GPS Data format is unknown: {}", $dms_str);
+                }
+            } else if let Ok(num) = part.parse::<f64>() {
+                numbers.push(num);
+            }
+        }
 
         match numbers.len() {
             3 => numbers[0] + numbers[1] / 60.0 + numbers[2] / 3600.0,
@@ -37,7 +70,7 @@ macro_rules! dms_to_decimal {
     }};
 }
 
-
+#[derive(Debug, Clone)]
 struct ExpensiveData {
     pub file_name: String,
     pub file_size: Option<f64>,
@@ -50,108 +83,150 @@ struct ExpensiveData {
 }
 
 impl ExpensiveData {
-    pub fn new(image_resource: &ImageResource, image_metadata: &ImageMetadata, image: &Image) -> Self {
-        let path = &image.path;
+    pub fn new(image_resource: &ImageResource, image_metadata: &ImageMetadata, image: &Image) -> Arc<Mutex<Self>> {
+        let date_format = "%d/%m/%Y %H:%M %p";
 
-        let file_name = path.file_name().unwrap().to_string_lossy().to_string();
-        let file_relative_path = path.to_string_lossy().to_string();
+        let path = image.path.clone();
+        let image_metadata_clone = image_metadata.clone();
 
-        let file_metadata = match path.metadata() {
-            Ok(metadata) => Some(metadata),
+        let mut image_created_time = if let Some(time) = &image_metadata_clone.originally_created {
+            match NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S") {
+                Ok(datetime) => {
+                    Some(datetime.format(date_format).to_string())
+                },
+                Err(err) => {
+                    log::warn!("Failed to parse image created date! Error: {}", err);
+
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        let (file_size, file_modified_time) = match path.metadata() {
+            Ok(metadata) => {
+                if image_created_time.is_none() {
+                    image_created_time = match metadata.created() {
+                        Ok(time) => {
+                            let datetime: DateTime<Local> = time.into();
+                            Some(datetime.format(date_format).to_string())
+                        },
+                        Err(error) => {
+                            log::warn!("Failed to retrieve image file creation date! Error: {}", error);
+
+                            None
+                        },
+                    };
+                }
+
+                let file_modified_time = match metadata.modified() {
+                    Ok(time) => {
+                        let datetime: DateTime<Local> = time.into();
+                        Some(datetime.format(date_format).to_string())
+                    },
+                    Err(error) => {
+                        log::warn!("Failed to retrieve image file modified date! Error: {}", error);
+
+                        None
+                    },
+                };
+
+                (Some(metadata.len() as f64), file_modified_time)
+            },
             Err(error) => {
                 log::error!(
                     "Failed to retrive image file metadata from file system! Error: {}",
                     error
                 );
 
-                None
+                (None, None)
             },
         };
 
-        let mut file_size = None;
-        let mut image_created_time = None;
-        let mut file_modified_time = None;
-        let mut location = None;
 
-        let date_format = "%d/%m/%Y %H:%M %p";
-
-        if let Some(time) = &image_metadata.originally_created {
-            match NaiveDateTime::parse_from_str(time, "%Y-%m-%d %H:%M:%S") {
-                Ok(datetime) => {
-                    image_created_time = Some(datetime.format(date_format).to_string());
-                },
-                Err(err) => {
-                    log::warn!("Failed to retrieve image file created date! Error: {}", err);
-                }
-            }
-        }
-
-        if let Some(latitude) = &image_metadata.location.latitude
-            && let Some(longitude) = &image_metadata.location.longitude {
-            let geocoder = reverse_geocoder::ReverseGeocoder::new();
-
-            let latitude = dms_to_decimal!(latitude);
-            let longitude = dms_to_decimal!(longitude);
-            log::debug!("converted dms to decimal: {}, {}", latitude, longitude);
-
-            let result = geocoder.search((latitude, longitude));
-
-            let country_name = country_emoji::name(&result.record.cc).unwrap(); // this should always exist ~ ananas
-
-            let formatted_location = format!("{}, {}", result.record.name, country_name);
-            // TODO: add possiblity to change the default map to google maps or custom one by formatting.
-            let url = format!("https://www.openstreetmap.org?mlat={}&mlon={}#map=18/{}/{}", latitude, longitude, latitude, longitude);
-
-            location = Some((formatted_location, url));
-        }
-
-        if let Some(metadata) = file_metadata {
-            file_modified_time = match metadata.modified() {
-                Ok(time) => {
-                    let datetime: DateTime<Local> = time.into();
-                    Some(datetime.format(date_format).to_string())
-                },
-                Err(error) => {
-                    log::warn!("Failed to retrieve image file modified date! Error: {}", error);
-
-                    None
-                },
-            };
-
-            file_size = Some(metadata.len() as f64);
-        }
-
-        Self {
-            file_name,
+        let initial_data = Self {
+            file_name: path.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
             file_size,
-            file_relative_path,
+            file_relative_path: path.to_string_lossy().to_string(),
             image_created_time,
             file_modified_time,
-            memory_allocated_for_image: match image_resource {
-                ImageResource::Texture(texture_handle) => texture_handle.byte_size() as f64,
-                ImageResource::AnimatedTexture(frames) => {
-                    let mut size = 0;
+            memory_allocated_for_image: 0.0,
+            location: None,
+        };
 
-                    for (texture_handler, _) in frames {
-                        size += texture_handler.byte_size();
-                    }
+        let mutex_data = Arc::new(Mutex::new(initial_data));
+        let mutex_data_clone = mutex_data.clone();
 
-                    size as f64
-                },
-            },
-            location
+        let resource = image_resource.clone();
+
+        std::thread::spawn(move || {
+            let mut locked_data = mutex_data_clone.lock().unwrap();
+
+            if let Some(latitude) = &image_metadata_clone.location.latitude
+                && let Some(longitude) = &image_metadata_clone.location.longitude {
+                log::debug!("original coords: {}, {}", latitude, longitude);
+                let geocoder = reverse_geocoder::ReverseGeocoder::new();
+
+                let latitude = dms_to_decimal!(latitude);
+                let longitude = dms_to_decimal!(longitude);
+                log::debug!("converted coords to decimal: {}, {}", latitude, longitude);
+
+                let result = geocoder.search((latitude, longitude));
+
+                if let Some(country_name) = country_emoji::name(&result.record.cc) {
+                    let formatted_location = format!("{}, {}", result.record.name, country_name);
+                    let url = format!("https://www.openstreetmap.org?mlat={}&mlon={}#map=18/{}/{}",
+                        latitude, longitude, latitude, longitude);
+                    locked_data.location = Some((formatted_location, url));
+                }
+
+                locked_data.memory_allocated_for_image = match resource {
+                    ImageResource::Texture(texture_handle) => texture_handle.byte_size() as f64,
+                    ImageResource::AnimatedTexture(frames) => {
+                        let mut size = 0;
+
+                        for (texture_handler, _) in frames {
+                            size += texture_handler.byte_size();
+                        }
+
+                        size as f64
+                    },
+                };
+            }
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(10)); // Thread is spawning too slow for the locking to work. ~ ananas
+
+        mutex_data
+    }
+
+    pub fn get(&self, index: &str) -> Option<String> {
+        match index {
+            "file_name" => Some(self.file_name.clone()),
+            "file_relative_path" => Some(self.file_relative_path.clone()),
+            "image_created_time" => self.image_created_time.clone(),
+            "file_modified_time" => self.file_modified_time.clone(),
+            _ => None,
         }
     }
 }
 
 pub struct ImageInfoWindow {
     data: Option<ExpensiveData>,
+
+    processing_expensive_data: Option<Arc<Mutex<ExpensiveData>>>
 }
 
 impl ImageInfoWindow {
     pub fn new() -> Self {
         Self {
-            data: None
+            data: None,
+
+            processing_expensive_data: None
         }
     }
 
@@ -204,7 +279,7 @@ impl ImageInfoWindow {
 
     fn show_image_info_grid(
         ui: &mut Ui,
-        expensive_data: &ExpensiveData,
+        expensive_data: &Option<ExpensiveData>,
         image: &Image,
         image_info: &ImageInfo,
         max_grid_width: f32,
@@ -216,8 +291,8 @@ impl ImageInfoWindow {
             .max_col_width(max_grid_width)
             .show(ui, |ui| {
                 ui_non_select_label(ui, "Name:");
-                ui.label(&expensive_data.file_name)
-                    .on_hover_text(&expensive_data.file_relative_path);
+                ui.label(rich_text_or_init!(&expensive_data, "file_name"))
+                    .on_hover_text(rich_text_or_init!(&expensive_data, "file_relative_path"));
                 ui.end_row();
 
                 ui_non_select_label(ui, "Dimensions:");
@@ -243,30 +318,25 @@ impl ImageInfoWindow {
                     date is NOT accurate!)";
 
                 ui_non_select_label(ui, "Created:").on_hover_text(created_hint);
-                ui.label(
-                    match &expensive_data.image_created_time {
-                        Some(time_string) => RichText::new(time_string),
-                        None => RichText::new("Unknown").weak(),
-                    }
-                ).on_hover_text(created_hint);
+                ui.label(rich_text_or_init!(&expensive_data, "image_created_time")).on_hover_text(created_hint);
                 ui.end_row();
 
                 if show_extra {
                     ui_non_select_label(ui, "File Modified:");
-                    ui.label(
-                        match &expensive_data.file_modified_time {
-                            Some(time_string) => RichText::new(time_string),
-                            None => RichText::new("Unknown").weak(),
-                        }
-                    );
+                    ui.label(rich_text_or_init!(&expensive_data, "file_modified_time"));
                     ui.end_row();
                 }
 
                 ui_non_select_label(ui, "File size:");
                 ui.label(
-                    match expensive_data.file_size {
-                        Some(size) => RichText::new(re_format::format_bytes(size)),
-                        None => RichText::new("Unknown").weak(),
+                    match &expensive_data {
+                        Some(data) => {
+                            match data.file_size {
+                                Some(size) => RichText::new(re_format::format_bytes(size)),
+                                None => RichText::new("Unknown").weak()
+                            }
+                        },
+                        None => RichText::new("Initializing...").weak(),
                     }
                 );
                 ui.end_row();
@@ -292,12 +362,24 @@ impl ImageInfoWindow {
                     ui.label(rich_text_or_unknown!("{}s", &image_info.metadata.exposure_time));
                     ui.end_row();
 
-                    if let Some(location) = &expensive_data.location {
-                        ui_non_select_label(ui, "Location:");
-                        if ui.button(&location.0).clicked() {
-                            ui.ctx().open_url(
-                                OpenUrl::new_tab(&location.1)
-                            );
+                    ui_non_select_label(ui, "Location:");
+                    match &expensive_data {
+                        Some(data) => {
+                            match &data.location {
+                                Some(location) => {
+                                    if ui.button(&location.0).clicked() {
+                                        ui.ctx().open_url(
+                                            OpenUrl::new_tab(&location.1)
+                                        );
+                                    }
+                                },
+                                None => {
+                                    ui.label(RichText::new("Unknown").weak());
+                                }
+                            }
+                        },
+                        None => {
+                            ui.label(RichText::new("Initializing...").weak());
                         }
                     }
                 }
@@ -306,7 +388,7 @@ impl ImageInfoWindow {
 
     fn show_misc_info_grid(
         ui: &mut Ui,
-        expensive_data: &ExpensiveData,
+        expensive_data: &Option<ExpensiveData>,
         image: &Image,
         image_info: &ImageInfo,
         max_grid_width: f32,
@@ -331,9 +413,16 @@ impl ImageInfoWindow {
                 ui_non_select_label(ui, "Image Mem Alloc:")
                     .on_hover_text(mem_allocation_by_image_hint);
                 ui.label(
-                    RichText::new(re_format::format_bytes(
-                        expensive_data.memory_allocated_for_image)
-                    )
+                    match expensive_data {
+                        Some(data) => {
+                            RichText::new(re_format::format_bytes(
+                                data.memory_allocated_for_image)
+                            )
+                        },
+                        None => {
+                            RichText::new("Initializing...")
+                        }
+                    }
                 ).on_hover_text(mem_allocation_by_image_hint);
                 ui.end_row();
             });
@@ -348,9 +437,21 @@ impl ImageInfoWindow {
         image_info: &ImageInfo,
         show_extra: bool
     ) -> Response {
-        let image_info_data = self.data.get_or_insert_with(
-            || ExpensiveData::new(image_resource, &image_info.metadata, image)
-        );
+        if self.data.is_none() {
+            self.processing_expensive_data.get_or_insert_with(
+                || ExpensiveData::new(image_resource, &image_info.metadata, image)
+            );
+        }
+
+        match self.processing_expensive_data.clone() {
+            Some(mutex) => {
+                if let Ok(data) = mutex.try_lock() {
+                    self.data = Some(data.clone());
+                    self.processing_expensive_data = None;
+                }
+            },
+            None => {}
+        };
 
         let main_frame = egui::Frame::group(&ui.style())
             .inner_margin(8.0);
@@ -432,7 +533,7 @@ impl ImageInfoWindow {
                                 ui.vertical(|ui| {
                                     Self::show_image_info_grid(
                                         ui,
-                                        image_info_data,
+                                        &self.data,
                                         image,
                                         image_info,
                                         180.0,
@@ -444,7 +545,7 @@ impl ImageInfoWindow {
 
                                     Self::show_misc_info_grid(
                                         ui,
-                                        image_info_data,
+                                        &self.data,
                                         image,
                                         image_info,
                                         180.0,
@@ -456,7 +557,7 @@ impl ImageInfoWindow {
                             false => {
                                 ui.vertical(|ui| {
                                     Self::show_image_info_grid(
-                                        ui, image_info_data, image, image_info, 160.0, soon_text, show_extra
+                                        ui, &self.data, image, image_info, 160.0, soon_text, show_extra
                                     );
                                 });
                             },
