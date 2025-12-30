@@ -178,12 +178,14 @@ impl Viewport {
             }
         }
 
-        // Respond to image panning / grab
-        if response.dragged() {
+        // Respond to image panning / grabbing.
+        if response.is_pointer_button_down_on() 
+            && ui.input(|i| i.pointer.primary_down()) {
             let delta = response.drag_delta();
             self.offset += delta;
 
-            // I kinda like the grabbing cursor. ツ
+            // Changing the cursor is a great hint to 
+            // the user that panning the image is possible.
             ui.ctx().set_cursor_icon(CursorIcon::Grabbing);
         }
 
