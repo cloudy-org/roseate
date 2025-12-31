@@ -1,15 +1,20 @@
 use cirrus_egui::v1::notifier::Notifier;
-use egui::{Context, Key, Rect, Ui};
+use egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, utils::ctx_input_with_soft_binds};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, utils::{get_input_reader_from_soft_binds}};
 
 mod info;
 pub use info::ImageInfoWindow;
 
+type InputReader = Box<dyn FnMut(&InputState) -> bool>;
+
 pub struct WindowsManager {
     info_window: ImageInfoWindow,
+
+    show_info_reader: Option<InputReader>,
+    show_extra_info_reader: Option<InputReader>,
 
     pub show_info: bool,
     pub show_extra_info: bool,
@@ -23,6 +28,9 @@ impl WindowsManager {
 
         Self {
             info_window,
+
+            show_info_reader: None,
+            show_extra_info_reader: None,
 
             show_info: false,
             show_extra_info: false,
@@ -38,41 +46,43 @@ impl WindowsManager {
         show_image_info_key: &String,
         show_extra_image_info_key: &String
     ) {
-        // NOTE: in the future I'll probably turn this pattern into macros.
-        let show_image_info = match ctx_input_with_soft_binds(
-            ctx,
-            show_image_info_key,
-            |i, key| i.key_pressed(key),
-            |i, modifiers| i.modifiers.contains(modifiers),
-        ) {
-            Ok(bool) => bool,
-            Err(error) => {
-                notifier.toast(
-                    Box::new(error), ToastLevel::Error, |_| {}
-                );
+        // TODO: put this into some nice function without loosing too much control somehow.
+        let show_info_reader = self.show_info_reader.get_or_insert_with(|| {
+            match get_input_reader_from_soft_binds(
+                show_image_info_key,
+                |i, key| i.key_pressed(key)
+            ) {
+                Ok(reader) => Box::new(reader),
+                Err(error) => {
+                    notifier.toast(
+                        Box::new(error), ToastLevel::Error, |_| {}
+                    );
 
-                ctx.input(|i| i.key_pressed(Key::I))
-            },
-        };
+                    Box::new(|i| i.key_pressed(Key::I))
+                },
+            }
+        });
 
-        let show_extra_image_info = match ctx_input_with_soft_binds(
-            ctx,
-            show_extra_image_info_key,
-            |i, key| i.key_pressed(key),
-            |i, modifiers| i.modifiers.contains(modifiers),
-        ) {
-            Ok(bool) => bool,
-            Err(error) => {
-                notifier.toast(
-                    Box::new(error), ToastLevel::Error, |_| {}
-                );
+        let show_extra_info_reader = self.show_extra_info_reader.get_or_insert_with(|| {
+            match get_input_reader_from_soft_binds(
+                show_extra_image_info_key,
+                |i, key| i.key_pressed(key)
+            ) {
+                Ok(reader) => Box::new(reader),
+                Err(error) => {
+                    notifier.toast(
+                        Box::new(error), ToastLevel::Error, |_| {}
+                    );
 
-                ctx.input(|i| i.key_pressed(Key::I) && i.modifiers.ctrl)
-            },
-        };
+                    Box::new(|i| i.key_pressed(Key::I) && i.modifiers.ctrl)
+                },
+            }
+        });
 
-        if show_image_info || show_extra_image_info {
-            self.show_extra_info = show_extra_image_info;
+        let show_extra_info = ctx.input(show_extra_info_reader);
+
+        if ctx.input(show_info_reader) || show_extra_info {
+            self.show_extra_info = show_extra_info;
 
             self.show_info = !self.show_info;
         }
