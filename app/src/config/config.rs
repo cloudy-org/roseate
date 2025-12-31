@@ -1,9 +1,11 @@
 use cirrus_config::v1::config::CConfig;
 use serde::{Serialize, Deserialize};
 
+use crate::config::models::ui::{SelectionMenu, Viewport, controls::Controls};
+
 use super::models::{image::Image, key_binds::KeyBinds, misc::Misc, ui::UI};
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Config {
     #[serde(default)]
     pub version: i8,
@@ -18,3 +20,39 @@ pub struct Config {
 }
 
 impl CConfig for Config {}
+
+pub enum UIConfigMode {
+    Standard,
+    Minimalist,
+}
+
+impl Config {
+    pub fn override_ui_config(&mut self, ui_mode: UIConfigMode) {
+        match ui_mode {
+            UIConfigMode::Standard => {
+                self.ui = UI {
+                    controls: Controls {
+                        hide: false,
+                        magnification: true,
+                    },
+                    viewport: Viewport::default(),
+                    selection_menu: SelectionMenu {
+                        show_open_image_button: true,
+                    }
+                }
+            },
+            UIConfigMode::Minimalist => {
+                self.ui = UI {
+                    controls: Controls {
+                        hide: true,
+                        magnification: true,
+                    },
+                    viewport: Viewport::default(),
+                    selection_menu: SelectionMenu {
+                        show_open_image_button: false,
+                    }
+                }
+            },
+        }
+    }
+}

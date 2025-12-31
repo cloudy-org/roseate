@@ -32,6 +32,7 @@ mod monitor_size;
 mod viewport;
 mod settings;
 mod context_menu;
+mod tutorial;
 
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");

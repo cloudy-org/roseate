@@ -39,11 +39,11 @@ impl SettingsMenu {
 
         settings.add_section(
             Section::new(
-                config_key_path!(config.ui.magnification_panel.enabled_default),
-                &mut config.ui.magnification_panel.enabled_default,
+                config_key_path!(config.ui.controls.hide),
+                &mut config.ui.controls.hide,
                 SectionOverrides::default(),
                 SectionDisplayInfo {
-                    name: Some("Display Magnification Panel".into()),
+                    name: Some("Display Controls".into()),
                     ..Default::default()
                 }
             )

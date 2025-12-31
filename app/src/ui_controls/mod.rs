@@ -7,7 +7,7 @@ mod magnification_panel;
 pub struct UIControlsManager {
     mag_panel: MagnificationPanel,
 
-    show_controls: bool,
+    show_controls: Option<bool>,
 }
 
 impl UIControlsManager {
@@ -17,18 +17,20 @@ impl UIControlsManager {
         Self {
             mag_panel,
 
-            show_controls: false
+            show_controls: None
         }
     }
 
-    pub fn handle_input(&mut self, ctx: &Context) {
+    pub fn handle_input(&mut self, ctx: &Context, hide_by_default: bool) {
+        let show_controls = self.show_controls.get_or_insert(!hide_by_default);
+
         if ctx.input(|input| input.key_pressed(Key::C)) {
-            self.show_controls = !self.show_controls;
+            *show_controls ^= true;
         }
     }
 
     pub fn show(&mut self, ui: &mut Ui, viewport: &mut Viewport) {
-        if self.show_controls {
+        if self.show_controls.unwrap_or(false) {
             self.mag_panel.show(ui, viewport);
         }
     }
