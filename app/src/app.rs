@@ -73,7 +73,12 @@ impl eframe::App for Roseate {
 
         let config = &self.config_manager.config;
 
-        self.windows_manager.handle_input(&ctx);
+        self.windows_manager.handle_input(
+            &ctx,
+            &mut self.notifier,
+            &config.key_binds.show_image_info,
+            &config.key_binds.show_extra_image_info
+        );
         self.ui_controls_manager.handle_input(&ctx, config.ui.controls.hide);
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
