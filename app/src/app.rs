@@ -32,7 +32,7 @@ impl Roseate {
         config_manager: ConfigManager<Config>
     ) -> Self {
         let viewport = Viewport::new();
-        let windows_manager = WindowsManager::new();
+        let windows_manager = WindowsManager::new(config_manager.config.ui.info_panel.show_location);
         let settings_menu = SettingsMenu::new();
         let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
@@ -121,7 +121,7 @@ impl eframe::App for Roseate {
                 (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            // handle inputs here that you do not 
+                            // handle inputs here that you do not
                             // want toggling outside the viewport
                             self.context_menu.handle_input(&ctx, &self.windows_manager);
 

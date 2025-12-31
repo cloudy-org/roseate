@@ -16,8 +16,8 @@ pub struct WindowsManager {
 }
 
 impl WindowsManager {
-    pub fn new() -> Self {
-        let info_window = ImageInfoWindow::new();
+    pub fn new(show_location: bool) -> Self {
+        let info_window = ImageInfoWindow::new(show_location);
 
         Self {
             info_window,

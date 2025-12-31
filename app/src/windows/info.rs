@@ -83,7 +83,7 @@ struct ExpensiveData {
 }
 
 impl ExpensiveData {
-    pub fn new(image_resource: &ImageResource, image_metadata: &ImageMetadata, image: &Image) -> Arc<Mutex<Self>> {
+    pub fn new(image_resource: &ImageResource, image_metadata: &ImageMetadata, image: &Image, show_location: bool) -> Arc<Mutex<Self>> {
         let date_format = "%d/%m/%Y %H:%M %p";
 
         let path = image.path.clone();
@@ -166,24 +166,25 @@ impl ExpensiveData {
         std::thread::spawn(move || {
             let mut locked_data = mutex_data_clone.lock().unwrap();
 
-            if let Some(latitude) = &image_metadata_clone.location.latitude
+            if show_location {
+                if let Some(latitude) = &image_metadata_clone.location.latitude
                 && let Some(longitude) = &image_metadata_clone.location.longitude {
-                log::debug!("original coords: {}, {}", latitude, longitude);
-                let geocoder = reverse_geocoder::ReverseGeocoder::new();
+                    log::debug!("original coords: {}, {}", latitude, longitude);
+                    let geocoder = reverse_geocoder::ReverseGeocoder::new();
 
-                let latitude = dms_to_decimal!(latitude);
-                let longitude = dms_to_decimal!(longitude);
-                log::debug!("converted coords to decimal: {}, {}", latitude, longitude);
+                    let latitude = dms_to_decimal!(latitude);
+                    let longitude = dms_to_decimal!(longitude);
+                    log::debug!("converted coords to decimal: {}, {}", latitude, longitude);
 
-                let result = geocoder.search((latitude, longitude));
+                    let result = geocoder.search((latitude, longitude));
 
-                if let Some(country_name) = country_emoji::name(&result.record.cc) {
-                    let formatted_location = format!("{}, {}", result.record.name, country_name);
-                    let url = format!("https://www.openstreetmap.org?mlat={}&mlon={}#map=18/{}/{}",
-                        latitude, longitude, latitude, longitude);
-                    locked_data.location = Some((formatted_location, url));
-                }
-
+                    if let Some(country_name) = country_emoji::name(&result.record.cc) {
+                        let formatted_location = format!("{}, {}", result.record.name, country_name);
+                        let url = format!("https://www.openstreetmap.org?mlat={}&mlon={}#map=18/{}/{}",
+                            latitude, longitude, latitude, longitude);
+                        locked_data.location = Some((formatted_location, url));
+                    }
+            }
                 locked_data.memory_allocated_for_image = match resource {
                     ImageResource::Texture(texture_handle) => texture_handle.byte_size() as f64,
                     ImageResource::AnimatedTexture(frames) => {
@@ -218,15 +219,17 @@ impl ExpensiveData {
 pub struct ImageInfoWindow {
     data: Option<ExpensiveData>,
 
-    processing_expensive_data: Option<Arc<Mutex<ExpensiveData>>>
+    processing_expensive_data: Option<Arc<Mutex<ExpensiveData>>>,
+    show_location: bool
 }
 
 impl ImageInfoWindow {
-    pub fn new() -> Self {
+    pub fn new(show_location: bool) -> Self {
         Self {
             data: None,
 
-            processing_expensive_data: None
+            processing_expensive_data: None,
+            show_location
         }
     }
 
@@ -278,6 +281,7 @@ impl ImageInfoWindow {
     }
 
     fn show_image_info_grid(
+        &self,
         ui: &mut Ui,
         expensive_data: &Option<ExpensiveData>,
         image: &Image,
@@ -363,24 +367,28 @@ impl ImageInfoWindow {
                     ui.end_row();
 
                     ui_non_select_label(ui, "Location:");
-                    match &expensive_data {
-                        Some(data) => {
-                            match &data.location {
-                                Some(location) => {
-                                    if ui.button(&location.0).clicked() {
-                                        ui.ctx().open_url(
-                                            OpenUrl::new_tab(&location.1)
-                                        );
+                    if self.show_location {
+                        match &expensive_data {
+                            Some(data) => {
+                                match &data.location {
+                                    Some(location) => {
+                                        if ui.button(&location.0).clicked() {
+                                            ui.ctx().open_url(
+                                                OpenUrl::new_tab(&location.1)
+                                            );
+                                        }
+                                    },
+                                    None => {
+                                        ui.label(RichText::new("Unknown").weak());
                                     }
-                                },
-                                None => {
-                                    ui.label(RichText::new("Unknown").weak());
                                 }
+                            },
+                            None => {
+                                ui.label(RichText::new("Initializing...").weak());
                             }
-                        },
-                        None => {
-                            ui.label(RichText::new("Initializing...").weak());
                         }
+                    } else {
+                        ui.label(RichText::new("Disabled").weak());
                     }
                 }
             });
@@ -439,7 +447,7 @@ impl ImageInfoWindow {
     ) -> Response {
         if self.data.is_none() {
             self.processing_expensive_data.get_or_insert_with(
-                || ExpensiveData::new(image_resource, &image_info.metadata, image)
+                || ExpensiveData::new(image_resource, &image_info.metadata, image, self.show_location)
             );
         }
 
@@ -531,7 +539,7 @@ impl ImageInfoWindow {
                                 ui.add(egui::Separator::default().grow(4.0));
 
                                 ui.vertical(|ui| {
-                                    Self::show_image_info_grid(
+                                    self.show_image_info_grid(
                                         ui,
                                         &self.data,
                                         image,
@@ -556,7 +564,7 @@ impl ImageInfoWindow {
                             },
                             false => {
                                 ui.vertical(|ui| {
-                                    Self::show_image_info_grid(
+                                    self.show_image_info_grid(
                                         ui, &self.data, image, image_info, 160.0, soon_text, show_extra
                                     );
                                 });

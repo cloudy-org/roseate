@@ -3,22 +3,22 @@ version = 1
 [image]
 
 [image.loading]
-# Setting this to "true" will make the image load on a separate thread to the GUI initially. This 
-# means the GUI may load up before the image is ready to display itself. This will have an impact 
+# Setting this to "true" will make the image load on a separate thread to the GUI initially. This
+# means the GUI may load up before the image is ready to display itself. This will have an impact
 # on peak memory hence it's "false" by default.
 initial.lazy_loading = false
 
 # Same as the above but this is now for when you select and load an image from the GUI.
 # For example: Picking an image from the file picker or dropping an image into the window.
-# Not setting this to "true" will avoid spawning a separate thread for image loading but will 
+# Not setting this to "true" will avoid spawning a separate thread for image loading but will
 # cause the GUI to freeze up (or appear as if it's not responding) until the image has been loaded.
 gui.lazy_loading = true
 
 [image.backend]
-# Setting this to "zune-image" will tell roseate-core to decode images with the zune-image backend, 
-# the implementation of this backend in Roseate is experimental and WIP, but it can be faster than image-rs  
+# Setting this to "zune-image" will tell roseate-core to decode images with the zune-image backend,
+# the implementation of this backend in Roseate is experimental and WIP, but it can be faster than image-rs
 # while also having lower memory usage.
-# 
+#
 # However we default to "image-rs" due to it's wider support and stability in Roseate.
 decoder = "image-rs"
 
@@ -28,56 +28,56 @@ decoder = "image-rs"
 mode = "default"
 
 # Downsamples the image roughly to the resolution of your monitor.
-# 
-# Images don't always have to be displayed at their full native resolution, especially when 
-# the image is significantly bigger than your monitor can even display, so to save GPU memory 
-# we downsample the image. Downsampling decreases the amount of GPU memory eaten up by the image 
+#
+# Images don't always have to be displayed at their full native resolution, especially when
+# the image is significantly bigger than your monitor can even display, so to save GPU memory
+# we downsample the image. Downsampling decreases the amount of GPU memory eaten up by the image
 # at the cost of CPU time wasted actually resizing the image (depending on the decoder).
-# The bigger the image, the more time it will take to downsample but we think the memory savings 
-# from doing so are more valuable for most users. Also some decoders have the capability 
-# of decoding a specific size of an image (thumbnail) from the get go, which means CPU time is 
-# actually never wasted but rather significantly reduced (making image loading even faster with 
+# The bigger the image, the more time it will take to downsample but we think the memory savings
+# from doing so are more valuable for most users. Also some decoders have the capability
+# of decoding a specific size of an image (thumbnail) from the get go, which means CPU time is
+# actually never wasted but rather significantly reduced (making image loading even faster with
 # monitor downsampling enabled).
-# 
-# If you do not wish for such memory savings (like those with a beefy GPU) and 
+#
+# If you do not wish for such memory savings (like those with a beefy GPU) and
 # you prefer overall faster image load times disable this optimization.
-# 
-# If you want your image quality back when zooming into your image, 
+#
+# If you want your image quality back when zooming into your image,
 # you might want to also enable the "dynamic_sampling" image optimization too.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Enabling this allows Roseate to upload RGBA decoded images directly 
-# to the GPU without duplicating it's memory (zero-copy). If the image is 
-# RGBA, peak heap memory (on the CPU side) will be almost HALVED, it's very 
+# Enabling this allows Roseate to upload RGBA decoded images directly
+# to the GPU without duplicating it's memory (zero-copy). If the image is
+# RGBA, peak heap memory (on the CPU side) will be almost HALVED, it's very
 # memory efficient.
-# 
-# If your image is not in the RGBA colour format, zero-copy will NOT be possible 
-# (memory will peak for a very short moment), however you will still benefit as 
+#
+# If your image is not in the RGBA colour format, zero-copy will NOT be possible
+# (memory will peak for a very short moment), however you will still benefit as
 # memory for the decoded image will still be immediately freed AFTER GPU upload.
-# 
+#
 # This optimization is disabled if you enable "dynamic_sampling".
 experimental_consume_pixels_during_gpu_upload = true
 
-# Enabling this will enable the extremely experimental 
-# dynamic sampling feature that upsamples your image when you zoom in 
+# Enabling this will enable the extremely experimental
+# dynamic sampling feature that upsamples your image when you zoom in
 # to bring back the detail lost from monitor downsampling when necessary.
-# 
+#
 # Disabled if "monitor_downsampling" is not enabled.
-# 
-# Again, this is VERY experimental, incomplete and untested! 
+#
+# Again, this is VERY experimental, incomplete and untested!
 # Expect a very broken implementation and bugs.
 experimental_dynamic_sampling = {enabled = false, also_downsample = true}
 
-# If you enable this Roseate will use it's fast 
+# If you enable this Roseate will use it's fast
 # multi-threaded function when downsampling images.
-# 
-# If you want to limit or increase the amount of threads used for parallelisation, 
-# you may with the "threads" key. Otherwise please leave the key undefined, Roseate 
-# will consult with your operating system on how many threads it may use and it will 
+#
+# If you want to limit or increase the amount of threads used for parallelisation,
+# you may with the "threads" key. Otherwise please leave the key undefined, Roseate
+# will consult with your operating system on how many threads it may use and it will
 # always use two threads less than it's allowed.
-# 
+#
 # experimental_multi_threaded_sampling = {enabled = false, threads = 8}
-# 
+#
 # This is VERY experimental and can break.
 experimental_multi_threaded_sampling = false
 
@@ -95,22 +95,27 @@ padding = 2
 zoom_into_cursor = true
 # If set to "true", the viewport will automatically fit the image to the window.
 fit_to_window = true
-# Set to "false" if you want the image to instantly snap to the window size otherwise 
+# Set to "false" if you want the image to instantly snap to the window size otherwise
 # the viewport will perform a fancy animation while fitting the image to the window.
 animate_fit_to_window = true
 # If set to "true", the viewport will animate pan and zoom when they are reset.
 animate_reset = true
 
 [ui.selection_menu]
-# If set to "true", the image selection menu will display an 
+# If set to "true", the image selection menu will display an
 # "Open Image" button otherwise to open an image you can click on the rose.
 show_open_image_button = true
+
+[ui.info_panel]
+# If set to "true", it will show you the location the image was taken.
+# otherwise it'll show disabled where the location would be.
+show_location = true
 
 [key_binds]
 show_image_info = "I"
 show_extra_image_info = "CTRL+I"
 show_app_about = "CTRL+A"
-# Key bind to reset the image pan 
+# Key bind to reset the image pan
 # position and zoom scale back to default.
 reset_viewport = "R"
 # Key bind to toggle all your UI controls like the magnification panel.
@@ -123,7 +128,7 @@ show_ui_controls = "C"
 # override_monitor_size = {width = 1920, height = 1080}
 
 [misc.experimental]
-# Settings to toggle experimental features that aren't yet ready yet to be 
+# Settings to toggle experimental features that aren't yet ready yet to be
 # used by the wider user audience. This exists for the sole purpose of testing.
-# 
+#
 # Remember these are EXPERIMENTAL, bugs WILL be present.

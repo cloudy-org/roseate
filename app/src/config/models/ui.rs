@@ -9,7 +9,9 @@ pub struct UI {
     #[serde(default)]
     pub viewport: Viewport,
     #[serde(default)]
-    pub selection_menu: SelectionMenu
+    pub selection_menu: SelectionMenu,
+    #[serde(default)]
+    pub info_panel: InfoPanel
 }
 
 
@@ -82,6 +84,20 @@ impl Default for SelectionMenu {
     fn default() -> Self {
         Self {
             show_open_image_button: true
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Hash)]
+pub struct InfoPanel {
+    #[serde(default = "super::true_default")]
+    pub show_location: bool
+}
+
+impl Default for InfoPanel {
+    fn default() -> Self {
+        Self {
+            show_location: true
         }
     }
 }
