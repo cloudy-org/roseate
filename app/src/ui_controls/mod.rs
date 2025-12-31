@@ -22,7 +22,7 @@ impl UIControlsManager {
     }
 
     pub fn handle_input(&mut self, ctx: &Context, hide_by_default: bool) {
-        let show_controls = self.show_controls.get_or_insert(hide_by_default);
+        let show_controls = self.show_controls.get_or_insert(!hide_by_default);
 
         if ctx.input(|input| input.key_pressed(Key::C)) {
             *show_controls ^= true;
