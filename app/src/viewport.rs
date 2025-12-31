@@ -248,6 +248,7 @@ impl Viewport {
             self.reset_offset = Some(self.offset);
         }
 
+        // TODO: key bind
         if ui.ctx().input(|i| i.key_pressed(Key::R)) {
             debug!("Force resetting zoom and pan...");
 
