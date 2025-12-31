@@ -2,7 +2,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets
 use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 
-use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
+use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -18,6 +18,7 @@ pub struct Roseate {
     windows_manager: WindowsManager,
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
+    tutorial: Tutorial,
 
     show_settings: bool,
     show_about: bool,
@@ -38,6 +39,7 @@ impl Roseate {
         let selection_menu = ImageSelectionMenu::new();
         let ui_controls_manager = UIControlsManager::new();
         let context_menu = ContextMenu::new();
+        let tutorial = Tutorial::new();
 
         Self {
             theme,
@@ -52,6 +54,7 @@ impl Roseate {
             ui_controls_manager,
             config_manager,
             context_menu,
+            tutorial,
 
             show_settings: false,
             show_about: false,
@@ -86,7 +89,7 @@ impl eframe::App for Roseate {
         egui::CentralPanel::default()
             .frame(central_panel_frame)
             .show(ctx, |ui| {
-            let config = &self.config_manager.config;
+            let config = &self.config_manager.config.clone();
 
             self.notifier.update(ctx);
             self.image_handler.update(
@@ -97,6 +100,8 @@ impl eframe::App for Roseate {
                 config.image.backend.get_decoding_backend(),
                 &mut self.notifier,
             );
+
+            self.tutorial.show(ui, &mut self.config_manager);
 
             if self.show_settings {
                 // we only want to run the config manager's

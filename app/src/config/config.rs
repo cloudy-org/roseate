@@ -5,7 +5,7 @@ use crate::config::models::ui::{SelectionMenu, Viewport, controls::Controls};
 
 use super::models::{image::Image, key_binds::KeyBinds, misc::Misc, ui::UI};
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Config {
     #[serde(default)]
     pub version: i8,

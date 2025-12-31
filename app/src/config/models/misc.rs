@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Misc {
     #[serde(default = "super::none_default")]
     pub override_monitor_size: Option<OverrideMonitorSize>,
@@ -9,10 +9,10 @@ pub struct Misc {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct Experimental {
     #[serde(default = "super::true_default")]
-    show_ui_modes_popup: bool
+    pub show_ui_modes_popup: bool
 }
 
 impl Default for Experimental {
@@ -28,7 +28,7 @@ impl Default for Experimental {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct OverrideMonitorSize {
     pub width: u32,
     pub height: u32
