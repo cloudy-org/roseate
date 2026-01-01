@@ -3797,7 +3797,7 @@ dependencies = [
 
 [[package]]
 name = "roseate"
-version = "0.1.0-alpha.17"
+version = "0.1.0-alpha.18"
 dependencies = [
  "cap",
  "chrono",
