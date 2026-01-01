@@ -26,6 +26,7 @@ impl SettingsMenu {
                         choices: Some([
                             "default".into(),
                             "speed".into(),
+                            "quality".into(),
                         ].into()),
                         ..Default::default()
                     },
