@@ -73,8 +73,18 @@ impl eframe::App for Roseate {
 
         let config = &self.config_manager.config;
 
-        self.windows_manager.handle_input(&ctx);
-        self.ui_controls_manager.handle_input(&ctx, config.ui.controls.hide);
+        self.windows_manager.handle_input(
+            &ctx,
+            &mut self.notifier,
+            &config.key_binds.show_image_info,
+            &config.key_binds.show_extra_image_info
+        );
+        self.ui_controls_manager.handle_input(
+            &ctx,
+            &mut self.notifier,
+            &config.key_binds.show_ui_controls,
+            config.ui.controls.hide
+        );
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
             self.show_about = !self.show_about;
@@ -151,11 +161,13 @@ impl eframe::App for Roseate {
                                 ui,
                                 &image.size,
                                 image_resource.clone(), // ImageHandlerData is safe to clone
+                                &mut self.notifier,
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
                                 config.ui.viewport.fit_to_window,
                                 config.ui.viewport.animate_fit_to_window,
-                                config.ui.viewport.animate_reset
+                                config.ui.viewport.animate_reset,
+                                &config.key_binds.reset_viewport
                             );
                         });
 

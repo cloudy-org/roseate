@@ -37,7 +37,8 @@ mod tutorial;
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
 
-/// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
+// TODO: add 'roseate -e' and 'roseate --edit' command for easy config file access. 
+/// 🌹 A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k.
 #[derive(Parser, Debug)]
 #[clap(author = "Goldy")]
 #[command(version, about, long_about = None)]

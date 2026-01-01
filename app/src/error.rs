@@ -2,9 +2,10 @@ use std::{io, result::Result as StdResult};
 
 use cirrus_error::v1::error::CError;
 use roseate_core::error::Error as CoreError;
+use cirrus_softbinds::v1::error::Error as SoftBindsError;
+
 use derive_more::{Debug, Display, From};
 
-type ActualError = Option<String>;
 pub type Result<T, E = Error> = StdResult<T, E>;
 
 // I'm experimenting with "derive_more" for improved error handling all over the codebase.
@@ -45,6 +46,9 @@ pub enum Error {
     // External errors (some to later be handled better).
     #[from]
     Core(CoreError),
+
+    #[from]
+    SoftBinds(SoftBindsError),
     // #[from]
     // IO(io::Error),
 }

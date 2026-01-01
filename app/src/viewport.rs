@@ -1,13 +1,14 @@
 use core::f32;
 use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
+use egui_notify::ToastLevel;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
 use std::hash::Hasher;
-use cirrus_egui::v1::{scheduler::Scheduler};
-use egui::{CursorIcon, Key, Rect, Sense, Ui, Vec2};
+use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
+use egui::{CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
-use crate::image_handler::resource::ImageResource;
+use crate::{image_handler::resource::ImageResource, utils::get_input_reader_from_soft_binds};
 
 pub struct Viewport {
     pub zoom: f32,
@@ -21,6 +22,8 @@ pub struct Viewport {
     // update loop.
     zoom_first_pass: bool,
     offset_first_pass: bool,
+
+    reset_viewport_reader: Option<Box<dyn FnMut(&InputState) -> bool>>,
 
     zoom_offset_reset_schedule: Scheduler,
     // we use a scheduler for fit to window 
@@ -45,6 +48,8 @@ impl Viewport {
             reset_offset: None,
             zoom_first_pass: true,
             offset_first_pass: true,
+
+            reset_viewport_reader: None,
 
             zoom_offset_reset_schedule: Scheduler::UNSET,
             fit_to_window_animate_schedule: Self::get_fit_to_window_animation_schedule(),
@@ -92,15 +97,23 @@ impl Viewport {
         ui: &mut Ui,
         image_size: &ImageSize,
         image_resource: ImageResource,
+        notifier: &mut Notifier,
         padding: f32,
         zoom_into_cursor: bool,
         fit_to_window: bool,
         animate_fit_to_window: bool,
-        animate_reset: bool
+        animate_reset: bool,
+        reset_viewport_key: &String,
     ) {
         let window_size = ui.input(|i: &egui::InputState| i.viewport_rect()).size();
 
-        self.pan_and_zoom_reset_update(ui, window_size, animate_reset);
+        self.pan_and_zoom_reset_update(
+            ui,
+            window_size,
+            notifier,
+            reset_viewport_key,
+            animate_reset
+        );
 
         // Schedule fit to window animation on window size 
         // change and reset that schedule if any more changes occur.
@@ -240,7 +253,27 @@ impl Viewport {
         egui_image.paint_at(ui, image_rect);
     }
 
-    fn pan_and_zoom_reset_update(&mut self, ui: &Ui, window_size: Vec2, animate_reset: bool) {
+    fn pan_and_zoom_reset_update(
+        &mut self,
+        ui: &Ui,
+        window_size: Vec2,
+        notifier: &mut Notifier,
+        reset_viewport_key: &String,
+        animate_reset: bool,
+    ) {
+        let reset_viewport_reader = self.reset_viewport_reader.get_or_insert_with(|| {
+            match get_input_reader_from_soft_binds(reset_viewport_key, |i, key| i.key_pressed(key)) {
+                Ok(reader) => Box::new(reader),
+                Err(error) => {
+                    notifier.toast(
+                        Box::new(error), ToastLevel::Error, |_| {}
+                    );
+
+                    Box::new(|i| i.key_pressed(Key::R))
+                },
+            }
+        });
+
         if self.zoom_offset_reset_schedule.update().is_some() {
             debug!("Completing scheduled zoom and pan reset...");
 
@@ -248,7 +281,7 @@ impl Viewport {
             self.reset_offset = Some(self.offset);
         }
 
-        if ui.ctx().input(|i| i.key_pressed(Key::R)) {
+        if ui.ctx().input(reset_viewport_reader) {
             debug!("Force resetting zoom and pan...");
 
             self.reset_zoom = Some(self.zoom);

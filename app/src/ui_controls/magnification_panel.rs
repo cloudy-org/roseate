@@ -7,19 +7,6 @@ pub struct MagnificationPanel {}
 
 impl MagnificationPanel {
     pub fn new() -> Self {
-        // let toggle_key = match Key::from_name(&config.key_binds.ui_controls.toggle) {
-        //     Some(key) => key,
-        //     None => {
-        //         notifier.toast(
-        //             "The key bind set for 'ui_controls.toggle' is invalid! Defaulting to `C`.", 
-        //             ToastLevel::Error,
-        //             |_| {}
-        //         );
-
-        //         Key::C
-        //     },
-        // };
-
         Self {}
     }
 

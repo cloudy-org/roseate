@@ -883,6 +883,7 @@ name = "cirrus_softbinds"
 version = "0.1.0"
 dependencies = [
  "egui",
+ "log",
 ]
 
 [[package]]
