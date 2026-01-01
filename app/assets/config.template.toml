@@ -117,7 +117,6 @@ show_open_image_button = true
 [key_binds]
 show_image_info = "I"
 show_extra_image_info = "CTRL+I"
-show_app_about = "CTRL+A"
 # Key bind to reset the image pan 
 # position and zoom scale back to default.
 reset_viewport = "R"

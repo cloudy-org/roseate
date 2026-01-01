@@ -365,7 +365,7 @@ impl ImageInfoWindow {
                                             egui::Image::from_texture(texture)
                                                 // 16 is the padding from
                                                 // the image optimizations grid
-                                                .max_size([220.0 + 16.0, 140.0].into())
+                                                .max_size([200.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)
                                         );
                                     }
