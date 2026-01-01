@@ -10,9 +10,11 @@ rust-version = "1.89"
 
 [dependencies]
 cirrus_egui = { path = "../cirrus/egui" }
+cirrus_edit = { path = "../cirrus/edit" }
 cirrus_error = { path = "../cirrus/error" }
 cirrus_config = { path = "../cirrus/config" }
 cirrus_theming = { path = "../cirrus/theming" }
+cirrus_clap_cli = { path = "../cirrus/clap_cli" }
 cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 
 roseate-core = { path = "../core" }

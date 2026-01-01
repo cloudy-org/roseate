@@ -838,6 +838,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cirrus_clap_cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "cirrus_config"
 version = "0.1.0"
 dependencies = [
@@ -847,6 +854,10 @@ dependencies = [
  "serde",
  "toml",
 ]
+
+[[package]]
+name = "cirrus_edit"
+version = "0.1.0"
 
 [[package]]
 name = "cirrus_egui"
@@ -3790,7 +3801,9 @@ version = "0.1.0-alpha.17"
 dependencies = [
  "cap",
  "chrono",
+ "cirrus_clap_cli",
  "cirrus_config",
+ "cirrus_edit",
  "cirrus_egui",
  "cirrus_error",
  "cirrus_softbinds",
