@@ -92,9 +92,6 @@ hide = true
 
 magnification = true
 
-# Setting this to "true" will enable the magnification panel by default.
-enabled_default = false
-
 [ui.viewport]
 # Adjust this value to control the spacing between the image and the edge of the window.
 padding = 2
