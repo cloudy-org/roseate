@@ -266,9 +266,8 @@ impl ImageInfoWindow {
                     ui.end_row();
                 }
 
-                let created_hint = "Shows the date and time the image was taken or created \
-                    according to your filesystem. (WARNING: EXIF tags are not used YET, so creation \
-                    date is NOT accurate!)";
+                let created_hint = "The best estimate of when the image was taken or created \
+                    according to EXIF tags or your filesystem.";
 
                 ui_non_select_label(ui, "Created:").on_hover_text(created_hint);
                 ui.label(
