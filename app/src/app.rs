@@ -33,7 +33,7 @@ impl Roseate {
         config_manager: ConfigManager<Config>
     ) -> Self {
         let viewport = Viewport::new();
-        let windows_manager = WindowsManager::new(config_manager.config.ui.info_panel.show_location);
+        let windows_manager = WindowsManager::new();
         let settings_menu = SettingsMenu::new();
         let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
@@ -148,7 +148,8 @@ impl eframe::App for Roseate {
                                 &self.image_handler.image_optimizations,
                                 image,
                                 // leaving this unwrap here for now, I'll defiantly improve this soon
-                                self.image_handler.decoded_image_info.as_ref().unwrap()
+                                self.image_handler.decoded_image_info.as_ref().unwrap(),
+                                config.ui.image_info.show_location,
                             );
 
                             self.context_menu.show(ui, &mut self.windows_manager);

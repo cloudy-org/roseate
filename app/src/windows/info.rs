@@ -220,16 +220,14 @@ pub struct ImageInfoWindow {
     data: Option<ExpensiveData>,
 
     processing_expensive_data: Option<Arc<Mutex<ExpensiveData>>>,
-    show_location: bool
 }
 
 impl ImageInfoWindow {
-    pub fn new(show_location: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             data: None,
 
             processing_expensive_data: None,
-            show_location
         }
     }
 
@@ -288,7 +286,8 @@ impl ImageInfoWindow {
         image_info: &ImageInfo,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
-        show_extra: bool
+        show_extra: bool,
+        show_location_in_image_info: bool,
     ) {
         egui::Grid::new("base_image_info_grid")
             .striped(true)
@@ -367,7 +366,7 @@ impl ImageInfoWindow {
                     ui.end_row();
 
                     ui_non_select_label(ui, "Location:");
-                    if self.show_location {
+                    if show_location_in_image_info {
                         match &expensive_data {
                             Some(data) => {
                                 match &data.location {
@@ -443,11 +442,12 @@ impl ImageInfoWindow {
         image_optimizations: &ImageOptimizations,
         image: &Image,
         image_info: &ImageInfo,
-        show_extra: bool
+        show_extra: bool,
+        show_location_in_image_info: bool
     ) -> Response {
         if self.data.is_none() {
             self.processing_expensive_data.get_or_insert_with(
-                || ExpensiveData::new(image_resource, &image_info.metadata, image, self.show_location)
+                || ExpensiveData::new(image_resource, &image_info.metadata, image, show_location_in_image_info)
             );
         }
 
@@ -546,7 +546,8 @@ impl ImageInfoWindow {
                                         image_info,
                                         180.0,
                                         soon_text.clone(),
-                                        show_extra
+                                        show_extra,
+                                        show_location_in_image_info,
                                     );
 
                                     ui.separator();
@@ -565,7 +566,14 @@ impl ImageInfoWindow {
                             false => {
                                 ui.vertical(|ui| {
                                     self.show_image_info_grid(
-                                        ui, &self.data, image, image_info, 160.0, soon_text, show_extra
+                                        ui,
+                                        &self.data,
+                                        image,
+                                        image_info,
+                                        160.0,
+                                        soon_text,
+                                        show_extra,
+                                        show_location_in_image_info,
                                     );
                                 });
                             },

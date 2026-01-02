@@ -23,8 +23,8 @@ pub struct WindowsManager {
 }
 
 impl WindowsManager {
-    pub fn new(show_location: bool) -> Self {
-        let info_window = ImageInfoWindow::new(show_location);
+    pub fn new() -> Self {
+        let info_window = ImageInfoWindow::new();
 
         Self {
             info_window,
@@ -95,6 +95,7 @@ impl WindowsManager {
         image_optimizations: &ImageOptimizations,
         image: &Image,
         image_info: &ImageInfo,
+        show_location_in_image_info: bool
     ) {
         let mut new_rect: Rect = Rect::NOTHING;
 
@@ -106,6 +107,7 @@ impl WindowsManager {
                 image,
                 image_info,
                 self.show_extra_info,
+                show_location_in_image_info,
             );
 
             new_rect = new_rect.union(response.rect);

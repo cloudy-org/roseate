@@ -16,7 +16,7 @@ pub struct UI {
     #[serde(default)]
     pub selection_menu: SelectionMenu,
     #[serde(default)]
-    pub info_panel: InfoPanel
+    pub image_info: ImageInfo
 }
 
 
@@ -78,13 +78,14 @@ impl Default for SelectionMenu {
     }
 }
 
-#[derive(Serialize, Deserialize, Hash)]
-pub struct InfoPanel {
+
+#[derive(Serialize, Deserialize, Hash, Clone)]
+pub struct ImageInfo {
     #[serde(default = "super::true_default")]
     pub show_location: bool
 }
 
-impl Default for InfoPanel {
+impl Default for ImageInfo {
     fn default() -> Self {
         Self {
             show_location: true

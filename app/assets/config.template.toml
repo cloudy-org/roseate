@@ -112,9 +112,10 @@ animate_reset = true
 # "Open Image" button otherwise to open an image you can click on the rose.
 show_open_image_button = true
 
-[ui.info_panel]
-# If set to "true", it will show you the location the image was taken.
-# otherwise it'll show disabled where the location would be.
+[ui.image_info]
+# When enabled the image info window will display the location 
+# of where the image was taken. Otherwise if disabled no offline 
+# lookup will be performed and no location will be shown.
 show_location = true
 
 [key_binds]
