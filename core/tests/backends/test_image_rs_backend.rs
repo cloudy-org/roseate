@@ -1,4 +1,4 @@
-use std::{io::Cursor};
+use std::io::Cursor;
 
 use image::{Rgb, Rgba};
 use roseate_core::{self, backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, error::Result, format::ImageFormat, colour_type::ImageColourType, modifications::ImageModification, reader::ImageReader};
@@ -198,6 +198,26 @@ fn test_modifying_vertical_png() -> Result<()> {
     assert_eq!(decoded_image.colour_type, ImageColourType::Rgb8);
 
     save_image::<Rgb<u8>>(decoded_image, "smaller_example.png");
+
+    Ok(())
+}
+
+#[test]
+fn test_tiff_decode_and_modify() -> Result<()> {
+    let image_bytes = include_bytes!("../terror_in_resonace_backdrop.tiff");
+
+    let cursor = Cursor::new(&image_bytes[..]);
+    let image_reader = ImageReader::new(cursor, ImageFormat::Tiff);
+
+    let mut backend = ImageRSBackend::from_reader(image_reader)?;
+    backend.modify(vec![ImageModification::Resize(960, 381)]);
+
+    let decoded_image = backend.decode()?;
+
+    assert_eq!(decoded_image.size, (960, 381));
+    assert_eq!(decoded_image.colour_type, ImageColourType::Rgba16);
+
+    save_image::<Rgba<u8>>(decoded_image, "resized_terror_in_resonace_backdrop.tiff");
 
     Ok(())
 }
