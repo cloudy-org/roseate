@@ -20,12 +20,16 @@ gui.lazy_loading = true
 # while also having lower memory usage.
 #
 # However we default to "image-rs" due to it's wider support and stability in Roseate.
-decoder = "image-rs"
+decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)! 
 
 [image.optimizations]
-# Comment this out if you would like to customize the optimizations below.
-# PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below it will not apply.
-mode = "default"
+# The optimization mode controls and defines what 
+# image optimizations should be enabled or disabled.
+# 
+# Default: A decent balance between low memory usage and speed.
+# Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+# Quality: You don't care about memory usage, you just want the highest and sharpest image possible.
+mode = "default" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
 
 # Downsamples the image roughly to the resolution of your monitor.
 #
@@ -83,9 +87,11 @@ experimental_multi_threaded_sampling = false
 
 [ui]
 
-[ui.magnification_panel]
-# Setting this to "true" will enable the magnification panel by default.
-enabled_default = false
+[ui.controls]
+# Whether we should show or hide ui controls by default.
+hide = true
+
+magnification = true
 
 [ui.viewport]
 # Adjust this value to control the spacing between the image and the edge of the window.
@@ -114,8 +120,7 @@ show_location = true
 [key_binds]
 show_image_info = "I"
 show_extra_image_info = "CTRL+I"
-show_app_about = "CTRL+A"
-# Key bind to reset the image pan
+# Key bind to reset the image pan 
 # position and zoom scale back to default.
 reset_viewport = "R"
 # Key bind to toggle all your UI controls like the magnification panel.
@@ -130,5 +135,7 @@ show_ui_controls = "C"
 [misc.experimental]
 # Settings to toggle experimental features that aren't yet ready yet to be
 # used by the wider user audience. This exists for the sole purpose of testing.
-#
+# 
 # Remember these are EXPERIMENTAL, bugs WILL be present.
+
+show_ui_modes_popup = true

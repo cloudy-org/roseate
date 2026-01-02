@@ -13,36 +13,42 @@ impl SettingsMenu {
     }
 
     pub fn show(&self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
-        Settings::new(TEMPLATE_CONFIG_TOML_STRING, &ui)
-        // .add_section(
-        //     Section::new(
-        //         config_key_path!(config.image.optimizations.mode),
-        //         &mut config.image.optimizations.mode,
-        //         SectionOverrides {
-        //             choices: Some([
-        //                 Some("default"),
-        //                 Some("speed"),
-        //             ]),
-        //             ..Default::default()
-        //         },
-        //         SectionDisplayInfo {
-        //             name: Some("Image optimization mode".into()),
-        //             ..Default::default()
-        //         }
-        //     )
-        // )
-        .add_section(
+        let mut settings = Settings::new(TEMPLATE_CONFIG_TOML_STRING, &ui);
+
+        let image_optimization_config_key_path = config_key_path!(config.image.optimizations.mode);
+
+        if let Some(config_key) = &mut config.image.optimizations.mode {
+            settings.add_section(
+                Section::new(
+                    image_optimization_config_key_path,
+                    config_key,
+                    SectionOverrides {
+                        choices: Some([
+                            "default".into(),
+                            "speed".into(),
+                            "quality".into(),
+                        ].into()),
+                        ..Default::default()
+                    },
+                    SectionDisplayInfo {
+                        name: Some("Image optimization mode".into()),
+                        ..Default::default()
+                    }
+                )
+            );
+        }
+
+        settings.add_section(
             Section::new(
-                config_key_path!(config.ui.magnification_panel.enabled_default),
-                &mut config.ui.magnification_panel.enabled_default,
+                config_key_path!(config.ui.controls.hide),
+                &mut config.ui.controls.hide,
                 SectionOverrides::default(),
                 SectionDisplayInfo {
-                    name: Some("Display Magnification Panel".into()),
+                    name: Some("Display Controls".into()),
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.padding),
                 &mut config.ui.viewport.padding,
@@ -55,16 +61,14 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.zoom_into_cursor),
                 &mut config.ui.viewport.zoom_into_cursor,
                 SectionOverrides::default(),
                 SectionDisplayInfo::default()
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.fit_to_window),
                 &mut config.ui.viewport.fit_to_window,
@@ -74,8 +78,7 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.animate_fit_to_window),
                 &mut config.ui.viewport.animate_fit_to_window,
@@ -85,8 +88,7 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.animate_reset),
                 &mut config.ui.viewport.animate_reset,
@@ -96,8 +98,7 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.image.loading.initial.lazy_loading),
                 &mut config.image.loading.initial.lazy_loading,
@@ -107,8 +108,7 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        )
-        .add_section(
+        ).add_section(
             Section::new(
                 config_key_path!(config.image.loading.gui.lazy_loading),
                 &mut config.image.loading.gui.lazy_loading,
@@ -118,6 +118,8 @@ impl SettingsMenu {
                     ..Default::default()
                 }
             )
-        ).show_ui(ui, &theme);
+        );
+
+        settings.show_ui(ui, &theme);
     }
 }

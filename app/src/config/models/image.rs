@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use crate::{config::models::image_optimizations::ImageOptimizations, image::backend::DecodingBackend};
 use std::hash::Hash;
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Image {
     #[serde(default)]
     pub loading: ImageLoading,
@@ -12,7 +12,7 @@ pub struct Image {
     pub backend: Backend,
 }
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Backend {
     #[serde(default = "super::none_default")]
     decoder: Option<String>,
@@ -34,7 +34,7 @@ impl Backend {
 }
 
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct ImageLoading {
     #[serde(default)]
     pub gui: LoadingGUISettings,
@@ -43,7 +43,7 @@ pub struct ImageLoading {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct LoadingGUISettings {
     #[serde(default = "super::true_default")]
     pub lazy_loading: bool,
@@ -58,7 +58,7 @@ impl Default for LoadingGUISettings {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct InitialSettings {
     #[serde(default = "super::false_default")]
     pub lazy_loading: bool,

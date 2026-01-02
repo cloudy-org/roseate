@@ -2,7 +2,7 @@
 Type=Application
 Name=Roseate
 GenericName=Image Viewer
-Comment=A fast, memory efficient and fancy image viewer.
+Comment=A simplistic, highly configurable, GPU-accelerated and fast image viewer.
 Exec=roseate %f
 Icon=roseate
 Terminal=false

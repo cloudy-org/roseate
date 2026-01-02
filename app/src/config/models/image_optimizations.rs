@@ -3,7 +3,7 @@ use log::warn;
 use serde::{Deserialize, Deserializer, Serialize};
 use crate::{image_handler::optimization};
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct ImageOptimizations {
     #[serde(default = "super::none_default")]
     pub mode: Option<String>,
@@ -36,6 +36,7 @@ impl ImageOptimizations {
             Some(mode) => {
                 match mode.to_lowercase().as_str() {
                     "s" | "speed" => optimization::ImageOptimizations::speed(),
+                    "q" | "quality" => optimization::ImageOptimizations::quality(),
                     "d" | "default" | &_ => optimization::ImageOptimizations::default(),
                 }
             },
@@ -75,7 +76,7 @@ impl ImageOptimizations {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MonitorDownsampling {
     #[serde(default = "super::true_default")]
     pub enabled: bool,
@@ -118,7 +119,7 @@ fn monitor_downsampling_strength_default() -> f32 {
     // allow images up to 2688x1512 until it decides to downsample
 }
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct ConsumePixelsDuringGPUUpload {
     #[serde(default = "super::true_default")]
     pub enabled: bool,
@@ -137,7 +138,7 @@ impl DefaultWithEnabled for ConsumePixelsDuringGPUUpload {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct MultiThreadedSampling {
     #[serde(default = "super::false_default")]
     pub enabled: bool,
@@ -171,7 +172,7 @@ fn multi_threaded_sampling_threads_default() -> Option<usize> {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct DynamicSampling {
     #[serde(default = "super::false_default")]
     pub enabled: bool,
