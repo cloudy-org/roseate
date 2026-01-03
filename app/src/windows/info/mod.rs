@@ -2,7 +2,7 @@ use std::{alloc, sync::{Arc, TryLockError}};
 
 use cap::Cap;
 use eframe::egui::{self, Response};
-use egui::{Color32, CursorIcon, Label, OpenUrl, Pos2, RichText, TextureHandle, Ui, WidgetText};
+use egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use roseate_core::image_info::{info::ImageInfo};
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::expensive_data::ExpensiveData};
@@ -125,45 +125,60 @@ impl ImageInfoWindow {
                                             egui::Image::from_texture(texture)
                                                 // 16 is the padding from
                                                 // the image optimizations grid
-                                                .max_size([200.0 + 16.0, 140.0].into())
+                                                .max_size([180.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)
                                         );
                                     }
 
                                     ui.add_space(5.0);
 
-                                    egui::ScrollArea::vertical()
-                                        .min_scrolled_height(150.0)
-                                        .show(ui, |ui| {
-                                            Self::show_image_optimizations_grid(ui, image_optimizations);
-                                        });
+                                    ui.scope(|ui| {
+                                        let grid_response = egui::ScrollArea::vertical()
+                                            .id_salt("image_optimizations_and_misc_info")
+                                            .min_scrolled_height(150.0)
+                                            .show(ui, |ui| {
+                                                Self::show_image_optimizations_grid(
+                                                    ui, image_optimizations
+                                                )
+                                            }).inner;
+
+                                        ui.add_space(5.0);
+
+                                        ui.set_max_width(grid_response.rect.width());
+                                        ui.add(egui::Separator::default().shrink(40.0));
+
+                                        egui::Frame::default()
+                                            .outer_margin(Margin {left: 3, top: 5, ..Default::default()})
+                                            .show(ui, |ui| {
+                                                Self::show_misc_info_grid(
+                                                    ui,
+                                                    image_info_data,
+                                                    image,
+                                                    image_info,
+                                                    soon_text.clone(),
+                                                    app_memory_allocated as f64,
+                                                );
+                                            });
+                                    });
                                 });
 
-                                ui.add(egui::Separator::default().grow(4.0));
+                                ui.add(egui::Separator::default().spacing(0.0));
 
                                 ui.vertical(|ui| {
-                                    Self::show_image_info_grid(
-                                        ui,
-                                        image_info_data,
-                                        image,
-                                        image_info,
-                                        180.0,
-                                        soon_text.clone(),
-                                        show_extra,
-                                        show_location_in_image_info,
-                                    );
-
-                                    ui.separator();
-
-                                    Self::show_misc_info_grid(
-                                        ui,
-                                        image_info_data,
-                                        image,
-                                        image_info,
-                                        180.0,
-                                        soon_text.clone(),
-                                        app_memory_allocated as f64,
-                                    );
+                                    egui::ScrollArea::vertical()
+                                        .id_salt("base_image_info_scroll_area")
+                                        .show_viewport(ui, |ui, _| {
+                                            Self::show_image_info_grid(
+                                                ui,
+                                                image_info_data,
+                                                image,
+                                                image_info,
+                                                160.0,
+                                                soon_text.clone(),
+                                                show_extra,
+                                                show_location_in_image_info,
+                                            );
+                                        });
                                 });
                             },
                             false => {
@@ -186,7 +201,7 @@ impl ImageInfoWindow {
             }).unwrap().response
     }
 
-    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations) {
+    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations) -> Response {
         egui::Frame::default()
             .inner_margin(8)
             .corner_radius(8)
@@ -195,6 +210,7 @@ impl ImageInfoWindow {
 
                 egui::Grid::new("image_optimizations_grid")
                     .max_col_width(120.0)
+                    .spacing(Vec2::new(0.0, 5.0))
                     .striped(false)
                     .show(ui, |ui| {
                         // I'm using let Some() because in the future
@@ -230,7 +246,7 @@ impl ImageInfoWindow {
                         }
                     });
 
-            });
+            }).response
     }
 
     fn show_image_info_grid(
@@ -303,6 +319,10 @@ impl ImageInfoWindow {
                 ui.end_row();
 
                 if show_extra {
+                    if show_location_in_image_info {
+                        Self::show_location_field(ui, expensive_data);
+                    }
+
                     ui_non_select_label(ui, "Camera:");
                     ui.label(rich_text_or_unknown!("{}", &image_info.metadata.model));
                     ui.end_row();
@@ -322,38 +342,6 @@ impl ImageInfoWindow {
                     ui_non_select_label(ui, "Exposure Time:");
                     ui.label(rich_text_or_unknown!("{}s", &image_info.metadata.exposure_time));
                     ui.end_row();
-
-                    if show_location_in_image_info {
-                        ui_non_select_label(ui, "Location:");
-                        match expensive_data.location.try_lock() {
-                            Ok(location_lock) => {
-                                match location_lock.as_ref() {
-                                    Some(location) => {
-                                        let button = ui.button(&location.0)
-                                            .on_hover_cursor(CursorIcon::PointingHand);
-
-                                        if button.clicked() {
-                                            ui.ctx().open_url(
-                                                OpenUrl::new_tab(&location.1)
-                                            );
-                                        }
-                                    },
-                                    None => {
-                                        ui.label(RichText::new("Unknown").weak());
-                                    },
-                                }
-                            },
-                            Err(error) => {
-                                ui.label(RichText::new("Loading...").italics());
-
-                                if let TryLockError::Poisoned(error) = error {
-                                    log::error!(
-                                        "Thread spawned to perform location lookup on image got poisoned! Error: {error}"
-                                    );
-                                }
-                            },
-                        };
-                    }
                 }
             });
     }
@@ -363,34 +351,76 @@ impl ImageInfoWindow {
         expensive_data: &ExpensiveData,
         image: &Image,
         image_info: &ImageInfo,
-        max_grid_width: f32,
         soon_text: Arc<RichText>,
         app_memory_allocated: f64,
     ) {
         egui::Grid::new("misc_image_info_grid")
-            .max_col_width(max_grid_width)
             .striped(false)
             .show(ui, |ui| {
-                let mem_allocation_hint = "How much memory has been allocated to the entire application \
-                (this includes the decoded image, if it's still in memory).";
+                let font_size: f32 = 12.0;
 
-                ui_non_select_label(ui, "App Mem Alloc:")
-                    .on_hover_text(mem_allocation_hint);
-                ui.label(RichText::new(re_format::format_bytes(app_memory_allocated)))
-                    .on_hover_text(mem_allocation_hint);
+                let mem_allocation_hint = "How much memory has been allocated to the entire \
+                application (this includes the decoded image, if it's still in memory).";
+
+                ui_non_select_label(
+                    ui,
+                    RichText::new("App Mem Alloc:").size(font_size)
+                ).on_hover_text(mem_allocation_hint);
+                ui.label(
+                    RichText::new(
+                        re_format::format_bytes(app_memory_allocated)
+                    ).size(font_size)
+                ).on_hover_text(mem_allocation_hint);
                 ui.end_row();
 
-                let mem_allocation_by_image_hint = "How much memory has been allocated to display the image on the GPU.";
+                let mem_allocation_by_image_hint = "How much memory has been allocated to \
+                    display the image on the GPU.";
 
-                ui_non_select_label(ui, "Image Mem Alloc:")
-                    .on_hover_text(mem_allocation_by_image_hint);
+                ui_non_select_label(
+                    ui,
+                    RichText::new("Image Mem Alloc:").size(font_size)
+                ).on_hover_text(mem_allocation_by_image_hint);
                 ui.label(
                     RichText::new(re_format::format_bytes(
                         expensive_data.memory_allocated_for_image)
-                    )
+                    ).size(font_size)
                 ).on_hover_text(mem_allocation_by_image_hint);
                 ui.end_row();
             });
+    }
+
+    fn show_location_field(ui: &mut Ui, expensive_data: &ExpensiveData) {
+        ui_non_select_label(ui, "Location:");
+        match expensive_data.location.try_lock() {
+            Ok(location_lock) => {
+                match location_lock.as_ref() {
+                    Some(location) => {
+                        let button = ui.button(&location.0)
+                            .on_hover_cursor(CursorIcon::PointingHand);
+
+                        if button.clicked() {
+                            ui.ctx().open_url(
+                                OpenUrl::new_tab(&location.1)
+                            );
+                        }
+                    },
+                    None => {
+                        ui.label(RichText::new("Unknown").weak());
+                    },
+                }
+            },
+            Err(error) => {
+                ui.label(RichText::new("Loading...").italics());
+
+                if let TryLockError::Poisoned(error) = error {
+                    log::error!(
+                        "Thread spawned to perform location lookup on image got poisoned! Error: {error}"
+                    );
+                }
+            },
+        };
+
+        ui.end_row();
     }
 }
 
