@@ -138,7 +138,7 @@ impl eframe::App for Roseate {
                 (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            // handle inputs here that you do not 
+                            // handle inputs here that you do not
                             // want toggling outside the viewport
                             self.context_menu.handle_input(&ctx, &self.windows_manager);
 
@@ -148,7 +148,8 @@ impl eframe::App for Roseate {
                                 &self.image_handler.image_optimizations,
                                 image,
                                 // leaving this unwrap here for now, I'll defiantly improve this soon
-                                self.image_handler.decoded_image_info.as_ref().unwrap()
+                                self.image_handler.decoded_image_info.as_ref().unwrap(),
+                                config.ui.image_info.show_location,
                             );
 
                             self.context_menu.show(ui, &mut self.windows_manager);

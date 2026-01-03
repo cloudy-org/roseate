@@ -1,7 +1,7 @@
 use cirrus_config::v1::config::CConfig;
 use serde::{Serialize, Deserialize};
 
-use crate::config::models::ui::{SelectionMenu, Viewport, controls::Controls};
+use crate::config::models::ui::{ImageInfo, SelectionMenu, Viewport, controls::Controls};
 
 use super::models::{image::Image, key_binds::KeyBinds, misc::Misc, ui::UI};
 
@@ -38,7 +38,8 @@ impl Config {
                     viewport: Viewport::default(),
                     selection_menu: SelectionMenu {
                         show_open_image_button: true,
-                    }
+                    },
+                    image_info: ImageInfo::default(),
                 }
             },
             UIConfigMode::Minimalist => {
@@ -50,7 +51,8 @@ impl Config {
                     viewport: Viewport::default(),
                     selection_menu: SelectionMenu {
                         show_open_image_button: false,
-                    }
+                    },
+                    image_info: ImageInfo::default(),
                 }
             },
         }

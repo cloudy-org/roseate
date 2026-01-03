@@ -4,6 +4,13 @@ use log::debug;
 use crate::error::{Error, Result};
 
 #[derive(Default, Clone)]
+pub struct Location {
+    pub longitude: Option<String>,
+    pub latitude: Option<String>,
+    pub altitude: Option<String>
+}
+
+#[derive(Default, Clone)]
 pub struct ImageMetadata {
     pub model: Option<String>,
     pub iso: Option<String>,
@@ -11,13 +18,15 @@ pub struct ImageMetadata {
     pub focal_length: Option<String>,
     pub exposure_time: Option<String>,
     pub originally_created: Option<String>,
+
+    pub location: Location,
 }
 
 impl ImageMetadata {
     pub fn new(exif_chunk: Vec<u8>) -> Result<Self> {
         debug!("Reading and parsing exif chunk...");
 
-        // TODO: use the same buf reader we use for the decoder with 
+        // TODO: use the same buf reader we use for the decoder with
         // 'exif_reader.read_from_container' to save performance and reduce memory duplication.
         let exif_reader = Reader::new();
         let exif = exif_reader.read_raw(exif_chunk)
@@ -55,6 +64,12 @@ impl ImageMetadata {
             None => None,
         };
 
+        let location = Location {
+            longitude: exif.get_field(Tag::GPSLongitude, In::PRIMARY).and_then(to_option_fn),
+            latitude: exif.get_field(Tag::GPSLatitude, In::PRIMARY).and_then(to_option_fn),
+            altitude: exif.get_field(Tag::GPSAltitude, In::PRIMARY).and_then(to_option_fn)
+        };
+
         Ok(
             Self {
                 model: model_and_maker,
@@ -62,8 +77,9 @@ impl ImageMetadata {
                 aperture: exif.get_field(Tag::ApertureValue, In::PRIMARY).and_then(to_option_fn),
                 focal_length: exif.get_field(Tag::FocalLength, In::PRIMARY).and_then(to_option_fn),
                 exposure_time: exposure_time,
-                // TODO: use this for date modifier field
-                originally_created: exif.get_field(Tag::DateTimeOriginal, In::PRIMARY).and_then(to_option_fn)
+                originally_created: exif.get_field(Tag::DateTimeOriginal, In::PRIMARY).and_then(to_option_fn),
+
+                location: location,
             }
         )
     }
