@@ -113,9 +113,10 @@ animate_reset = true
 show_open_image_button = true
 
 [ui.image_info]
-# When enabled the image info window will display the location 
-# of where the image was taken. Otherwise if disabled no offline 
-# lookup will be performed and no location will be shown.
+# When enabled an offline location lookup will be performed and the 
+# image info window will display the location of where the image was 
+# taken. Otherwise if disabled no lookup will be performed and no 
+# location will be shown.
 show_location = true
 
 [key_binds]
