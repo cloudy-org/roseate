@@ -1,5 +1,3 @@
-mod expensive_data;
-
 use std::{alloc, sync::{Arc, TryLockError}};
 
 use cap::Cap;
@@ -8,6 +6,11 @@ use egui::{Color32, CursorIcon, Label, OpenUrl, Pos2, RichText, TextureHandle, U
 use roseate_core::image_info::{info::ImageInfo};
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::expensive_data::ExpensiveData};
+
+#[cfg(feature = "geo")]
+mod location;
+
+mod expensive_data;
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -50,6 +53,7 @@ impl ImageInfoWindow {
                     &image_info.metadata
                 );
 
+                #[cfg(feature = "geo")]
                 if show_location_in_image_info {
                     data.start_location_lookup_thread(
                         &image_info.metadata

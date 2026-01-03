@@ -8,6 +8,17 @@ license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
 rust-version = "1.89"
 
+[features]
+default = ["full"]
+
+basic = []
+full = ["basic", "geo"]
+
+geo = [
+    "dep:reverse_geocoder",
+    "dep:country-emoji",
+]
+
 [dependencies]
 cirrus_egui = { path = "../cirrus/egui" }
 cirrus_edit = { path = "../cirrus/edit" }
@@ -20,8 +31,14 @@ cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 roseate-core = { path = "../core" }
 
 egui = "=0.33.2"
-eframe = { version = "=0.33.2", features = ["default"] }
-egui_extras = { version = "=0.33.2", features = ["all_loaders"]}
+eframe = { version = "=0.33.2", features = [
+    "accesskit",
+    "default_fonts",
+    "glow",
+    "x11",
+    "wayland",
+] }
+egui_extras = { version = "=0.33.2", features = ["image"]}
 
 egui_animation = "0.10.0"
 egui-notify = "0.21.0"
@@ -42,8 +59,8 @@ serde = {version = "1.0", features = ["derive"]}
 chrono = "0.4.42"
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
-reverse_geocoder = "4.1.1"
-country-emoji = "0.3.2"
+reverse_geocoder = {version = "4.1.1", optional = true}
+country-emoji = {version = "0.3.2", optional = true}
 
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
 #
