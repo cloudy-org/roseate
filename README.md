@@ -103,6 +103,6 @@ RUST_LOG=DEBUG cargo run -- ./anime_girl.png
 
 <div align="center">
 
-  <img width="650px" src="./assets/gif_showcase_1.gif">
+  <img width="650px" src="./app/assets/gif_showcase_1.gif">
 
 </div>

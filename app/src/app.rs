@@ -2,7 +2,7 @@ use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets
 use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 
-use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
+use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -18,6 +18,7 @@ pub struct Roseate {
     windows_manager: WindowsManager,
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
+    tutorial: Tutorial,
 
     show_settings: bool,
     show_about: bool,
@@ -38,6 +39,7 @@ impl Roseate {
         let selection_menu = ImageSelectionMenu::new();
         let ui_controls_manager = UIControlsManager::new();
         let context_menu = ContextMenu::new();
+        let tutorial = Tutorial::new();
 
         Self {
             theme,
@@ -52,6 +54,7 @@ impl Roseate {
             ui_controls_manager,
             config_manager,
             context_menu,
+            tutorial,
 
             show_settings: false,
             show_about: false,
@@ -68,8 +71,20 @@ impl eframe::App for Roseate {
             &mut self.show_settings
         );
 
-        self.windows_manager.handle_input(&ctx);
-        self.ui_controls_manager.handle_input(&ctx);
+        let config = &self.config_manager.config;
+
+        self.windows_manager.handle_input(
+            &ctx,
+            &mut self.notifier,
+            &config.key_binds.show_image_info,
+            &config.key_binds.show_extra_image_info
+        );
+        self.ui_controls_manager.handle_input(
+            &ctx,
+            &mut self.notifier,
+            &config.key_binds.show_ui_controls,
+            config.ui.controls.hide
+        );
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
             self.show_about = !self.show_about;
@@ -84,7 +99,7 @@ impl eframe::App for Roseate {
         egui::CentralPanel::default()
             .frame(central_panel_frame)
             .show(ctx, |ui| {
-            let config = &self.config_manager.config;
+            let config = &self.config_manager.config.clone();
 
             self.notifier.update(ctx);
             self.image_handler.update(
@@ -95,6 +110,8 @@ impl eframe::App for Roseate {
                 config.image.backend.get_decoding_backend(),
                 &mut self.notifier,
             );
+
+            self.tutorial.show(ui, &mut self.config_manager);
 
             if self.show_settings {
                 // we only want to run the config manager's
@@ -121,7 +138,7 @@ impl eframe::App for Roseate {
                 (Some(image), Some(image_resource))=> {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            // handle inputs here that you do not 
+                            // handle inputs here that you do not
                             // want toggling outside the viewport
                             self.context_menu.handle_input(&ctx, &self.windows_manager);
 
@@ -131,7 +148,8 @@ impl eframe::App for Roseate {
                                 &self.image_handler.image_optimizations,
                                 image,
                                 // leaving this unwrap here for now, I'll defiantly improve this soon
-                                self.image_handler.decoded_image_info.as_ref().unwrap()
+                                self.image_handler.decoded_image_info.as_ref().unwrap(),
+                                config.ui.image_info.show_location,
                             );
 
                             self.context_menu.show(ui, &mut self.windows_manager);
@@ -144,11 +162,13 @@ impl eframe::App for Roseate {
                                 ui,
                                 &image.size,
                                 image_resource.clone(), // ImageHandlerData is safe to clone
+                                &mut self.notifier,
                                 proper_padding_percentage,
                                 config.ui.viewport.zoom_into_cursor,
                                 config.ui.viewport.fit_to_window,
                                 config.ui.viewport.animate_fit_to_window,
-                                config.ui.viewport.animate_reset
+                                config.ui.viewport.animate_reset,
+                                &config.key_binds.reset_viewport
                             );
                         });
 

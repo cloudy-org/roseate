@@ -21,6 +21,13 @@ impl ImageOptimizations {
         }
     }
 
+    pub fn quality() -> Self {
+        Self {
+            monitor_downsampling: None,
+            ..Self::default()
+        }
+    }
+
     // might move this into something like 
     // 'ImageOptimizations::from_config()' in the future.
     pub fn normalize(mut self) -> Self {

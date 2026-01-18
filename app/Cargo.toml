@@ -1,25 +1,44 @@
 [package]
 name = "roseate"
 edition = "2024"
-version = "0.1.0-alpha.17"
-description = "A fast as fuck, memory efficient and simple but fancy image viewer built with Rust that's cross-platform."
+version = "0.1.0-alpha.19"
+description = "A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k."
 authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
 license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
 rust-version = "1.89"
 
+[features]
+default = ["full"]
+
+basic = []
+full = ["basic", "geo"]
+
+geo = [
+    "dep:reverse_geocoder",
+    "dep:country-emoji",
+]
+
 [dependencies]
 cirrus_egui = { path = "../cirrus/egui" }
+cirrus_edit = { path = "../cirrus/edit" }
 cirrus_error = { path = "../cirrus/error" }
 cirrus_config = { path = "../cirrus/config" }
 cirrus_theming = { path = "../cirrus/theming" }
+cirrus_clap_cli = { path = "../cirrus/clap_cli" }
 cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 
 roseate-core = { path = "../core" }
 
 egui = "=0.33.2"
-eframe = { version = "=0.33.2", features = ["default"] }
-egui_extras = { version = "=0.33.2", features = ["all_loaders"]}
+eframe = { version = "=0.33.2", features = [
+    "accesskit",
+    "default_fonts",
+    "glow",
+    "x11",
+    "wayland",
+] }
+egui_extras = { version = "=0.33.2", features = ["image"]}
 
 egui_animation = "0.10.0"
 egui-notify = "0.21.0"
@@ -40,12 +59,15 @@ serde = {version = "1.0", features = ["derive"]}
 chrono = "0.4.42"
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
+reverse_geocoder = {version = "4.1.1", optional = true}
+country-emoji = {version = "0.3.2", optional = true}
+
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
-# 
-# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH 
+#
+# THIS MEANS IMAGE PROCESSING WILL BE MUCH MUCH
 # SLOWER ON DEV BUILDS COMPARED TO RELEASE BUILDS
-# 
+#
 # So with that said ALWAYS compile release unless you are developing Roseate.
-# 
+#
 #[profile.dev.package."*"]
 #opt-level = 3

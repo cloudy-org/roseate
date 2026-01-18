@@ -2,6 +2,8 @@
 
 use std::{path::Path, time::Duration};
 
+use cirrus_clap_cli::v1::EditArgs;
+use cirrus_edit::v1::{Preference, open_editor};
 use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use cirrus_theming::v1::{colour::Colour, theme::Theme};
 use config::config::Config;
@@ -32,17 +34,22 @@ mod monitor_size;
 mod viewport;
 mod settings;
 mod context_menu;
+mod tutorial;
 
 static APP_NAME: &str = "roseate";
 static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
 
-/// 🌹 A fast as fuck, memory efficient and simple but fancy image viewer built with 🦀 Rust that's cross platform.
+// TODO: add 'roseate -e' and 'roseate --edit' command for easy config file access. 
+/// 🌹 A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k.
 #[derive(Parser, Debug)]
 #[clap(author = "Goldy")]
 #[command(version, about, long_about = None)]
 struct Args {
     /// Valid path to image.
     image: Option<String>,
+
+    #[command(flatten)]
+    edit: EditArgs,
 }
 
 fn main() -> eframe::Result {
@@ -114,6 +121,26 @@ fn main() -> eframe::Result {
     };
 
     let cli_args = Args::parse();
+
+    if cli_args.edit.edit {
+        match config_manager.config_path {
+            Some(config_path) => {
+                match open_editor(&config_path, Preference::Terminal) {
+                    Ok(status) => {
+                        if let Some(code) = status.code() {
+                            if code != 0 {
+                                log::error!("Editor did not exit successfully (status code: {code})!");
+                            }
+                        }
+                    },
+                    Err(error) => log::error!("{}", error),
+                }
+            },
+            None => log::error!("Config file was not initialized so it cannot be opened!"),
+        }
+
+        return Ok(());
+    }
 
     let image_path = cli_args.image;
 

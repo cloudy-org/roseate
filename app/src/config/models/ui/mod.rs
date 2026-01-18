@@ -2,33 +2,25 @@ use std::hash::Hash;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Default, Hash)]
+use crate::config::models::ui::controls::Controls;
+
+pub mod controls;
+pub(self) use super::true_default;
+
+#[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct UI {
     #[serde(default)]
-    pub magnification_panel: MagnificationPanel,
+    pub controls: Controls,
     #[serde(default)]
     pub viewport: Viewport,
     #[serde(default)]
-    pub selection_menu: SelectionMenu
+    pub selection_menu: SelectionMenu,
+    #[serde(default)]
+    pub image_info: ImageInfo
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
-pub struct MagnificationPanel {
-    #[serde(default = "super::true_default")]
-    pub enabled_default: bool,
-}
-
-impl Default for MagnificationPanel {
-    fn default() -> Self {
-        Self {
-            enabled_default: false
-        }
-    }
-}
-
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Viewport {
     #[serde(default = "ui_padding")]
     pub padding: f32,
@@ -69,7 +61,7 @@ fn ui_padding() -> f32 {
 }
 
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct SelectionMenu {
     // #[serde(default = "super::none_default")]
     // pub mode: Option<String>,
@@ -82,6 +74,21 @@ impl Default for SelectionMenu {
     fn default() -> Self {
         Self {
             show_open_image_button: true
+        }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Hash, Clone)]
+pub struct ImageInfo {
+    #[serde(default = "super::true_default")]
+    pub show_location: bool
+}
+
+impl Default for ImageInfo {
+    fn default() -> Self {
+        Self {
+            show_location: true
         }
     }
 }
