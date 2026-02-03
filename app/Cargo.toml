@@ -11,8 +11,15 @@ rust-version = "1.89"
 [features]
 default = ["full"]
 
+# Use this feature if you want a lean image viewer that 
+# only supports the most common image formats and you don't 
+# care about the features in the 'full' feature.
 basic = []
 full = ["basic", "geo"]
+# A set of opinionated extra features I like to compile on my system 
+# but may be out of the scope for the product I actually want to 
+# ship to end users.
+goldy = []
 
 geo = [
     "dep:reverse_geocoder",
