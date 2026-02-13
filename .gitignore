@@ -1,8 +1,8 @@
 target
 tests-image-dump
+dist
 
 # Just in case you switch from the web version branch.
-dist
 node_modules
 src-tauri
 package-lock.json
