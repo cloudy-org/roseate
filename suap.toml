@@ -1,4 +1,6 @@
 version = 1
 
+display-name = "Roseate"
+
 [project.cargo]
 bin-crate = "roseate"
