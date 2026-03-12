@@ -1,6 +1,7 @@
 version = 1
 
 display-name = "Roseate"
+icons = "./app/assets/icons"
 
 [project.cargo]
 bin-crate = "roseate"
