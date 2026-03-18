@@ -1,0 +1,14 @@
+version = 1
+
+display-name = "Roseate"
+icons = "./app/assets/icons"
+
+mime_types = [
+    "image/jpeg",
+    "image/gif",
+    "image/png",
+    "image/webp",
+]
+
+[project.cargo]
+bin-crate = "roseate"

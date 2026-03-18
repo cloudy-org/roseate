@@ -2,7 +2,10 @@ target
 tests-image-dump
 
 # Just in case you switch from the web version branch.
-dist
 node_modules
 src-tauri
 package-lock.json
+
+# suap artifacts
+dist
+temp
