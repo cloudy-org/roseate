@@ -49,7 +49,7 @@ I officially maintain both **[`roseate`](https://aur.archlinux.org/packages/rose
 yay -S roseate-bin
 ```
 
-## 🏗 Build from source
+## 🏗️ Build from source
 
 ### Prerequisites:
 - **[Rust](https://www.rust-lang.org/tools/install)** and **Cargo** (Rust **`1.89.0`**+ is required!).
