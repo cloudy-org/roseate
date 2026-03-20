@@ -83,7 +83,7 @@ sudo make install
 ```
 
 # Development
-> [!INFO]
+> [!NOTE]
 > Building a development build WILL SIGNIFICANTLY KILL performance!
 > Read more [here](https://github.com/cloudy-org/roseate/blob/6e7e638997110af0149f06ceadb87c3ec088cf84/Cargo.toml#L48-L53).
 
