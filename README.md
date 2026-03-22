@@ -15,7 +15,11 @@
 > Additionally, you are playing with alpha versions of Roseate. Many little features I intend to be available on a stable release, either don't exist yet or are unfinished. PRs for unassigned issues or issues labelled with "good first issue" are welcome. 🤝
 
 # 📖 Wiki
-The wiki will provide more in-depth info moving forward: https://cloudy-org.github.io/wiki/apps/roseate/
+The wiki will provide more in-depth information moving forward: https://cloudy-org.github.io/wiki/apps/roseate/
+
+- **[What is Roseate?](https://cloudy-org.github.io/wiki/apps/roseate/#roseate)**
+- **[How do I use Roseate?](https://cloudy-org.github.io/wiki/apps/roseate/how_to_use/)**
+- **[Why did you make an image viewer?](https://cloudy-org.github.io/wiki/apps/roseate/#background)**
 
 # 🌟 Devlogs
 <a href="https://www.youtube.com/watch?v=8bSdw34x98k&list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-&index=2">
