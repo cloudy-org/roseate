@@ -3,7 +3,7 @@
   # 🌹 roseate
   <sub>A fancy, fast, GPU-accelerated image viewer built for simplicity and all the control in the world. **VERY WIP!**</sub>
 
-  <img width="700px" src="./assets/alpha_preview_1.png">
+  <img width="750px" src="./assets/alpha_preview_1.png">
 
   <sub>(image from alpha build, this is **NOT** the final product)</sub>
 
