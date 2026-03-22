@@ -1,4 +1,4 @@
-use egui::{Context, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
+use egui::{Context, CornerRadius, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
 
 use crate::windows::WindowsManager;
 
@@ -46,18 +46,34 @@ impl ContextMenu {
                 .style(egui::containers::menu::menu_style)
                 // doesn't work, just trying to disable "CloseOnClick"
                 .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
-                .show(|pop_ui| {
-                    if pop_ui.button("Toggle Image Info").clicked() {
-                        windows_manager.show_info = !windows_manager.show_info;
-                        self.show_menu = None;
-                    }
+                .show(|ui| {
+                    ui.scope(|ui| {
+                        let widgets = &mut ui.visuals_mut().widgets;
 
-                    if pop_ui.button("Toggle extra Image Info").clicked() {
-                        windows_manager.show_info = !windows_manager.show_info;
+                        widgets.inactive.corner_radius = CornerRadius::same(3);
+                        widgets.active.corner_radius = CornerRadius::same(3);
+                        widgets.hovered.corner_radius = CornerRadius::same(3);
+                        widgets.noninteractive.corner_radius = CornerRadius::same(3);
+                        widgets.open.corner_radius = CornerRadius::same(3);
 
-                        windows_manager.show_extra_info = true;
-                        self.show_menu = None;
-                    }
+                        if ui.button("Toggle Image Info").clicked() {
+                            match windows_manager.show_extra_info {
+                                true => windows_manager.show_extra_info = false,
+                                false => windows_manager.show_info = !windows_manager.show_info,
+                            }
+
+                            self.show_menu = None;
+                        }
+
+                        if ui.button("Toggle Extra Image Info").clicked() {
+                            match windows_manager.show_info {
+                                true => windows_manager.show_extra_info = true,
+                                false => windows_manager.show_info = !windows_manager.show_info,
+                            }
+
+                            self.show_menu = None;
+                        }
+                    });
                 }).unwrap().response;
 
             // We wouldn't have to do this if "Popup::content_menu" or 
