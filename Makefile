@@ -1,46 +1,25 @@
-ifeq ($(OS),Windows_NT)     # is Windows_NT on XP, 2000, 7, Vista, 10...
-    detected_os := Windows
-else
-    detected_os := $(shell uname)  # same as "uname -s"
-endif
+.PHONY: build
 
 build:
 	cargo build --release
 
 install: install-shortcut
-ifeq ($(detected_os), Windows)
-	copy ".\target\release\roseate.exe" "$(USERPROFILE)\.cargo\bin\"
-else
-	sudo cp ./target/release/roseate /usr/bin/
-endif
+	cp ./target/release/roseate /usr/bin/
 
 install-shortcut:
-ifeq ($(detected_os), Windows)
-	echo "Not implemented!"
-else
-	sudo cp ./assets/rose_emojis/google_noto.png /usr/share/icons/roseate.png
-	sudo cp ./assets/roseate.desktop /usr/share/applications/
-	sudo update-desktop-database /usr/share/applications/
-endif
+	cp ./app/assets/roseate.desktop /usr/share/applications/
+	cp ./app/assets/icons/original.png /usr/share/pixmaps/roseate.png
+
+	update-desktop-database /usr/share/applications/
 
 uninstall: uninstall-shortcut
-ifeq ($(detected_os), Windows)
-	del "$(USERPROFILE)\.cargo\bin\roseate.exe"
-else
-	sudo rm /usr/bin/roseate
-endif
+	rm /usr/bin/roseate
 
 uninstall-shortcut:
-ifeq ($(detected_os), Windows)
-	echo "Not implemented!"
-else
-	sudo rm /usr/share/icons/roseate.png
-	sudo rm /usr/share/applications/roseate.desktop
-	sudo update-desktop-database /usr/share/applications/
-endif
+	rm /usr/share/pixmaps/roseate.png
+	rm /usr/share/applications/roseate.desktop
 
-clean:
-	cargo clean
+	update-desktop-database /usr/share/applications/
 
-pull-submodules:
-	git submodule update --init --recursive
+# pull-submodules:
+# 	git submodule update --init --recursive
