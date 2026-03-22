@@ -1,7 +1,7 @@
 [package]
 name = "roseate"
 edition = "2024"
-version = "0.1.0-alpha.20"
+version = "0.1.0-alpha.21"
 description = "A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k."
 authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
 license = "GPL-3.0"
@@ -9,13 +9,16 @@ repository = "https://github.com/cloudy-org/roseate/"
 rust-version = "1.89"
 
 [features]
-default = ["full"]
+default = ["full", "eframe-linux"]
 
 # Use this feature if you want a lean image viewer that 
 # only supports the most common image formats and you don't 
-# care about the features in the 'full' feature.
+# care about the additional features in the 'full' feature.
 basic = []
-full = ["basic", "geo"]
+full = [
+    "basic",
+    "geo",
+]
 # A set of opinionated extra features I like to compile on my system 
 # but may be out of the scope for the product I actually want to 
 # ship to end users.
@@ -25,6 +28,13 @@ geo = [
     "dep:reverse_geocoder",
     "dep:country-emoji",
 ]
+
+# Special linux eframe feature flags
+# https://cloudy-org.github.io/wiki/apps/roseate/advanced_installs/#display-server-specific-x11-wayland
+eframe-linux = ["eframe-x11-only", "eframe-wayland-only"]
+
+eframe-x11-only = ["dep:eframe", "eframe/x11"]
+eframe-wayland-only = ["dep:eframe", "eframe/wayland"]
 
 [dependencies]
 cirrus_egui = { path = "../cirrus/egui" }
@@ -38,14 +48,12 @@ cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 roseate-core = { path = "../core" }
 
 egui = "=0.33.2"
-eframe = { version = "=0.33.2", features = [
+eframe = { version = "=0.33.2", default-features = false, optional = true, features = [
     "accesskit",
     "default_fonts",
     "glow",
-    "x11",
-    "wayland",
-] }
-egui_extras = { version = "=0.33.2", features = ["image"]}
+]}
+egui_extras = { version = "=0.33.2", default-features = false, features = ["image"]}
 
 egui_animation = "0.10.0"
 egui-notify = "0.21.0"
@@ -68,6 +76,7 @@ derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
 reverse_geocoder = {version = "4.1.1", optional = true}
 country-emoji = {version = "0.3.2", optional = true}
+
 
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
 #
