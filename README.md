@@ -3,26 +3,28 @@
   # 🌹 roseate
   <sub>A fancy, fast, GPU-accelerated image viewer built for simplicity and all the control in the world. **VERY WIP!**</sub>
 
-  <img src="./assets/alpha_preview_1.png">
+  <img width="700px" src="./assets/alpha_preview_1.png">
 
   <sub>(image from alpha build, this is **NOT** the final product)</sub>
 
 </div>
 
 > [!CAUTION]
-> This project is HEAVILY a work in progress, it may crash or freeze up your system. Github issues are very welcome. 🤝
+> This project is HEAVILY a **work in progress**, it could crash or freeze up your system. Github issues are very welcome. 🤝
+> 
+> Additionally, you are playing with alpha versions of Roseate. Many little features I intend to be available on a stable release, either don't exist yet or are unfinished. PRs for unassigned issues or issues labelled with "good first issue" are welcome. 🤝
+
+# 📖 Wiki
+The wiki will provide more in-depth info moving forward: https://cloudy-org.github.io/wiki/apps/roseate/
 
 # 🌟 Devlogs
 <a href="https://www.youtube.com/watch?v=8bSdw34x98k&list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-&index=2">
-  <img width="600px" src="https://img.youtube.com/vi/8bSdw34x98k/maxresdefault.jpg">
+  <img width="400px" src="https://img.youtube.com/vi/8bSdw34x98k/maxresdefault.jpg">
 </a>
 
 You can find devlogs **in video format** on my youtube channel.
 
 I have a playlist for it here: **https://www.youtube.com/playlist?list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-**
-
-# 📖 Wiki
-The wiki will provide more in-depth info moving forward: https://cloudy-org.github.io/wiki/apps/roseate/
 
 # 🛠️ Installation
 Roseate is in heavy development so you won't see many packages and binaries offered, you'll mostly need to compile the application from source.
