@@ -154,7 +154,11 @@ impl eframe::App for Roseate {
                             );
 
                             self.context_menu.show(ui, &mut self.windows_manager);
-                            self.ui_controls_manager.show(ui, &mut self.viewport);
+                            self.ui_controls_manager.show(
+                                ui,
+                                &mut self.viewport,
+                                config.ui.controls.magnification
+                            );
 
                             let config_padding = config.ui.viewport.padding;
                             let proper_padding_percentage = ((100.0 - config_padding) / 100.0).clamp(0.0, 1.0);

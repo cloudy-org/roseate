@@ -44,7 +44,7 @@ impl SettingsMenu {
                 &mut config.ui.controls.hide,
                 SectionOverrides::default(),
                 SectionDisplayInfo {
-                    name: Some("Display Controls".into()),
+                    name: Some("Hide Controls".into()),
                     ..Default::default()
                 }
             )

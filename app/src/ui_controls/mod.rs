@@ -57,9 +57,16 @@ impl UIControlsManager {
         }
     }
 
-    pub fn show(&mut self, ui: &mut Ui, viewport: &mut Viewport) {
+    pub fn show(
+        &mut self,
+        ui: &mut Ui,
+        viewport: &mut Viewport,
+        show_magnification: bool,
+    ) {
         if self.show_controls.unwrap_or(false) {
-            self.mag_panel.show(ui, viewport);
+            if show_magnification {
+                self.mag_panel.show(ui, viewport)
+            }
         }
     }
 }
