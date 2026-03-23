@@ -63,6 +63,17 @@ impl Roseate {
 }
 
 impl eframe::App for Roseate {
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        log::info!("Cleaning up before exiting...");
+
+        if let Err(error) = self.config_manager.save_if_changed() {
+            log::error!(
+                "Error occured while saving config on exit! Error: {}",
+                error.human_message()
+            );
+        }
+    }
+
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         Settings::handle_input(
             &ctx,
