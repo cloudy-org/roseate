@@ -863,7 +863,6 @@ version = "0.1.0"
 name = "cirrus_path"
 version = "0.1.0"
 dependencies = [
- "cirrus_error",
  "dirs",
  "log",
 ]
@@ -3619,6 +3618,7 @@ dependencies = [
  "cirrus_edit",
  "cirrus_egui",
  "cirrus_error",
+ "cirrus_path",
  "cirrus_softbinds",
  "cirrus_theming",
  "clap",

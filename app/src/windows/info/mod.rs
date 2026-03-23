@@ -5,7 +5,7 @@ use eframe::egui::{self, Response};
 use egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use roseate_core::image_info::{info::ImageInfo};
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, windows::info::expensive_data::ExpensiveData};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
 
 #[cfg(feature = "geo")]
 mod location;
@@ -42,6 +42,7 @@ impl ImageInfoWindow {
         image_optimizations: &ImageOptimizations,
         image: &Image,
         image_info: &ImageInfo,
+        monitor_size: &MonitorSize,
         show_extra: bool,
         show_location_in_image_info: bool,
     ) -> Response {
@@ -138,7 +139,7 @@ impl ImageInfoWindow {
                                             .min_scrolled_height(150.0)
                                             .show(ui, |ui| {
                                                 Self::show_image_optimizations_grid(
-                                                    ui, image_optimizations
+                                                    ui, image_optimizations, monitor_size
                                                 )
                                             }).inner;
 
@@ -201,7 +202,7 @@ impl ImageInfoWindow {
             }).unwrap().response
     }
 
-    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations) -> Response {
+    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations, monitor_size: &MonitorSize) -> Response {
         egui::Frame::default()
             .inner_margin(8)
             .corner_radius(8)
@@ -213,12 +214,20 @@ impl ImageInfoWindow {
                     .spacing(Vec2::new(0.0, 5.0))
                     .striped(false)
                     .show(ui, |ui| {
-                        // I'm using let Some() because in the future
-                        // I'll actually make use of the struct inside.
+                        if let Some(monitor_downsampling) = &image_optimizations.monitor_downsampling {
+                            let marginal_allowance_scale = monitor_downsampling.marginal_allowance;
+                            let downsampled_size = monitor_downsampling.get_size_relative_to_monitor(monitor_size);
 
-                        if let Some(_) = image_optimizations.monitor_downsampling {
+                            let downsampled_size_string = format!("{}x{}", downsampled_size.0, downsampled_size.1);
+
                             ui_non_select_label(ui, "Monitor downsampling:");
-                            ui.label("applied");
+
+                            ui.label(&downsampled_size_string)
+                                .on_hover_text(
+                                    format!(
+                                        "Downsampled to '{downsampled_size_string}' with {marginal_allowance_scale} strength."
+                                    )
+                                );
                             ui.end_row();
                         }
 
@@ -286,16 +295,17 @@ impl ImageInfoWindow {
                     ui.end_row();
                 }
 
-                let created_hint = "The best estimate of when the image was taken or created \
-                    according to EXIF tags or your filesystem.";
-
-                ui_non_select_label(ui, "Created:").on_hover_text(created_hint);
+                ui_non_select_label(ui, "Created:")
+                    .on_hover_text(
+                        "The best estimate of when the image was taken or created \
+                            according to EXIF tags or your filesystem."
+                    );
                 ui.label(
                     match &expensive_data.image_created_time {
                         Some(time_string) => RichText::new(time_string),
                         None => RichText::new("Unknown").weak(),
                     }
-                ).on_hover_text(created_hint);
+                );
                 ui.end_row();
 
                 if show_extra {
@@ -370,21 +380,20 @@ impl ImageInfoWindow {
                     RichText::new(
                         re_format::format_bytes(app_memory_allocated)
                     ).size(font_size)
-                ).on_hover_text(mem_allocation_hint);
+                );
                 ui.end_row();
 
                 let mem_allocation_by_image_hint = "How much memory has been allocated to \
                     display the image on the GPU.";
 
                 ui_non_select_label(
-                    ui,
-                    RichText::new("Image Mem Alloc:").size(font_size)
+                    ui, RichText::new("Image Mem Alloc:").size(font_size)
                 ).on_hover_text(mem_allocation_by_image_hint);
                 ui.label(
                     RichText::new(re_format::format_bytes(
                         expensive_data.memory_allocated_for_image)
                     ).size(font_size)
-                ).on_hover_text(mem_allocation_by_image_hint);
+                );
                 ui.end_row();
             });
     }

@@ -1,13 +1,14 @@
-use std::{fs::{File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
+use std::{fs::{self, File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
 
 use cirrus_egui::v1::notifier::Notifier;
+use cirrus_path::v1::get_user_cache_cloudy_folder_path;
 use egui_notify::ToastLevel;
 use fs2::FileExt;
 use eframe::egui::Context;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, files};
+use crate::error::Error;
 
 // TODO: move this to cirrus when it's good and stable enough.
 
@@ -56,18 +57,39 @@ impl MonitorSize {
             return;
         }
 
-        let cache_path_result = files::get_cache_path();
+        if let Ok(cloudy_cache_path) = get_user_cache_cloudy_folder_path() {
+            let cache_path = cloudy_cache_path.join("roseate");
 
-        if let Ok(cache_path) = cache_path_result {
+            if !cache_path.exists() {
+                debug!("Creating cache directory for roseate at '{}'...", cache_path.to_string_lossy());
+
+                if let Err(error) = fs::create_dir_all(&cache_path) {
+                    warn!(
+                        "{}",
+                        Error::CacheDirectoryCreationFailure {
+                            path: cache_path.to_string_lossy().to_string(),
+                            error: error.to_string()
+                        }
+                    );
+
+                    return;
+                };
+
+                debug!("Cache directory created ({})!", cache_path.to_string_lossy());
+            }
+
             let monitor_size_file_path = cache_path.join("monitor_size");
 
             let file = File::open(&monitor_size_file_path);
 
             if let Err(error) = file {
-                warn!("{}", Error::CacheFileReadFailure {
-                    file_name: String::from("monitor_size"),
-                    error: error.to_string()
-                });
+                warn!(
+                    "{}",
+                    Error::CacheFileReadFailure {
+                        file_name: String::from("monitor_size"),
+                        error: error.to_string()
+                    }
+                );
                 return;
             }
 
@@ -121,10 +143,29 @@ impl MonitorSize {
 
         debug!("Updating persistent monitor size state with '{:?}'...", monitor_size_to_add);
 
-        let cache_path_result = files::get_cache_path();
+        match get_user_cache_cloudy_folder_path() {
+            Ok(cloudy_cache_path) => {
+                let cache_path = cloudy_cache_path.join("roseate");
 
-        match cache_path_result {
-            Ok(cache_path) => {
+                // TODO: modularize into a function for reuse
+                if !cache_path.exists() {
+                    debug!("Creating cache directory for roseate at '{}'...", cache_path.to_string_lossy());
+
+                    if let Err(error) = fs::create_dir_all(&cache_path) {
+                        warn!(
+                            "{}",
+                            Error::CacheDirectoryCreationFailure {
+                                path: cache_path.to_string_lossy().to_string(),
+                                error: error.to_string()
+                            }
+                        );
+
+                        return;
+                    };
+
+                    debug!("Cache directory created ({})!", cache_path.to_string_lossy());
+                }
+
                 let monitor_size_file_path = cache_path.join("monitor_size");
 
                 debug!("Creating and opening 'monitor_size' cache file...");
@@ -210,7 +251,7 @@ impl MonitorSize {
             Err(error) => {
                 // TODO: test this and see how it looks.
                 notifier.toast(
-                    Box::new(error),
+                    Box::new(Error::PathError(error)),
                     ToastLevel::Error,
                     |_| {}
                 );

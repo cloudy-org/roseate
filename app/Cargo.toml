@@ -39,6 +39,7 @@ eframe-wayland-only = ["dep:eframe", "eframe/wayland"]
 [dependencies]
 cirrus_egui = { path = "../cirrus/egui" }
 cirrus_edit = { path = "../cirrus/edit" }
+cirrus_path = { path = "../cirrus/path" }
 cirrus_error = { path = "../cirrus/error" }
 cirrus_config = { path = "../cirrus/config" }
 cirrus_theming = { path = "../cirrus/theming" }

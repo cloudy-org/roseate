@@ -149,6 +149,7 @@ impl eframe::App for Roseate {
                                 image,
                                 // leaving this unwrap here for now, I'll defiantly improve this soon
                                 self.image_handler.decoded_image_info.as_ref().unwrap(),
+                                &self.monitor_size,
                                 config.ui.image_info.show_location,
                             );
 

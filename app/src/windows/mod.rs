@@ -3,7 +3,7 @@ use egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, utils::{get_input_reader_from_soft_binds}};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, utils::get_input_reader_from_soft_binds};
 
 mod info;
 pub use info::ImageInfoWindow;
@@ -95,6 +95,7 @@ impl WindowsManager {
         image_optimizations: &ImageOptimizations,
         image: &Image,
         image_info: &ImageInfo,
+        monitor_size: &MonitorSize,
         show_location_in_image_info: bool
     ) {
         let mut new_rect: Rect = Rect::NOTHING;
@@ -106,6 +107,7 @@ impl WindowsManager {
                 image_optimizations,
                 image,
                 image_info,
+                monitor_size,
                 self.show_extra_info,
                 show_location_in_image_info,
             );
