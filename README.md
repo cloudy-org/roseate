@@ -1,11 +1,11 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A fancy, fast, GPU-accelerated image viewer built for simplicity and all the control in the world. **VERY WIP!**</sub>
+  <sub>A fancy, fast, GPU-accelerated image viewer built for simplicity and all the control in the world. **WIP!**</sub>
 
   <img width="750px" src="./assets/alpha_preview_1.png">
 
-  <sub>(image from alpha build, this is **NOT** the final product)</sub>
+  <sub>Screenshot is from alpha build, this is **NOT** the final product - **[Image Credit](https://commons.wikimedia.org/wiki/File:Series-N700a-Mt.Fuji.jpg)**</sub>
 
 </div>
 
