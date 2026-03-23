@@ -223,7 +223,7 @@ impl ImageInfoWindow {
                             ui.label(marginal_allowance_scale.to_string())
                                 .on_hover_text(
                                     format!(
-                                        "Marginal Allowance: {}\nDownsample Threshold: {} x {}.",
+                                        "Marginal Allowance: {}\nDownsample Threshold: {}x{}.",
                                         marginal_allowance_scale,
                                         threshold_size.0,
                                         threshold_size.1,
