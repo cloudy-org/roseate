@@ -5,7 +5,7 @@
 
   <img width="750px" src="./assets/alpha_preview_1.png">
 
-  <sub>Screenshot is from alpha build, this is **NOT** the final product - **[Image Credit](https://commons.wikimedia.org/wiki/File:Series-N700a-Mt.Fuji.jpg)**</sub>
+  <sub>Screenshot from alpha build, this is **NOT** the final product - **[Image Credit](https://commons.wikimedia.org/wiki/File:Series-N700a-Mt.Fuji.jpg)**</sub>
 
 </div>
 
