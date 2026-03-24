@@ -1,7 +1,7 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A fancy, fast, GPU-accelerated image viewer built for simplicity and all the control in the world. **WIP!**</sub>
+  <sub>A fast, GPU-accelerated image viewer built for simplicity and customization. **WIP!**</sub>
 
   <img width="750px" src="./assets/alpha_preview_1.png">
 
