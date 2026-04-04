@@ -1,19 +1,25 @@
-use cirrus_config::config_key_path;
+use cirrus_config::{config_key_path, v1::template::Template};
 use cirrus_egui::v1::widgets::settings::{Settings, section::{Section, SectionDisplayInfo, SectionOverrides}};
 use cirrus_theming::v1::theme::Theme;
 use egui::Ui;
 
 use crate::{TEMPLATE_CONFIG_TOML_STRING, config::config::Config};
 
-pub struct SettingsMenu {}
+pub struct SettingsMenu {
+    // NOTE: Set to static as "TEMPLATE_CONFIG_TOML_STRING" is essentially static
+    template_config: Template<'static>,
+}
 
 impl SettingsMenu {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            // may move this to app.rs
+            template_config: Template::new(TEMPLATE_CONFIG_TOML_STRING)
+        }
     }
 
-    pub fn show(&self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
-        let mut settings = Settings::new(TEMPLATE_CONFIG_TOML_STRING, &ui);
+    pub fn show(&mut self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
+        let mut settings = Settings::new();
 
         let image_optimization_config_key_path = config_key_path!(config.image.optimizations.mode);
 
@@ -120,6 +126,10 @@ impl SettingsMenu {
             )
         );
 
-        settings.show_ui(ui, &theme);
+        if self.template_config.keys.is_none() {
+            self.template_config.parse_keys().unwrap();
+        }
+
+        settings.show_ui(ui, &theme, &self.template_config);
     }
 }

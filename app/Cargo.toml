@@ -68,7 +68,6 @@ clap = {version = "4.5.37", features = ["derive"]}
 textwrap = "0.16.2"
 dirs = "6.0.0"
 fs2 = "0.4.3"
-toml = "0.9.8"
 serde_json = "1.0.145"
 serde_derive = "1.0"
 serde = {version = "1.0", features = ["derive"]}
