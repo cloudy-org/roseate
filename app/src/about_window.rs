@@ -6,6 +6,8 @@ use egui::Ui;
 use crate::files;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+const REPO_URL: &str = env!("CARGO_PKG_REPOSITORY");
+const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 pub struct AboutWindow {}
 
@@ -34,15 +36,14 @@ impl AboutWindow {
                             ui,
                             files::get_rose_image(),
                             AboutApplicationInfo {
-                                name: "Roseate".to_string(),
-                                description: "Fancy yet simple image viewer — highly configurable, \
-                                    cross-platform, GPU-accelerated and fast as fu#k.".to_string(),
+                                name: String::from("Roseate"),
+                                description: DESCRIPTION.to_string(),
                                 license: include_str!("../../LICENSE").to_string(),
                                 version: VERSION.to_string(),
                                 authors: authors,
-                                webpage: "https://github.com/cloudy-org/roseate".to_string(),
-                                git_repo: "https://github.com/cloudy-org/roseate".to_string(),
-                                copyright: "Copyright (C) 2024 - 2026 Goldy".to_string()
+                                webpage: REPO_URL.to_string(),
+                                git_repo: REPO_URL.to_string(),
+                                copyright: String::from("Copyright (C) 2024 - 2026 Goldy")
                             },
                             show_license
                         );
