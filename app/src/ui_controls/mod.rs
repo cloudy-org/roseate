@@ -1,4 +1,4 @@
-use cirrus_egui::v1::notifier::Notifier;
+use cirrus_egui::notifier::Notifier;
 use egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 

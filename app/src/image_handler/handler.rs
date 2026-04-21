@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
+use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
 use egui::Context;
 use log::{debug, info, warn};
 use roseate_core::{decoded_image::ImageSize, format::ImageFormat, image_info::info::ImageInfo, modifications::{ImageModification, ImageModifications}};

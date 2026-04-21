@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use cirrus_egui::v1::scheduler::Scheduler;
+use cirrus_egui::scheduler::Scheduler;
 use eframe::egui::Vec2;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;

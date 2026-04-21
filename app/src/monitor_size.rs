@@ -1,6 +1,6 @@
 use std::{fs::{self, File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
 
-use cirrus_egui::v1::notifier::Notifier;
+use cirrus_egui::notifier::Notifier;
 use cirrus_path::v1::get_user_cache_cloudy_folder_path;
 use egui_notify::ToastLevel;
 use fs2::FileExt;

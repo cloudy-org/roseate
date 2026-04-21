@@ -1,9 +1,4 @@
-use log::debug;
-use std::{fs, path::PathBuf};
-
 use eframe::egui::{self, ImageSource};
-
-use crate::error::{Error, Result};
 
 // TODO: add ability to customize this image in the future
 pub fn get_rose_image<'a>() -> ImageSource<'a> {

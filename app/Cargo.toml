@@ -37,13 +37,14 @@ eframe-x11-only = ["dep:eframe", "eframe/x11"]
 eframe-wayland-only = ["dep:eframe", "eframe/wayland"]
 
 [dependencies]
-cirrus_egui = { path = "../cirrus/egui" }
+cirrus_egui = { path = "../cirrus/egui/v1" }
 cirrus_edit = { path = "../cirrus/edit" }
 cirrus_path = { path = "../cirrus/path" }
 cirrus_error = { path = "../cirrus/error" }
 cirrus_config = { path = "../cirrus/config" }
 cirrus_theming = { path = "../cirrus/theming" }
 cirrus_clap_cli = { path = "../cirrus/clap_cli" }
+cirrus_authors = { path = "../cirrus/authors/v1" }
 cirrus_softbinds = { path = "../cirrus/soft_binds", features = ["egui"] }
 
 roseate-core = { path = "../core" }
@@ -54,7 +55,7 @@ eframe = { version = "=0.33.2", default-features = false, optional = true, featu
     "default_fonts",
     "glow",
 ]}
-egui_extras = { version = "=0.33.2", default-features = false, features = ["image"]}
+egui_extras = { version = "=0.33.2", default-features = false, features = ["image", "http"]}
 
 egui_animation = "0.10.0"
 egui-notify = "0.21.0"

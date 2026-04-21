@@ -1,6 +1,6 @@
 use std::{time::Duration};
 
-use cirrus_egui::v1::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
+use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
 use cirrus_theming::v1::colour::Colour;
 use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;

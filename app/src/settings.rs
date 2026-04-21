@@ -1,5 +1,5 @@
 use cirrus_config::{config_key_path, v1::template::Template};
-use cirrus_egui::v1::widgets::settings::{Settings, section::{Section, SectionDisplayInfo, SectionOverrides}};
+use cirrus_egui::widgets::settings::{Settings, section::{Section, SectionDisplayInfo, SectionOverrides}};
 use cirrus_theming::v1::theme::Theme;
 use egui::Ui;
 

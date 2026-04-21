@@ -1,4 +1,5 @@
-use cirrus_egui::v1::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
+use cirrus_authors::Authors;
+use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
 use cirrus_theming::v1::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 
@@ -8,13 +9,14 @@ pub struct Roseate {
     theme: Theme,
     notifier: Notifier,
     config_manager: ConfigManager<Config>,
+    authors: Authors,
 
     viewport: Viewport,
+    about_window: AboutWindow,
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
     settings_menu: SettingsMenu,
     selection_menu: ImageSelectionMenu,
-    about_window: AboutWindow<'static>,
     windows_manager: WindowsManager,
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
@@ -22,6 +24,7 @@ pub struct Roseate {
 
     show_settings: bool,
     show_about: bool,
+    show_license: bool
 }
 
 impl Roseate {
@@ -30,12 +33,13 @@ impl Roseate {
         monitor_size: MonitorSize,
         theme: Theme,
         notifier: Notifier,
-        config_manager: ConfigManager<Config>
+        config_manager: ConfigManager<Config>,
+        authors: Authors,
     ) -> Self {
         let viewport = Viewport::new();
+        let about_window = AboutWindow::new();
         let windows_manager = WindowsManager::new();
         let settings_menu = SettingsMenu::new();
-        let about_window = AboutWindow::new();
         let selection_menu = ImageSelectionMenu::new();
         let ui_controls_manager = UIControlsManager::new();
         let context_menu = ContextMenu::new();
@@ -44,12 +48,14 @@ impl Roseate {
         Self {
             theme,
             notifier,
+            authors,
+
             viewport,
+            about_window,
             image_handler,
             monitor_size,
             settings_menu,
             selection_menu,
-            about_window,
             windows_manager,
             ui_controls_manager,
             config_manager,
@@ -58,6 +64,7 @@ impl Roseate {
 
             show_settings: false,
             show_about: false,
+            show_license: false,
         }
     }
 }
@@ -113,6 +120,14 @@ impl eframe::App for Roseate {
 
             self.tutorial.show(ui, &mut self.config_manager);
 
+            if self.show_about {
+                self.about_window.show(
+                    ui,
+                    &self.authors,
+                    &mut self.show_license
+                );
+            }
+
             if self.show_settings {
                 // we only want to run the config manager's
                 // update loop when were are in the settings menu
@@ -125,10 +140,6 @@ impl eframe::App for Roseate {
                 );
 
                 return;
-            }
-
-            if self.show_about {
-                self.about_window.show(ui);
             }
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
@@ -233,7 +244,7 @@ impl eframe::App for Roseate {
 
         if let Err(error) = self.config_manager.save_if_changed() {
             log::error!(
-                "Error occured while saving config on exit! Error: {}",
+                "Error occurred while saving config on exit! Error: {}",
                 error.human_message()
             );
         }

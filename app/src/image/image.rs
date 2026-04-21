@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Debug, fs::File, io::BufReader, path::PathBuf, sync::{Arc, Mutex}};
 
 use log::debug;
-use cirrus_egui::v1::notifier::Notifier;
+use cirrus_egui::notifier::Notifier;
 use roseate_core::{backends::backend::DecodeBackend, colour_type::ImageColourType, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
 
 use crate::{error::{Error, Result}, image::backend::DecodingBackend};

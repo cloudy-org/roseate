@@ -5,7 +5,7 @@ use egui_notify::ToastLevel;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
 use std::hash::Hasher;
-use cirrus_egui::v1::{notifier::Notifier, scheduler::Scheduler};
+use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
 use egui::{CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
 use crate::{image_handler::resource::ImageResource, utils::get_input_reader_from_soft_binds};

@@ -1,12 +1,11 @@
-use cirrus_egui::v1::notifier::Notifier;
+use cirrus_egui::notifier::Notifier;
 use egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, utils::get_input_reader_from_soft_binds};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, utils::get_input_reader_from_soft_binds, windows::info::ImageInfoWindow};
 
 mod info;
-pub use info::ImageInfoWindow;
 
 type InputReader = Box<dyn FnMut(&InputState) -> bool>;
 

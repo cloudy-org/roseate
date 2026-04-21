@@ -2,9 +2,10 @@
 
 use std::{path::Path, time::Duration};
 
+use cirrus_authors::Authors;
 use cirrus_clap_cli::v1::EditArgs;
 use cirrus_edit::v1::{Preference, open_editor};
-use cirrus_egui::v1::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
+use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
 use cirrus_theming::v1::{colour::Colour, theme::Theme};
 use config::config::Config;
 use env_logger::Builder;
@@ -28,16 +29,17 @@ mod config;
 mod windows;
 mod image_handler;
 mod ui_controls;
-mod about_window;
 mod image_selection_menu;
 mod monitor_size;
 mod viewport;
 mod settings;
+mod about_window;
 mod context_menu;
 mod tutorial;
 
-static APP_NAME: &str = "roseate";
-static TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
+const APP_NAME: &str = "roseate";
+const AUTHORS_TXT_STRING: &str = include_str!("../../AUTHORS.txt");
+const TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
 
 // TODO: add 'roseate -e' and 'roseate --edit' command for easy config file access. 
 /// 🌹 A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k.
@@ -110,6 +112,15 @@ fn main() -> eframe::Result {
             }
         );
     }
+
+    let authors = match Authors::parse_authors_txt_string(AUTHORS_TXT_STRING) {
+        Ok(authors) => authors,
+        Err(error) => {
+            log::error!("Failed to parse AUTHORS.txt! Error: {}", error);
+
+            return Ok(());
+        },
+    };
 
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -187,6 +198,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+
             Styling::new(&theme)
                 .set_all()
                 .apply(&cc.egui_ctx);
@@ -196,7 +208,8 @@ fn main() -> eframe::Result {
                 monitor_size,
                 theme,
                 notifier,
-                config_manager
+                config_manager,
+                authors,
             );
 
             Ok(Box::new(app))
