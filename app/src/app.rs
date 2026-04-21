@@ -1,6 +1,6 @@
 use cirrus_authors::Authors;
 use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
-use cirrus_theming::v1::theme::Theme;
+use cirrus_theming::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
 
 use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};

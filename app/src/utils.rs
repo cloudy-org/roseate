@@ -1,7 +1,7 @@
 // Where I dump functions temporally that I don't know where to place.
 // Don't just be lazy and dump everything in here ~~like me~~.
 
-use cirrus_softbinds::v1::keys::Keys;
+use cirrus_softbinds::keys::Keys;
 use egui::{InputState, Key};
 
 use crate::error::Result;

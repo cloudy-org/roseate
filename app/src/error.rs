@@ -1,10 +1,10 @@
 use std::{io, result::Result as StdResult};
 
-use cirrus_error::v1::error::CError;
+use cirrus_error::error::CError;
 
 use roseate_core::error::Error as CoreError;
-use cirrus_path::v1::error::Error as PathError;
-use cirrus_softbinds::v1::error::Error as SoftBindsError;
+use cirrus_path::error::Error as PathError;
+use cirrus_softbinds::error::Error as SoftBindsError;
 
 use derive_more::{Debug, Display, From};
 

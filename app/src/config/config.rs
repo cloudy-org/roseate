@@ -1,4 +1,4 @@
-use cirrus_config::v1::config::CConfig;
+use cirrus_config::config::CConfig;
 use serde::{Serialize, Deserialize};
 
 use crate::config::models::ui::{ImageInfo, SelectionMenu, Viewport, controls::Controls};

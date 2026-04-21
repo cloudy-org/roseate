@@ -3,10 +3,10 @@
 use std::{path::Path, time::Duration};
 
 use cirrus_authors::Authors;
-use cirrus_clap_cli::v1::EditArgs;
-use cirrus_edit::v1::{Preference, open_editor};
+use cirrus_clap_cli::EditArgs;
+use cirrus_edit::{Preference, open_editor};
 use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
-use cirrus_theming::v1::{colour::Colour, theme::Theme};
+use cirrus_theming::{colour::Colour, theme::Theme};
 use config::config::Config;
 use env_logger::Builder;
 use image_handler::{ImageHandler};

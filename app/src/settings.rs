@@ -1,6 +1,6 @@
-use cirrus_config::{config_key_path, v1::template::Template};
+use cirrus_config::{config_key_path, template::Template};
 use cirrus_egui::widgets::settings::{Settings, section::{Section, SectionDisplayInfo, SectionOverrides}};
-use cirrus_theming::v1::theme::Theme;
+use cirrus_theming::theme::Theme;
 use egui::Ui;
 
 use crate::{TEMPLATE_CONFIG_TOML_STRING, config::config::Config};
