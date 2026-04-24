@@ -6,7 +6,7 @@ use cirrus_authors::Authors;
 use cirrus_clap_cli::EditArgs;
 use cirrus_edit::{Preference, open_editor};
 use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
-use cirrus_theming::{colour::Colour, theme::Theme};
+use cirrus_theming::manager::ThemeManager;
 use config::config::Config;
 use env_logger::Builder;
 use image_handler::{ImageHandler};
@@ -191,7 +191,16 @@ fn main() -> eframe::Result {
         &mut notifier,
     );
 
-    let theme = Theme::new(Some(Colour::from_hex(0xe05f78)));
+    // the theme manager may move into the app 
+    // struct in the future as it matures with more features
+    let theme_manager = ThemeManager::default()
+        .get_theme_from_env()
+        .get_theme_from_system();
+
+    let theme = theme_manager.theme;
+
+    // temporary for now until we can set fallbacks accent colours
+    // let fallback_accent_colour = Colour::from_hex(0xe05f78);
 
     eframe::run_native(
         "Roseate",
