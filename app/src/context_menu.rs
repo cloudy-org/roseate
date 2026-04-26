@@ -57,18 +57,21 @@ impl ContextMenu {
                         widgets.open.corner_radius = CornerRadius::same(3);
 
                         if ui.button("Toggle Image Info").clicked() {
-                            match windows_manager.show_extra_info {
-                                true => windows_manager.show_extra_info = false,
-                                false => windows_manager.show_info = !windows_manager.show_info,
-                            }
+                            windows_manager.show_info = !windows_manager.show_info;
+                            windows_manager.show_extra_info = false;
 
                             self.show_menu = None;
                         }
 
                         if ui.button("Toggle Extra Image Info").clicked() {
                             match windows_manager.show_info {
-                                true => windows_manager.show_extra_info = true,
-                                false => windows_manager.show_info = !windows_manager.show_info,
+                                true => {
+                                    windows_manager.show_info = false;
+                                },
+                                false => {
+                                    windows_manager.show_extra_info = true;
+                                    windows_manager.show_info = true;
+                                },
                             }
 
                             self.show_menu = None;
