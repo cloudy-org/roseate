@@ -1,9 +1,8 @@
 [package]
 name = "roseate"
 edition = "2024"
-version = "0.1.0-alpha.21"
+version = "0.1.0-alpha.22"
 description = "A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k."
-authors = ["Goldy <goldy@devgoldy.xyz>", "Ananas <ananas@ananas.moe>"]
 license = "GPL-3.0"
 repository = "https://github.com/cloudy-org/roseate/"
 rust-version = "1.89"
