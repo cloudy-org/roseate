@@ -20,7 +20,7 @@ gui.lazy_loading = true
 # while also having lower memory usage.
 #
 # However we default to "image-rs" due to it's wider support and stability in Roseate.
-decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)! 
+decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)!
 
 [image.optimizations]
 # The optimization mode controls and defines what 
@@ -30,7 +30,7 @@ decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://git
 # 
 # Speed: You don't mind higher memory usage and just want images to load as fast as possible.
 # 
-# Quality: You don't care about memory usage, you just want the highest and sharpest image possible.
+# Quality: You don't care about memory usage, you just want the highest quality and sharpest image possible.
 mode = "default" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
 
 # Downsamples the image roughly to the resolution of your monitor.
@@ -49,7 +49,7 @@ mode = "default" # PLEASE READ THIS: If you don't comment the "mode" key, the op
 # you prefer overall faster image load times disable this optimization.
 #
 # If you want your image quality back when zooming into your image,
-# you might want to also enable the "dynamic_sampling" image optimization too.
+# you might want to also enable the "dynamic_sampling" image optimization.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
 # Enabling this allows Roseate to upload RGBA decoded images directly
@@ -61,7 +61,8 @@ monitor_downsampling = {enabled = true, strength = 1.4}
 # (memory will peak for a very short moment), however you will still benefit as
 # memory for the decoded image will still be immediately freed AFTER GPU upload.
 #
-# This optimization is disabled if you enable "dynamic_sampling".
+# This optimization is disabled if you enable "dynamic_sampling" as 
+# dynamic sampling benefits from the decoded image not being freed from memory.
 experimental_consume_pixels_during_gpu_upload = true
 
 # Enabling this will enable the extremely experimental
