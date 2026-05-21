@@ -27,7 +27,9 @@ decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://git
 # image optimizations should be enabled or disabled.
 # 
 # Default: A decent balance between low memory usage and speed.
+# 
 # Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+# 
 # Quality: You don't care about memory usage, you just want the highest and sharpest image possible.
 mode = "default" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
 
