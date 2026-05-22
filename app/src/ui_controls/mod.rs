@@ -2,12 +2,14 @@ use cirrus_egui::notifier::Notifier;
 use egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 
-use crate::{ui_controls::magnification_panel::MagnificationPanel, utils::get_input_reader_from_soft_binds, viewport::Viewport};
+use crate::{ui_controls::{fullscreen::FullscreenButtonPanel, magnification_panel::MagnificationPanel}, utils::get_input_reader_from_soft_binds, viewport::Viewport};
 
+mod fullscreen;
 mod magnification_panel;
 
 pub struct UIControlsManager {
     mag_panel: MagnificationPanel,
+    fullscreen_button_panel: FullscreenButtonPanel,
 
     show_controls_reader: Option<Box<dyn FnMut(&InputState) -> bool>>,
 
@@ -17,9 +19,11 @@ pub struct UIControlsManager {
 impl UIControlsManager {
     pub fn new() -> Self {
         let mag_panel = MagnificationPanel::new();
+        let fullscreen_button_panel = FullscreenButtonPanel::new();
 
         Self {
             mag_panel,
+            fullscreen_button_panel,
 
             show_controls_reader: None,
 
@@ -65,7 +69,8 @@ impl UIControlsManager {
     ) {
         if self.show_controls.unwrap_or(false) {
             if show_magnification {
-                self.mag_panel.show(ui, viewport)
+                self.mag_panel.show(ui, viewport);
+                self.fullscreen_button_panel.show(ui);
             }
         }
     }

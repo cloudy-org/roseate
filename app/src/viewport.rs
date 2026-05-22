@@ -249,7 +249,7 @@ impl Viewport {
             },
         }.corner_radius(10.0); // TODO: config to customize image corner radius.
 
-        // // Drawing the image to the viewport.
+        // Drawing the image to the viewport.
         egui_image.paint_at(ui, image_rect);
     }
 

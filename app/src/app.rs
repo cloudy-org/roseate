@@ -1,7 +1,7 @@
 use cirrus_authors::Authors;
 use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
 use cirrus_theming::theme::Theme;
-use egui::{Color32, Context, CornerRadius, Frame, Key, Margin};
+use egui::{Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 
 use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
@@ -24,7 +24,7 @@ pub struct Roseate {
 
     show_settings: bool,
     show_about: bool,
-    show_license: bool
+    show_license: bool,
 }
 
 impl Roseate {
@@ -95,6 +95,17 @@ impl eframe::App for Roseate {
 
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
             self.show_about = !self.show_about;
+        }
+
+        // toggle fullscreen mode
+        if ctx.input(|i| i.key_pressed(Key::F) || i.key_pressed(Key::F11)) {
+            let is_fullscreen = ctx.input(
+                |i| i.viewport().fullscreen.unwrap_or_default()
+            );
+
+            ctx.send_viewport_cmd(
+                ViewportCommand::Fullscreen(!is_fullscreen)
+            );
         }
 
         // In roseate I prefer the central panel with zero margin.
