@@ -75,7 +75,7 @@ impl UIControlsManager {
                     None
                 ),
                 BannerPlacement::BOTTOM,
-                Duration::from_secs(4)
+                Duration::from_secs(2)
             );
         }
     }
