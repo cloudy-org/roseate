@@ -1,5 +1,7 @@
+use std::time::Duration;
+
 use cirrus_authors::Authors;
-use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::settings::Settings};
+use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::{overlayer_banner::{OverlayerBanner, placement::OverlayerBannerPlacement, text::OverlayerBannerText}, settings::Settings}};
 use cirrus_theming::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 
@@ -21,6 +23,8 @@ pub struct Roseate {
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
     tutorial: Tutorial,
+
+    overlayer_banner: OverlayerBanner,
 
     show_settings: bool,
     show_about: bool,
@@ -45,6 +49,9 @@ impl Roseate {
         let context_menu = ContextMenu::new();
         let tutorial = Tutorial::new();
 
+        // cirrus components
+        let overlayer_banner = OverlayerBanner::new();
+
         Self {
             theme,
             notifier,
@@ -61,6 +68,8 @@ impl Roseate {
             config_manager,
             context_menu,
             tutorial,
+
+            overlayer_banner,
 
             show_settings: false,
             show_about: false,
@@ -106,6 +115,21 @@ impl eframe::App for Roseate {
             ctx.send_viewport_cmd(
                 ViewportCommand::Fullscreen(!is_fullscreen)
             );
+
+            self.overlayer_banner.show_banner(
+                OverlayerBannerText::new(
+                    match is_fullscreen {
+                        false => String::from("Fullscreen Mode"),
+                        true => String::from("Windowed Mode")
+                    },
+                    match is_fullscreen {
+                        false => Some(String::from("Press 'F' or 'F11' to exit.")),
+                        true => None
+                    }
+                ),
+                OverlayerBannerPlacement::BOTTOM,
+                Duration::from_secs(3)
+            );
         }
 
         // In roseate I prefer the central panel with zero margin.
@@ -130,6 +154,8 @@ impl eframe::App for Roseate {
             );
 
             self.tutorial.show(ui, &mut self.config_manager);
+
+            self.overlayer_banner.show(ui);
 
             if self.show_about {
                 self.about_window.show(
