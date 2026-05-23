@@ -106,7 +106,13 @@ impl eframe::App for Roseate {
             self.show_about = !self.show_about;
         }
 
-        // toggle fullscreen mode
+        // toggle and escape fullscreen
+        if ctx.input(|i| i.key_pressed(Key::Escape)) {
+            ctx.send_viewport_cmd(
+                ViewportCommand::Fullscreen(false)
+            );
+        }
+
         if ctx.input(|i| i.key_pressed(Key::F) || i.key_pressed(Key::F11)) {
             let is_fullscreen = ctx.input(
                 |i| i.viewport().fullscreen.unwrap_or_default()
@@ -123,7 +129,9 @@ impl eframe::App for Roseate {
                         true => String::from("Windowed Mode")
                     },
                     match is_fullscreen {
-                        false => Some(String::from("Press 'F' or 'F11' to exit.")),
+                        false => Some(
+                            String::from("Press 'F' / 'F11' again or 'ESCAPE' to exit.")
+                        ),
                         true => None
                     }
                 ),

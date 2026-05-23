@@ -1,4 +1,4 @@
-use egui::{Align2, CursorIcon, Frame, Ui, Vec2, ViewportCommand};
+use egui::{Align2, CursorIcon, Ui, Vec2, ViewportCommand};
 
 pub struct FullscreenButtonPanel {}
 
