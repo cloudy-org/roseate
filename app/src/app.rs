@@ -100,17 +100,23 @@ impl eframe::App for Roseate {
         }
 
         // toggle and escape fullscreen
-        if ctx.input(|i| i.key_pressed(Key::Escape)) {
+        let is_fullscreen = ctx.input(
+            |i| i.viewport().fullscreen.unwrap_or_default()
+        );
+
+        if is_fullscreen && ctx.input(|i| i.key_pressed(Key::Escape)) {
             ctx.send_viewport_cmd(
                 ViewportCommand::Fullscreen(false)
+            );
+
+            self.notifier.show_banner(
+                "Windowed Mode (ESC)",
+                BannerPlacement::BOTTOM,
+                Duration::from_secs(3)
             );
         }
 
         if ctx.input(|i| i.key_pressed(Key::F) || i.key_pressed(Key::F11)) {
-            let is_fullscreen = ctx.input(
-                |i| i.viewport().fullscreen.unwrap_or_default()
-            );
-
             ctx.send_viewport_cmd(
                 ViewportCommand::Fullscreen(!is_fullscreen)
             );
