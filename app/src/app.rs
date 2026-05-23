@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cirrus_authors::Authors;
-use cirrus_egui::{config_manager::ConfigManager, notifier::Notifier, widgets::{overlayer_banner::{OverlayerBanner, placement::OverlayerBannerPlacement, text::OverlayerBannerText}, settings::Settings}};
+use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, banner::{BannerPlacement, BannerText}}, widgets::settings::Settings};
 use cirrus_theming::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 
@@ -23,8 +23,6 @@ pub struct Roseate {
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
     tutorial: Tutorial,
-
-    overlayer_banner: OverlayerBanner,
 
     show_settings: bool,
     show_about: bool,
@@ -49,9 +47,6 @@ impl Roseate {
         let context_menu = ContextMenu::new();
         let tutorial = Tutorial::new();
 
-        // cirrus components
-        let overlayer_banner = OverlayerBanner::new();
-
         Self {
             theme,
             notifier,
@@ -68,8 +63,6 @@ impl Roseate {
             config_manager,
             context_menu,
             tutorial,
-
-            overlayer_banner,
 
             show_settings: false,
             show_about: false,
@@ -92,14 +85,12 @@ impl eframe::App for Roseate {
         self.windows_manager.handle_input(
             &ctx,
             &mut self.notifier,
-            &mut self.overlayer_banner,
             &config.key_binds.show_image_info,
             &config.key_binds.show_extra_image_info
         );
         self.ui_controls_manager.handle_input(
             &ctx,
             &mut self.notifier,
-            &mut self.overlayer_banner,
             &config.key_binds.show_ui_controls,
             config.ui.controls.hide
         );
@@ -124,8 +115,8 @@ impl eframe::App for Roseate {
                 ViewportCommand::Fullscreen(!is_fullscreen)
             );
 
-            self.overlayer_banner.show_banner(
-                OverlayerBannerText::new(
+            self.notifier.show_banner(
+                BannerText::new(
                     match is_fullscreen {
                         false => String::from("Fullscreen Mode (F11)"),
                         true => String::from("Windowed Mode")
@@ -137,7 +128,7 @@ impl eframe::App for Roseate {
                         true => None
                     }
                 ),
-                OverlayerBannerPlacement::BOTTOM,
+                BannerPlacement::BOTTOM,
                 Duration::from_secs(4)
             );
         }
@@ -153,7 +144,6 @@ impl eframe::App for Roseate {
             .show(ctx, |ui| {
             let config = &self.config_manager.config.clone();
 
-            self.notifier.update(ctx);
             self.image_handler.update(
                 &ctx,
                 &self.viewport.zoom,
@@ -165,7 +155,7 @@ impl eframe::App for Roseate {
 
             self.tutorial.show(ui, &mut self.config_manager);
 
-            self.overlayer_banner.show(ui);
+            self.notifier.show(ui);
 
             if self.show_about {
                 self.about_window.show(

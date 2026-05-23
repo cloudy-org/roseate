@@ -1,4 +1,3 @@
-use cirrus_egui::widgets::overlayer_banner::OverlayerBanner;
 use eframe::egui::{self, Vec2};
 use egui::{Align2, CursorIcon, Ui};
 

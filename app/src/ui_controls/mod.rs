@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use cirrus_egui::{notifier::Notifier, widgets::overlayer_banner::{OverlayerBanner, placement::OverlayerBannerPlacement, text::OverlayerBannerText}};
+use cirrus_egui::notifier::{Notifier, banner::{BannerPlacement, BannerText}};
 use egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 
@@ -37,7 +37,6 @@ impl UIControlsManager {
         &mut self,
         ctx: &Context,
         notifier: &mut Notifier,
-        overlayer_banner: &mut OverlayerBanner,
         show_controls_key: &String,
         hide_by_default: bool
     ) {
@@ -64,8 +63,8 @@ impl UIControlsManager {
         if ctx.input(show_controls_reader) {
             *show_controls ^= true;
 
-            overlayer_banner.show_banner(
-                OverlayerBannerText::new(
+            notifier.show_banner(
+                BannerText::new(
                     format!(
                         "{} UI controls ({show_controls_key})",
                         match show_controls {
@@ -75,7 +74,7 @@ impl UIControlsManager {
                     ),
                     None
                 ),
-                OverlayerBannerPlacement::BOTTOM,
+                BannerPlacement::BOTTOM,
                 Duration::from_secs(4)
             );
         }
