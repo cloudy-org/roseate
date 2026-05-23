@@ -5,7 +5,7 @@ use egui_notify::ToastLevel;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
 use std::hash::Hasher;
-use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
+use cirrus_egui::{notifier::{Notifier, banner::BannerPlacement}, scheduler::Scheduler};
 use egui::{CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
 use crate::{image_handler::resource::ImageResource, utils::get_input_reader_from_soft_binds};
@@ -286,6 +286,12 @@ impl Viewport {
 
             self.reset_zoom = Some(self.zoom);
             self.reset_offset = Some(self.offset);
+
+            notifier.show_banner(
+                format!("Reset Viewport ({reset_viewport_key})"),
+                BannerPlacement::BOTTOM,
+                Duration::from_secs(2)
+            );
         }
 
         // don't schedule resets if the user is currently using the viewport
