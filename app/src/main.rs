@@ -13,7 +13,7 @@ use image_handler::{ImageHandler};
 use log::{LevelFilter, info};
 use eframe::egui;
 use egui_notify::ToastLevel;
-use clap::{command, Parser};
+use clap::Parser;
 
 use app::Roseate;
 use monitor_size::MonitorSize;
@@ -41,7 +41,6 @@ const APP_NAME: &str = "roseate";
 const AUTHORS_TXT_STRING: &str = include_str!("../../AUTHORS.txt");
 const TEMPLATE_CONFIG_TOML_STRING: &str = include_str!("../assets/config.template.toml");
 
-// TODO: add 'roseate -e' and 'roseate --edit' command for easy config file access. 
 /// 🌹 A fancy yet simple image viewer — highly configurable, cross-platform, GPU-accelerated and fast as fu#k.
 #[derive(Parser, Debug)]
 #[clap(author = "Goldy")]

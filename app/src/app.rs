@@ -92,12 +92,14 @@ impl eframe::App for Roseate {
         self.windows_manager.handle_input(
             &ctx,
             &mut self.notifier,
+            &mut self.overlayer_banner,
             &config.key_binds.show_image_info,
             &config.key_binds.show_extra_image_info
         );
         self.ui_controls_manager.handle_input(
             &ctx,
             &mut self.notifier,
+            &mut self.overlayer_banner,
             &config.key_binds.show_ui_controls,
             config.ui.controls.hide
         );
@@ -125,7 +127,7 @@ impl eframe::App for Roseate {
             self.overlayer_banner.show_banner(
                 OverlayerBannerText::new(
                     match is_fullscreen {
-                        false => String::from("Fullscreen Mode"),
+                        false => String::from("Fullscreen Mode (F11)"),
                         true => String::from("Windowed Mode")
                     },
                     match is_fullscreen {
@@ -136,7 +138,7 @@ impl eframe::App for Roseate {
                     }
                 ),
                 OverlayerBannerPlacement::BOTTOM,
-                Duration::from_secs(3)
+                Duration::from_secs(4)
             );
         }
 

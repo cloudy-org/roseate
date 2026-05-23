@@ -3,7 +3,6 @@ use std::{fs::{self, File, OpenOptions}, io::{BufReader, Read, Seek, Write}, tim
 use cirrus_egui::notifier::Notifier;
 use cirrus_path::get_user_cache_cloudy_folder_path;
 use egui_notify::ToastLevel;
-use fs2::FileExt;
 use eframe::egui::Context;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};

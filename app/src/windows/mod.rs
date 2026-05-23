@@ -1,4 +1,6 @@
-use cirrus_egui::notifier::Notifier;
+use std::time::Duration;
+
+use cirrus_egui::{notifier::Notifier, widgets::overlayer_banner::{OverlayerBanner, placement::OverlayerBannerPlacement, text::OverlayerBannerText}};
 use egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
@@ -42,6 +44,7 @@ impl WindowsManager {
         &mut self,
         ctx: &Context,
         notifier: &mut Notifier,
+        overlayer_banner: &mut OverlayerBanner,
         show_image_info_key: &String,
         show_extra_image_info_key: &String
     ) {
@@ -84,6 +87,23 @@ impl WindowsManager {
             self.show_extra_info = show_extra_info;
 
             self.show_info = !self.show_info;
+
+            let heading_text = match self.show_extra_info {
+                false => format!("image info ({show_image_info_key})"),
+                true => format!("extra image info ({show_extra_image_info_key})"),
+            };
+
+            overlayer_banner.show_banner(
+                OverlayerBannerText::new(
+                    match self.show_info {
+                        true => format!("Show {heading_text}"),
+                        false => format!("Hide {heading_text}"),
+                    },
+                    None
+                ),
+                OverlayerBannerPlacement::BOTTOM,
+                Duration::from_secs(4)
+            );
         }
     }
 

@@ -1,4 +1,6 @@
-use cirrus_egui::notifier::Notifier;
+use std::time::Duration;
+
+use cirrus_egui::{notifier::Notifier, widgets::overlayer_banner::{OverlayerBanner, placement::OverlayerBannerPlacement, text::OverlayerBannerText}};
 use egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 
@@ -35,29 +37,47 @@ impl UIControlsManager {
         &mut self,
         ctx: &Context,
         notifier: &mut Notifier,
+        overlayer_banner: &mut OverlayerBanner,
         show_controls_key: &String,
         hide_by_default: bool
     ) {
         let show_controls = self.show_controls.get_or_insert(!hide_by_default);
 
-        let show_controls_reader = self.show_controls_reader.get_or_insert_with(|| {
-            match get_input_reader_from_soft_binds(
-                show_controls_key,
-                |i, key| i.key_pressed(key)
-            ) {
-                Ok(reader) => Box::new(reader),
-                Err(error) => {
-                    notifier.toast(
-                        Box::new(error), ToastLevel::Error, |_| {}
-                    );
+        let show_controls_reader = self.show_controls_reader.get_or_insert_with(
+            || {
+                match get_input_reader_from_soft_binds(
+                    show_controls_key,
+                    |i, key| i.key_pressed(key)
+                ) {
+                    Ok(reader) => Box::new(reader),
+                    Err(error) => {
+                        notifier.toast(
+                            Box::new(error), ToastLevel::Error, |_| {}
+                        );
 
-                    Box::new(|i| i.key_pressed(Key::C))
-                },
+                        Box::new(|i| i.key_pressed(Key::C))
+                    },
+                }
             }
-        });
+        );
 
         if ctx.input(show_controls_reader) {
             *show_controls ^= true;
+
+            overlayer_banner.show_banner(
+                OverlayerBannerText::new(
+                    format!(
+                        "{} UI controls ({show_controls_key})",
+                        match show_controls {
+                            true => "Show",
+                            false => "Hide",
+                        }
+                    ),
+                    None
+                ),
+                OverlayerBannerPlacement::BOTTOM,
+                Duration::from_secs(4)
+            );
         }
     }
 
