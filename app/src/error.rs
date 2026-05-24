@@ -4,7 +4,7 @@ use cirrus_error::error::CError;
 
 use roseate_core::error::Error as CoreError;
 use cirrus_path::error::Error as PathError;
-use cirrus_softbinds::error::Error as SoftBindsError;
+use cirrus_soft_binds::error::Error as SoftBindsError;
 
 use derive_more::{Debug, Display, From};
 

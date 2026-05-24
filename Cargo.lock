@@ -823,26 +823,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "cirrus_authors"
+name = "cirrus_authors_v1"
 version = "0.1.0"
 dependencies = [
- "cirrus_git_tag",
+ "cirrus_git_tag_v1",
  "log",
 ]
 
 [[package]]
-name = "cirrus_clap_cli"
+name = "cirrus_clap_cli_v1"
 version = "0.1.0"
 dependencies = [
  "clap",
 ]
 
 [[package]]
-name = "cirrus_config"
+name = "cirrus_config_v1"
 version = "0.1.0"
 dependencies = [
- "cirrus_error",
- "cirrus_path",
+ "cirrus_error_v1",
+ "cirrus_path_v1",
  "log",
  "serde",
  "toml",
@@ -850,18 +850,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "cirrus_edit"
+name = "cirrus_edit_v1"
 version = "0.1.0"
 
 [[package]]
-name = "cirrus_egui"
+name = "cirrus_egui_v1"
 version = "0.1.0"
 dependencies = [
- "cirrus_authors",
- "cirrus_config",
- "cirrus_error",
- "cirrus_path",
- "cirrus_theming",
+ "cirrus_authors_v1",
+ "cirrus_config_v1",
+ "cirrus_error_v1",
+ "cirrus_path_v1",
+ "cirrus_theming_v1",
  "egui",
  "egui-notify",
  "log",
@@ -872,15 +872,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "cirrus_error"
+name = "cirrus_error_v1"
 version = "0.1.0"
 
 [[package]]
-name = "cirrus_git_tag"
+name = "cirrus_git_tag_v1"
 version = "0.1.0"
 
 [[package]]
-name = "cirrus_path"
+name = "cirrus_path_v1"
 version = "0.1.0"
 dependencies = [
  "dirs",
@@ -889,7 +889,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cirrus_softbinds"
+name = "cirrus_soft_binds_v1"
 version = "0.1.0"
 dependencies = [
  "egui",
@@ -897,11 +897,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cirrus_theming"
+name = "cirrus_theming_v1"
 version = "0.1.0"
 dependencies = [
- "cirrus_error",
- "cirrus_path",
+ "cirrus_error_v1",
+ "cirrus_path_v1",
  "log",
  "serde",
  "toml",
@@ -3663,15 +3663,15 @@ version = "0.1.0-alpha.23"
 dependencies = [
  "cap",
  "chrono",
- "cirrus_authors",
- "cirrus_clap_cli",
- "cirrus_config",
- "cirrus_edit",
- "cirrus_egui",
- "cirrus_error",
- "cirrus_path",
- "cirrus_softbinds",
- "cirrus_theming",
+ "cirrus_authors_v1",
+ "cirrus_clap_cli_v1",
+ "cirrus_config_v1",
+ "cirrus_edit_v1",
+ "cirrus_egui_v1",
+ "cirrus_error_v1",
+ "cirrus_path_v1",
+ "cirrus_soft_binds_v1",
+ "cirrus_theming_v1",
  "clap",
  "country-emoji",
  "derive_more",

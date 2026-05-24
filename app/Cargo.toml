@@ -36,15 +36,15 @@ eframe-x11-only = ["dep:eframe", "eframe/x11"]
 eframe-wayland-only = ["dep:eframe", "eframe/wayland"]
 
 [dependencies]
-cirrus_egui = { path = "../cirrus/egui/v1" }
-cirrus_edit = { path = "../cirrus/edit/v1" }
-cirrus_path = { path = "../cirrus/path/v1" }
-cirrus_error = { path = "../cirrus/error/v1" }
-cirrus_config = { path = "../cirrus/config/v1" }
-cirrus_theming = { path = "../cirrus/theming/v1" }
-cirrus_clap_cli = { path = "../cirrus/clap_cli/v1" }
-cirrus_authors = { path = "../cirrus/authors/v1" }
-cirrus_softbinds = { path = "../cirrus/soft_binds/v1", features = ["egui"] }
+cirrus_egui = { package = "cirrus_egui_v1", path = "../cirrus/egui/v1" }
+cirrus_edit = { package = "cirrus_edit_v1", path = "../cirrus/edit/v1" }
+cirrus_path = { package = "cirrus_path_v1", path = "../cirrus/path/v1" }
+cirrus_error = { package = "cirrus_error_v1", path = "../cirrus/error/v1" }
+cirrus_config = { package = "cirrus_config_v1", path = "../cirrus/config/v1" }
+cirrus_theming = { package = "cirrus_theming_v1", path = "../cirrus/theming/v1" }
+cirrus_clap_cli = { package = "cirrus_clap_cli_v1", path = "../cirrus/clap_cli/v1" }
+cirrus_authors = { package = "cirrus_authors_v1", path = "../cirrus/authors/v1" }
+cirrus_soft_binds = { package = "cirrus_soft_binds_v1", path = "../cirrus/soft_binds/v1", features = ["egui"] }
 
 roseate-core = { path = "../core" }
 
