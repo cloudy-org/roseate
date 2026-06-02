@@ -246,7 +246,10 @@ impl eframe::App for Roseate {
                                 &self.monitor_size,
                                 config.image.backend.get_decoding_backend(),
                                 &self.theme.pallet.accent,
+                                &mut self.show_settings,
+
                                 config.ui.selection_menu.show_open_image_button,
+                                true, // TODO: add config key for this
                             );
                         });
                 },

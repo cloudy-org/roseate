@@ -2,7 +2,7 @@ use std::{time::Duration};
 
 use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
 use cirrus_theming::colour::Colour;
-use egui::{Button, Color32, CursorIcon, RichText, Sense, Stroke, Ui, Vec2};
+use egui::{Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 use rfd::FileDialog;
 
@@ -23,7 +23,9 @@ impl ImageSelectionMenu {
         monitor_size: &MonitorSize,
         backend: DecodingBackend,
         accent_colour: &Colour,
-        show_open_image_button: bool
+        show_settings: &mut bool,
+        show_settings_button: bool,
+        show_open_image_button: bool,
     ) {
         let (rose_or_button_response, rose_rect) = ui_multiple_centered_double_render(ui, |ui| {
             if image_handler.image.is_some() {
@@ -80,6 +82,24 @@ impl ImageSelectionMenu {
                     );
                 },
             };
+        }
+
+        if show_settings_button {
+            egui::Area::new(Id::new("settings_button"))
+                .anchor(Align2::RIGHT_TOP, Vec2::new(-12.0, 12.0))
+                .show(ui.ctx(), |ui| {
+                    ui.horizontal_centered(|ui| {
+                        let settings_button = ui.add(
+                            Button::new(
+                                RichText::new("⚙").size(26.0)
+                            ).min_size(Vec2::new(44.0, 38.0))
+                        ).on_hover_cursor(CursorIcon::PointingHand);
+
+                        if settings_button.clicked() {
+                            *show_settings = true;
+                        }
+                    });
+                });
         }
 
         // TODO: drag and drop now needs re-testing.
