@@ -1,14 +1,14 @@
 use egui::{Align2, CursorIcon, Ui, Vec2, ViewportCommand};
 
-pub struct FullscreenButtonPanel {}
+pub struct FullscreenButton {}
 
-impl FullscreenButtonPanel {
+impl FullscreenButton {
     pub fn new() -> Self {
         Self {}
     }
 
     pub fn show(&mut self, ui: &Ui) {
-        egui::Window::new("fullscreen_button_panel_window")
+        egui::Window::new("fullscreen_button_window")
             .anchor(Align2::LEFT_BOTTOM, Vec2::new(16.0, -16.0))
             .title_bar(false)
             .resizable(false)

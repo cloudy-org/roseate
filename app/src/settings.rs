@@ -53,7 +53,7 @@ impl SettingsMenu {
                     name: Some("Hide Controls".into()),
                     ..Default::default()
                 }
-            )
+            ) // TODO: add fullscreen and minification toggles under this
         ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.padding),
@@ -66,7 +66,7 @@ impl SettingsMenu {
                     name: Some("Viewport padding".into()),
                     ..Default::default()
                 }
-            )
+            ) // TODO: add all other viewport toggles under viewport section
         ).add_section(
             Section::new(
                 config_key_path!(config.ui.viewport.zoom_into_cursor),

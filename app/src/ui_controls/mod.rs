@@ -4,14 +4,14 @@ use cirrus_egui::notifier::{Notifier, banner::{BannerPlacement, BannerText}};
 use egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 
-use crate::{ui_controls::{fullscreen::FullscreenButtonPanel, magnification_panel::MagnificationPanel}, utils::get_input_reader_from_soft_binds, viewport::Viewport};
+use crate::{ui_controls::{fullscreen::FullscreenButton, magnification_panel::MagnificationPanel}, utils::get_input_reader_from_soft_binds, viewport::Viewport};
 
 mod fullscreen;
 mod magnification_panel;
 
 pub struct UIControlsManager {
-    mag_panel: MagnificationPanel,
-    fullscreen_button_panel: FullscreenButtonPanel,
+    magnification_panel: MagnificationPanel,
+    fullscreen_button: FullscreenButton,
 
     show_controls_reader: Option<Box<dyn FnMut(&InputState) -> bool>>,
 
@@ -20,12 +20,12 @@ pub struct UIControlsManager {
 
 impl UIControlsManager {
     pub fn new() -> Self {
-        let mag_panel = MagnificationPanel::new();
-        let fullscreen_button_panel = FullscreenButtonPanel::new();
+        let magnification_panel = MagnificationPanel::new();
+        let fullscreen_button = FullscreenButton::new();
 
         Self {
-            mag_panel,
-            fullscreen_button_panel,
+            magnification_panel,
+            fullscreen_button,
 
             show_controls_reader: None,
 
@@ -84,12 +84,16 @@ impl UIControlsManager {
         &mut self,
         ui: &mut Ui,
         viewport: &mut Viewport,
-        show_magnification: bool,
+        show_magnification_panel: bool,
+        show_fullscreen_button: bool,
     ) {
         if self.show_controls.unwrap_or(false) {
-            if show_magnification {
-                self.mag_panel.show(ui, viewport);
-                self.fullscreen_button_panel.show(ui);
+            if show_magnification_panel {
+                self.magnification_panel.show(ui, viewport);
+            }
+
+            if show_fullscreen_button {
+                self.fullscreen_button.show(ui);
             }
         }
     }

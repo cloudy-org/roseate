@@ -211,7 +211,8 @@ impl eframe::App for Roseate {
                             self.ui_controls_manager.show(
                                 ui,
                                 &mut self.viewport,
-                                config.ui.controls.magnification
+                                config.ui.controls.magnification,
+                                config.ui.controls.fullscreen
                             );
 
                             let config_padding = config.ui.viewport.padding;

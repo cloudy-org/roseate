@@ -7,13 +7,17 @@ pub struct Controls {
 
     #[serde(default = "super::true_default")]
     pub magnification: bool,
+
+    #[serde(default = "super::true_default")]
+    pub fullscreen: bool,
 }
 
 impl Default for Controls {
     fn default() -> Self {
         Self {
             hide: true,
-            magnification: true
+            magnification: true,
+            fullscreen: true
         }
     }
 }

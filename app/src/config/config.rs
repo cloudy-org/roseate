@@ -34,6 +34,7 @@ impl Config {
                     controls: Controls {
                         hide: false,
                         magnification: true,
+                        fullscreen: true,
                     },
                     viewport: Viewport::default(),
                     selection_menu: SelectionMenu {
@@ -47,6 +48,7 @@ impl Config {
                     controls: Controls {
                         hide: true,
                         magnification: true,
+                        fullscreen: true,
                     },
                     viewport: Viewport::default(),
                     selection_menu: SelectionMenu {
