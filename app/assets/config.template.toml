@@ -3,24 +3,34 @@ version = 1
 [image]
 
 [image.loading]
+# Load image on separate thread during initial launch. 
+# 
 # Setting this to "true" will make the image load on a separate thread to the GUI initially. This
 # means the GUI may load up before the image is ready to display itself. This will have an impact
 # on peak memory hence it's "false" by default.
 initial.lazy_loading = false
 
+# Load image on separate thread when selected within GUI.
+# 
 # Same as the above but this is now for when you select and load an image from the GUI.
+# 
 # For example: Picking an image from the file picker or dropping an image into the window.
+# 
 # Not setting this to "true" will avoid spawning a separate thread for image loading but will
 # cause the GUI to freeze up (or appear as if it's not responding) until the image has been loaded.
 gui.lazy_loading = true
 
 [image.backend]
+# Change image decoder backend.
+# 
 # Setting this to "zune-image" will tell roseate-core to decode images with the zune-image backend,
 # the implementation of this backend in Roseate is experimental and WIP, but it can be faster than image-rs
 # while also having lower memory usage.
-#
+# 
 # However we default to "image-rs" due to it's wider support and stability in Roseate.
-decoder = "image-rs" # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)!
+# 
+# WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)!
+decoder = "image-rs"
 
 [image.optimizations]
 # The optimization mode controls and defines what 
@@ -91,9 +101,12 @@ experimental_multi_threaded_sampling = false
 [ui]
 
 [ui.controls]
-# Whether we should show or hide ui controls by default.
+# Show or hide UI controls by default.
 hide = true
 
+# Show the fullscreen button in UI controls.
+fullscreen = true
+# Show the magnification panel in UI controls.
 magnification = true
 
 [ui.viewport]
@@ -111,15 +124,20 @@ animate_fit_to_window = true
 animate_reset = true
 
 [ui.selection_menu]
-# If set to "true", the image selection menu will display an
-# "Open Image" button otherwise to open an image you can click on the rose.
+# Show "Open Image" button in main menu when no image is open.
+# 
+# If set to "true", the image selection menu will display an "Open Image" 
+# button otherwise to open an image you can click on the rose.
 show_open_image_button = true
 
 [ui.image_info]
+# Show image location in image info.
+# 
 # When enabled an offline location lookup will be performed and the 
-# image info window will display the location of where the image was 
-# taken. Otherwise if disabled no lookup will be performed and no 
-# location will be shown.
+# image info window will display the location of which the image was 
+# taken.
+# 
+# Otherwise if disabled no lookup will be performed and no location will be shown.
 show_location = true
 
 [key_binds]
