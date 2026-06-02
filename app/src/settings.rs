@@ -21,28 +21,26 @@ impl SettingsMenu {
     pub fn show(&mut self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
         let mut settings = Settings::new();
 
-        let image_optimization_config_key_path = config_key_path!(config.image.optimizations.mode);
-
-        if let Some(config_key) = &mut config.image.optimizations.mode {
-            settings.add_section(
-                Section::new(
-                    image_optimization_config_key_path,
-                    config_key,
-                    SectionOverrides {
-                        choices: Some([
-                            "default".into(),
-                            "speed".into(),
-                            "quality".into(),
-                        ].into()),
-                        ..Default::default()
-                    },
-                    SectionDisplayInfo {
-                        name: Some("Image optimization mode".into()),
-                        ..Default::default()
-                    }
-                )
-            );
-        }
+        settings.add_section(
+            Section::new(
+                config_key_path!(config.image.optimizations.mode),
+                &mut config.image.optimizations.mode,
+                SectionOverrides {
+                    choices: Some(
+                        vec![
+                            String::from("default").into(),
+                            String::from("speed").into(),
+                            String::from("quality").into(),
+                        ]
+                    ),
+                    ..Default::default()
+                },
+                SectionDisplayInfo {
+                    name: Some("Image optimization mode".into()),
+                    ..Default::default()
+                }
+            )
+        );
 
         settings.add_section(
             Section::new(
