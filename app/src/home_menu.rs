@@ -1,6 +1,6 @@
 use std::{time::Duration};
 
-use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render};
+use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render, widgets::settings::button::SettingsButton};
 use cirrus_theming::colour::Colour;
 use egui::{Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
@@ -8,9 +8,9 @@ use rfd::FileDialog;
 
 use crate::{error::{Error, Result}, files::get_rose_image, image::{Image, backend::DecodingBackend}, image_handler::ImageHandler, monitor_size::MonitorSize};
 
-pub struct ImageSelectionMenu {}
+pub struct HomeMenu {}
 
-impl ImageSelectionMenu {
+impl HomeMenu {
     pub fn new() -> Self {
         Self {}
     }
@@ -89,15 +89,8 @@ impl ImageSelectionMenu {
                 .anchor(Align2::RIGHT_TOP, Vec2::new(-12.0, 12.0))
                 .show(ui.ctx(), |ui| {
                     ui.horizontal_centered(|ui| {
-                        let settings_button = ui.add(
-                            Button::new(
-                                RichText::new("⚙").size(26.0)
-                            ).min_size(Vec2::new(44.0, 38.0))
-                        ).on_hover_cursor(CursorIcon::PointingHand);
-
-                        if settings_button.clicked() {
-                            *show_settings = true;
-                        }
+                        SettingsButton::new()
+                            .show(ui, show_settings);
                     });
                 });
         }

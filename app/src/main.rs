@@ -29,7 +29,7 @@ mod config;
 mod windows;
 mod image_handler;
 mod ui_controls;
-mod image_selection_menu;
+mod home_menu;
 mod monitor_size;
 mod viewport;
 mod settings;

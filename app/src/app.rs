@@ -5,7 +5,7 @@ use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, banner::{B
 use cirrus_theming::theme::Theme;
 use egui::{Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 
-use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, image_selection_menu::ImageSelectionMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
+use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, home_menu::HomeMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -18,7 +18,7 @@ pub struct Roseate {
     image_handler: ImageHandler,
     monitor_size: MonitorSize,
     settings_menu: SettingsMenu,
-    selection_menu: ImageSelectionMenu,
+    home_menu: HomeMenu,
     windows_manager: WindowsManager,
     ui_controls_manager: UIControlsManager,
     context_menu: ContextMenu,
@@ -42,7 +42,7 @@ impl Roseate {
         let about_window = AboutWindow::new();
         let windows_manager = WindowsManager::new();
         let settings_menu = SettingsMenu::new();
-        let selection_menu = ImageSelectionMenu::new();
+        let home_menu = HomeMenu::new();
         let ui_controls_manager = UIControlsManager::new();
         let context_menu = ContextMenu::new();
         let tutorial = Tutorial::new();
@@ -57,7 +57,7 @@ impl Roseate {
             image_handler,
             monitor_size,
             settings_menu,
-            selection_menu,
+            home_menu,
             windows_manager,
             ui_controls_manager,
             config_manager,
@@ -212,7 +212,9 @@ impl eframe::App for Roseate {
                                 ui,
                                 &mut self.viewport,
                                 config.ui.controls.magnification,
-                                config.ui.controls.fullscreen
+                                config.ui.controls.fullscreen,
+                                true, // TODO: add config key for this
+                                &mut self.show_settings,
                             );
 
                             let config_padding = config.ui.viewport.padding;
@@ -239,7 +241,7 @@ impl eframe::App for Roseate {
                 _ => {
                     egui::Frame::NONE
                         .show(ui, |ui| {
-                            self.selection_menu.show(
+                            self.home_menu.show(
                                 ui,
                                 &mut self.image_handler,
                                 &mut self.notifier,
@@ -249,7 +251,7 @@ impl eframe::App for Roseate {
                                 &mut self.show_settings,
 
                                 config.ui.selection_menu.show_open_image_button,
-                                true, // TODO: add config key for this
+                                true, // TODO: add separate config key for this
                             );
                         });
                 },
