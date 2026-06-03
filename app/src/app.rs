@@ -213,7 +213,7 @@ impl eframe::App for Roseate {
                                 &mut self.viewport,
                                 config.ui.controls.magnification,
                                 config.ui.controls.fullscreen,
-                                true, // TODO: add config key for this
+                                config.ui.controls.settings,
                                 &mut self.show_settings,
                             );
 
@@ -250,8 +250,8 @@ impl eframe::App for Roseate {
                                 &self.theme.pallet.accent,
                                 &mut self.show_settings,
 
-                                config.ui.selection_menu.show_open_image_button,
-                                true, // TODO: add separate config key for this
+                                config.ui.home_menu.show_open_image_button,
+                                config.ui.home_menu.show_settings_button,
                             );
                         });
                 },

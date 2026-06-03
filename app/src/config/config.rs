@@ -1,7 +1,7 @@
 use cirrus_config::config::CConfig;
 use serde::{Serialize, Deserialize};
 
-use crate::config::models::ui::{ImageInfo, SelectionMenu, Viewport, controls::Controls};
+use crate::config::models::ui::{HomeMenu, ImageInfo, Viewport, controls::Controls};
 
 use super::models::{image::Image, key_binds::KeyBinds, misc::Misc, ui::UI};
 
@@ -35,9 +35,11 @@ impl Config {
                         hide: false,
                         magnification: true,
                         fullscreen: true,
+                        settings: true,
                     },
                     viewport: Viewport::default(),
-                    selection_menu: SelectionMenu {
+                    home_menu: HomeMenu {
+                        show_settings_button: true,
                         show_open_image_button: true,
                     },
                     image_info: ImageInfo::default(),
@@ -49,9 +51,11 @@ impl Config {
                         hide: true,
                         magnification: true,
                         fullscreen: true,
+                        settings: true,
                     },
                     viewport: Viewport::default(),
-                    selection_menu: SelectionMenu {
+                    home_menu: HomeMenu {
+                        show_settings_button: false,
                         show_open_image_button: false,
                     },
                     image_info: ImageInfo::default(),

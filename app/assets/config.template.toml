@@ -104,6 +104,8 @@ experimental_multi_threaded_sampling = false
 # Show or hide UI controls by default.
 hide = true
 
+# Show the settings button in UI controls for easy access to the settings.
+settings = true
 # Show the fullscreen button in UI controls.
 fullscreen = true
 # Show the magnification panel in UI controls.
@@ -123,7 +125,8 @@ animate_fit_to_window = true
 # If set to "true", the viewport will animate pan and zoom when they are reset.
 animate_reset = true
 
-[ui.selection_menu]
+[ui.home_menu]
+show_settings_button = true
 # Show "Open Image" button in main menu when no image is open.
 # 
 # If set to "true", the image selection menu will display an "Open Image" 

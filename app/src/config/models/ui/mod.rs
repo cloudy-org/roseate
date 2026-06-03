@@ -14,7 +14,7 @@ pub struct UI {
     #[serde(default)]
     pub viewport: Viewport,
     #[serde(default)]
-    pub selection_menu: SelectionMenu,
+    pub home_menu: HomeMenu,
     #[serde(default)]
     pub image_info: ImageInfo
 }
@@ -62,17 +62,21 @@ fn ui_padding() -> f32 {
 
 
 #[derive(Serialize, Deserialize, Hash, Clone)]
-pub struct SelectionMenu {
+pub struct HomeMenu {
     // #[serde(default = "super::none_default")]
     // pub mode: Option<String>,
+
+    #[serde(default = "super::true_default")]
+    pub show_settings_button: bool,
 
     #[serde(default = "super::true_default")]
     pub show_open_image_button: bool
 }
 
-impl Default for SelectionMenu {
+impl Default for HomeMenu {
     fn default() -> Self {
         Self {
+            show_settings_button: true,
             show_open_image_button: true
         }
     }
