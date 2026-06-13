@@ -1,5 +1,5 @@
 use cirrus_config::{config_key_path, template::Template};
-use cirrus_egui::widgets::settings::{Settings, section::{Section, SectionDisplayInfo, SectionOverrides}};
+use cirrus_egui::widgets::settings::{Settings, any_section::AnySection, section::{Section, SectionDisplayInfo, SectionOverrides}};
 use cirrus_theming::theme::Theme;
 use egui::Ui;
 
@@ -12,15 +12,21 @@ pub struct SettingsMenu {
 
 impl SettingsMenu {
     pub fn new() -> Self {
+        // may move this to app.rs
+        let mut template_config = Template::new(TEMPLATE_CONFIG_TOML_STRING);
+
+        // TODO: when template config is moved, notify user when parsing fails.
+        template_config.parse_keys().unwrap();
+
         Self {
-            // may move this to app.rs
-            template_config: Template::new(TEMPLATE_CONFIG_TOML_STRING)
+            template_config
         }
     }
 
     pub fn show(&mut self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
         let mut settings = Settings::new();
 
+        // image optimization
         settings.add_section(
             Section::new(
                 config_key_path!(config.image.optimizations.mode),
@@ -42,67 +48,106 @@ impl SettingsMenu {
             )
         );
 
+        // ui controls
         settings.add_section(
-            Section::new(
-                config_key_path!(config.ui.controls.hide),
-                &mut config.ui.controls.hide,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Hide Controls".into()),
-                    ..Default::default()
-                }
-            ) // TODO: add fullscreen and minification toggles under this
-        ).add_section(
-            Section::new(
-                config_key_path!(config.ui.viewport.padding),
-                &mut config.ui.viewport.padding,
-                SectionOverrides {
-                    int_range: Some(0.0..=50.0),
-                    ..Default::default()
-                },
-                SectionDisplayInfo {
-                    name: Some("Viewport padding".into()),
-                    ..Default::default()
-                }
-            ) // TODO: add all other viewport toggles under viewport section
-        ).add_section(
-            Section::new(
-                config_key_path!(config.ui.viewport.zoom_into_cursor),
-                &mut config.ui.viewport.zoom_into_cursor,
-                SectionOverrides::default(),
-                SectionDisplayInfo::default()
-            )
-        ).add_section(
-            Section::new(
-                config_key_path!(config.ui.viewport.fit_to_window),
-                &mut config.ui.viewport.fit_to_window,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Fit image to window".into()),
-                    ..Default::default()
-                }
-            )
-        ).add_section(
-            Section::new(
-                config_key_path!(config.ui.viewport.animate_fit_to_window),
-                &mut config.ui.viewport.animate_fit_to_window,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Animate fit image to window".into()),
-                    ..Default::default()
-                }
-            )
-        ).add_section(
-            Section::new(
-                config_key_path!(config.ui.viewport.animate_reset),
-                &mut config.ui.viewport.animate_reset,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Animate viewport reset".into()),
-                    ..Default::default()
-                }
-            )
-        ).add_section(
+            AnySection::ChildSections {
+                title: String::from("UI Controls"),
+                sections: vec![
+                    Section::new(
+                        config_key_path!(config.ui.controls.hide),
+                        &mut config.ui.controls.hide,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Hide All Controls".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.controls.settings),
+                        &mut config.ui.controls.settings,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Hide Settings Button".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.controls.fullscreen),
+                        &mut config.ui.controls.fullscreen,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Hide Fullscreen Button".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.controls.magnification),
+                        &mut config.ui.controls.magnification,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Hide Magnification Panel".into()),
+                            ..Default::default()
+                        }
+                    ).into()
+                ]
+            }
+        );
+
+        // viewport
+        settings.add_section(
+            AnySection::ChildSections {
+                title: String::from("Viewport"),
+                sections: vec![
+                    Section::new(
+                        config_key_path!(config.ui.viewport.padding),
+                        &mut config.ui.viewport.padding,
+                        SectionOverrides {
+                            int_range: Some(0.0..=50.0),
+                            ..Default::default()
+                        },
+                        SectionDisplayInfo {
+                            name: Some("Viewport padding".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.viewport.zoom_into_cursor),
+                        &mut config.ui.viewport.zoom_into_cursor,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo::default()
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.viewport.fit_to_window),
+                        &mut config.ui.viewport.fit_to_window,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Fit image to window".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.viewport.animate_fit_to_window),
+                        &mut config.ui.viewport.animate_fit_to_window,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Animate fit image to window".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.viewport.animate_reset),
+                        &mut config.ui.viewport.animate_reset,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Animate viewport reset".into()),
+                            ..Default::default()
+                        }
+                    ).into()
+                ]
+            }
+        );
+
+        settings.add_section(
             Section::new(
                 config_key_path!(config.image.loading.initial.lazy_loading),
                 &mut config.image.loading.initial.lazy_loading,
@@ -124,10 +169,10 @@ impl SettingsMenu {
             )
         );
 
-        if self.template_config.keys.is_none() {
-            self.template_config.parse_keys().unwrap();
-        }
-
-        settings.show_ui(ui, &theme, &self.template_config);
+        settings.show_ui(
+            ui,
+            &theme,
+            &self.template_config.keys
+        );
     }
 }

@@ -73,72 +73,6 @@ impl Roseate {
 
 impl eframe::App for Roseate {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        Settings::handle_input(
-            &ctx,
-            &mut self.config_manager,
-            &mut self.notifier,
-            &mut self.show_settings
-        );
-
-        let config = &self.config_manager.config;
-
-        self.windows_manager.handle_input(
-            &ctx,
-            &mut self.notifier,
-            &config.key_binds.show_image_info,
-            &config.key_binds.show_extra_image_info
-        );
-        self.ui_controls_manager.handle_input(
-            &ctx,
-            &mut self.notifier,
-            &config.key_binds.show_ui_controls,
-            config.ui.controls.hide
-        );
-
-        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
-            self.show_about = !self.show_about;
-        }
-
-        // toggle and escape fullscreen
-        let is_fullscreen = ctx.input(
-            |i| i.viewport().fullscreen.unwrap_or_default()
-        );
-
-        if is_fullscreen && ctx.input(|i| i.key_pressed(Key::Escape)) {
-            ctx.send_viewport_cmd(
-                ViewportCommand::Fullscreen(false)
-            );
-
-            self.notifier.show_banner(
-                "Windowed Mode (ESC)",
-                BannerPlacement::BOTTOM,
-                Duration::from_secs(3)
-            );
-        }
-
-        if ctx.input(|i| i.key_pressed(Key::F) || i.key_pressed(Key::F11)) {
-            ctx.send_viewport_cmd(
-                ViewportCommand::Fullscreen(!is_fullscreen)
-            );
-
-            self.notifier.show_banner(
-                BannerText::new(
-                    match is_fullscreen {
-                        false => String::from("Fullscreen Mode (F11)"),
-                        true => String::from("Windowed Mode")
-                    },
-                    match is_fullscreen {
-                        false => Some(
-                            String::from("Press 'F' / 'F11' again or 'ESCAPE' to exit.")
-                        ),
-                        true => None
-                    }
-                ),
-                BannerPlacement::BOTTOM,
-                Duration::from_secs(4)
-            );
-        }
-
         // In roseate I prefer the central panel with zero margin.
         let central_panel_frame = Frame::default()
             .inner_margin(Margin::ZERO)
@@ -148,28 +82,15 @@ impl eframe::App for Roseate {
         egui::CentralPanel::default()
             .frame(central_panel_frame)
             .show(ctx, |ui| {
-            let config = &self.config_manager.config.clone();
 
-            self.image_handler.update(
+            // handle inputs and settings menu
+
+            Settings::handle_input(
                 &ctx,
-                &self.viewport.zoom,
-                self.viewport.is_busy,
-                &self.monitor_size,
-                config.image.backend.get_decoding_backend(),
+                &mut self.config_manager,
                 &mut self.notifier,
+                &mut self.show_settings
             );
-
-            self.tutorial.show(ui, &mut self.config_manager);
-
-            self.notifier.show(ui);
-
-            if self.show_about {
-                self.about_window.show(
-                    ui,
-                    &self.authors,
-                    &mut self.show_license
-                );
-            }
 
             if self.show_settings {
                 // we only want to run the config manager's
@@ -184,6 +105,85 @@ impl eframe::App for Roseate {
 
                 return;
             }
+
+            let config = &self.config_manager.config;
+
+            self.windows_manager.handle_input(
+                &ctx,
+                &mut self.notifier,
+                &config.key_binds.show_image_info,
+                &config.key_binds.show_extra_image_info
+            );
+            self.ui_controls_manager.handle_input(
+                &ctx,
+                &mut self.notifier,
+                &config.key_binds.show_ui_controls,
+                config.ui.controls.hide
+            );
+
+            if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {
+                self.show_about = !self.show_about;
+            }
+
+            // toggle and escape fullscreen
+            let is_fullscreen = ctx.input(
+                |i| i.viewport().fullscreen.unwrap_or_default()
+            );
+
+            if is_fullscreen && ctx.input(|i| i.key_pressed(Key::Escape)) {
+                ctx.send_viewport_cmd(
+                    ViewportCommand::Fullscreen(false)
+                );
+
+                self.notifier.show_banner(
+                    "Windowed Mode (ESC)",
+                    BannerPlacement::BOTTOM,
+                    Duration::from_secs(3)
+                );
+            }
+
+            if ctx.input(|i| i.key_pressed(Key::F) || i.key_pressed(Key::F11)) {
+                ctx.send_viewport_cmd(
+                    ViewportCommand::Fullscreen(!is_fullscreen)
+                );
+
+                self.notifier.show_banner(
+                    BannerText::new(
+                        match is_fullscreen {
+                            false => String::from("Fullscreen Mode (F11)"),
+                            true => String::from("Windowed Mode")
+                        },
+                        match is_fullscreen {
+                            false => Some(
+                                String::from("Press 'F' / 'F11' again or 'ESCAPE' to exit.")
+                            ),
+                            true => None
+                        }
+                    ),
+                    BannerPlacement::BOTTOM,
+                    Duration::from_secs(4)
+                );
+            }
+
+            self.notifier.show(ui);
+            // self.tutorial.show(ui, &mut self.config_manager);
+
+            if self.show_about {
+                self.about_window.show(
+                    ui,
+                    &self.authors,
+                    &mut self.show_license
+                );
+            }
+
+            self.image_handler.update(
+                &ctx,
+                &self.viewport.zoom,
+                self.viewport.is_busy,
+                &self.monitor_size,
+                config.image.backend.clone().get_decoding_backend(),
+                &mut self.notifier,
+            );
 
             // NOTE: hopefully cloning this here doesn't duplicate anything big, I recall it shouldn't in my codebase.
             match (self.image_handler.image.as_ref(), self.image_handler.resource.as_ref()) {
