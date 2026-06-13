@@ -58,7 +58,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.hide,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide All Controls".into()),
+                            name: Some("Hide all controls".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -67,7 +67,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.settings,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide Settings Button".into()),
+                            name: Some("Hide settings button".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -76,7 +76,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.fullscreen,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide Fullscreen Button".into()),
+                            name: Some("Hide fullscreen button".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -85,7 +85,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.magnification,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide Magnification Panel".into()),
+                            name: Some("Hide magnification panel".into()),
                             ..Default::default()
                         }
                     ).into()
@@ -148,24 +148,76 @@ impl SettingsMenu {
         );
 
         settings.add_section(
+            AnySection::ChildSections {
+                title: String::from("Home Menu"),
+                sections: vec![
+                    Section::new(
+                        config_key_path!(config.ui.home_menu.show_settings_button),
+                        &mut config.ui.home_menu.show_settings_button,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo::default(),
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.ui.home_menu.show_open_image_button),
+                        &mut config.ui.home_menu.show_open_image_button,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo::default(),
+                    ).into()
+                ]
+            }
+        );
+
+        settings.add_section(
             Section::new(
-                config_key_path!(config.image.loading.initial.lazy_loading),
-                &mut config.image.loading.initial.lazy_loading,
+                config_key_path!(config.ui.image_info.show_location),
+                &mut config.ui.image_info.show_location,
                 SectionOverrides::default(),
                 SectionDisplayInfo {
-                    name: Some("Lazy load image initially".into()),
+                    name: Some(String::from("Show image location")),
                     ..Default::default()
-                }
+                },
             )
-        ).add_section(
+        );
+
+        settings.add_section(
+            AnySection::ChildSections {
+                title: String::from("Lazy Image Loading"),
+                sections: vec![
+                    Section::new(
+                        config_key_path!(config.image.loading.initial.lazy_loading),
+                        &mut config.image.loading.initial.lazy_loading,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Lazy load image initially".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    Section::new(
+                        config_key_path!(config.image.loading.gui.lazy_loading),
+                        &mut config.image.loading.gui.lazy_loading,
+                        SectionOverrides::default(),
+                        SectionDisplayInfo {
+                            name: Some("Lazy load Image in GUI".into()),
+                            ..Default::default()
+                        }
+                    ).into()
+                ]
+            }
+        );
+
+        settings.add_section(
             Section::new(
-                config_key_path!(config.image.loading.gui.lazy_loading),
-                &mut config.image.loading.gui.lazy_loading,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Lazy load Image in GUI".into()),
+                config_key_path!(config.image.backend.decoder),
+                &mut config.image.backend.decoder,
+                SectionOverrides {
+                    choices: Some(
+                        vec![
+                            "image-rs".into()
+                        ]
+                    ),
                     ..Default::default()
-                }
+                },
+                SectionDisplayInfo::default()
             )
         );
 

@@ -14,23 +14,22 @@ pub struct Image {
 
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Backend {
-    #[serde(default = "super::none_default")]
-    decoder: Option<String>,
+    #[serde(default = "decoder_default")]
+    pub decoder: String,
 }
 
 impl Backend {
     pub fn get_decoding_backend(&self) -> DecodingBackend {
-        match &self.decoder {
-            Some(backend_id) => {
-                match backend_id.as_str() {
-                    "image-rs" => DecodingBackend::ImageRS,
-                    "zune-image" => DecodingBackend::ZuneImage,
-                    _ => DecodingBackend::ImageRS
-                }
-            },
-            None => DecodingBackend::ImageRS,
+        match self.decoder.as_str() {
+            "image-rs" => DecodingBackend::ImageRS,
+            "zune-image" => DecodingBackend::ZuneImage,
+            _ => DecodingBackend::ImageRS
         }
     }
+}
+
+fn decoder_default() -> String {
+    String::from("image-rs")
 }
 
 
