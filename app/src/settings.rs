@@ -54,11 +54,11 @@ impl SettingsMenu {
                 title: String::from("UI Controls"),
                 sections: vec![
                     Section::new(
-                        config_key_path!(config.ui.controls.hide),
-                        &mut config.ui.controls.hide,
+                        config_key_path!(config.ui.controls.show),
+                        &mut config.ui.controls.show,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide all controls".into()),
+                            name: Some("Show all controls".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -67,7 +67,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.settings,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide settings button".into()),
+                            name: Some("Show settings button".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -76,7 +76,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.fullscreen,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide fullscreen button".into()),
+                            name: Some("Show fullscreen button".into()),
                             ..Default::default()
                         }
                     ).into(),
@@ -85,7 +85,7 @@ impl SettingsMenu {
                         &mut config.ui.controls.magnification,
                         SectionOverrides::default(),
                         SectionDisplayInfo {
-                            name: Some("Hide magnification panel".into()),
+                            name: Some("Show magnification panel".into()),
                             ..Default::default()
                         }
                     ).into()

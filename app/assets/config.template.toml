@@ -101,10 +101,10 @@ experimental_multi_threaded_sampling = false
 [ui]
 
 [ui.controls]
-# Hide all UI controls by default.
-hide = true
+# Show all UI controls by default.
+show = false
 
-# Show the settings button in UI controls for easy access to the settings.
+# Show the settings button in UI controls.
 settings = true
 # Show the fullscreen button in UI controls.
 fullscreen = true

@@ -38,9 +38,9 @@ impl UIControlsManager {
         ctx: &Context,
         notifier: &mut Notifier,
         show_controls_key: &String,
-        hide_by_default: bool
+        show_by_default: bool
     ) {
-        let show_controls = self.show_controls.get_or_insert(!hide_by_default);
+        let show_controls = self.show_controls.get_or_insert(show_by_default);
 
         let show_controls_reader = self.show_controls_reader.get_or_insert_with(
             || {

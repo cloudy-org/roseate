@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct Controls {
-    #[serde(default = "super::true_default")]
-    pub hide: bool,
+    #[serde(default = "super::false_default")]
+    pub show: bool,
 
     #[serde(default = "super::true_default")]
     pub magnification: bool,
@@ -16,7 +16,7 @@ pub struct Controls {
 impl Default for Controls {
     fn default() -> Self {
         Self {
-            hide: true,
+            show: false,
 
             magnification: true,
             fullscreen: true,

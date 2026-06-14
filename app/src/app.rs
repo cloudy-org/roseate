@@ -118,7 +118,7 @@ impl eframe::App for Roseate {
                 &ctx,
                 &mut self.notifier,
                 &config.key_binds.show_ui_controls,
-                config.ui.controls.hide
+                config.ui.controls.show
             );
 
             if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::A)) {

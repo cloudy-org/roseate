@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use crate::config::models::ui::controls::Controls;
 
 pub mod controls;
-pub(self) use super::true_default;
+pub(self) use super::{true_default, false_default};
 
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct UI {
