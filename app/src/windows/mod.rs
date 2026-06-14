@@ -1,11 +1,12 @@
 use std::time::Duration;
 
 use cirrus_egui::notifier::{Notifier, banner::{BannerPlacement, BannerText}};
+use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
 use egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, utils::get_input_reader_from_soft_binds, windows::info::ImageInfoWindow};
+use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
 
 mod info;
 
@@ -49,14 +50,16 @@ impl WindowsManager {
     ) {
         // TODO: put this into some nice function without loosing too much control somehow.
         let show_info_reader = self.show_info_reader.get_or_insert_with(|| {
-            match get_input_reader_from_soft_binds(
+            match parse_and_get_egui_input_reader_from_string(
                 show_image_info_key,
                 |i, key| i.key_pressed(key)
             ) {
                 Ok(reader) => Box::new(reader),
                 Err(error) => {
                     notifier.toast(
-                        Box::new(error), ToastLevel::Error, |_| {}
+                        error.to_string(),
+                        ToastLevel::Error,
+                        |_| {}
                     );
 
                     Box::new(|i| i.key_pressed(Key::I))
@@ -65,14 +68,16 @@ impl WindowsManager {
         });
 
         let show_extra_info_reader = self.show_extra_info_reader.get_or_insert_with(|| {
-            match get_input_reader_from_soft_binds(
+            match parse_and_get_egui_input_reader_from_string(
                 show_extra_image_info_key,
                 |i, key| i.key_pressed(key)
             ) {
                 Ok(reader) => Box::new(reader),
                 Err(error) => {
                     notifier.toast(
-                        Box::new(error), ToastLevel::Error, |_| {}
+                        error.to_string(),
+                        ToastLevel::Error,
+                        |_| {}
                     );
 
                     Box::new(|i| i.key_pressed(Key::I) && i.modifiers.ctrl)

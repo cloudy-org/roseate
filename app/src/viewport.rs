@@ -1,6 +1,7 @@
 use core::f32;
 use std::{hash::{DefaultHasher, Hash}, time::Duration};
 
+use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
 use egui_notify::ToastLevel;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
@@ -8,7 +9,7 @@ use std::hash::Hasher;
 use cirrus_egui::{notifier::{Notifier, banner::BannerPlacement}, scheduler::Scheduler};
 use egui::{CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
-use crate::{image_handler::resource::ImageResource, utils::get_input_reader_from_soft_binds};
+use crate::{image_handler::resource::ImageResource};
 
 pub struct Viewport {
     pub zoom: f32,
@@ -262,11 +263,13 @@ impl Viewport {
         animate_reset: bool,
     ) {
         let reset_viewport_reader = self.reset_viewport_reader.get_or_insert_with(|| {
-            match get_input_reader_from_soft_binds(reset_viewport_key, |i, key| i.key_pressed(key)) {
+            match parse_and_get_egui_input_reader_from_string(reset_viewport_key, |i, key| i.key_pressed(key)) {
                 Ok(reader) => Box::new(reader),
                 Err(error) => {
                     notifier.toast(
-                        Box::new(error), ToastLevel::Error, |_| {}
+                        error.to_string(),
+                        ToastLevel::Error,
+                        |_| {}
                     );
 
                     Box::new(|i| i.key_pressed(Key::R))

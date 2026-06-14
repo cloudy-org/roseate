@@ -84,7 +84,6 @@ impl eframe::App for Roseate {
             .show(ctx, |ui| {
 
             // handle inputs and settings menu
-
             Settings::handle_input(
                 &ctx,
                 &mut self.config_manager,
@@ -92,6 +91,13 @@ impl eframe::App for Roseate {
                 &mut self.show_settings
             );
 
+            // we have to render the settings menu here so typing into input boxes 
+            // in the settings menu don't collide with configured key binds. A better 
+            // way of handling this would be restructuring the entirety of the update loop 
+            // to bring in a concept of "sections" where we have the home menu, the image 
+            // viewport section and the settings menu as an individual section that is rendered
+            // on it's own so that we can choose to only listen to keybinds in one section but not 
+            // the other.
             if self.show_settings {
                 // we only want to run the config manager's
                 // update loop when were are in the settings menu
