@@ -6,7 +6,7 @@ use cirrus_authors::Authors;
 use cirrus_clap_cli::EditArgs;
 use cirrus_edit::{Preference, open_editor};
 use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
-use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks, ThemePalletFallbacks}, manager::ThemeManager};
+use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks}, manager::ThemeManager};
 use config::config::Config;
 use env_logger::Builder;
 use image_handler::{ImageHandler};
@@ -192,9 +192,7 @@ fn main() -> eframe::Result {
     );
 
     let theme_fallbacks = ThemeFallbacks {
-        pallet: ThemePalletFallbacks {
-            accent_colour: Colour::from_hex(0xe05f78)
-        },
+        system_derived_accent_colour: Colour::from_hex(0xe05f78),
     };
 
     // the theme manager may move into the app 

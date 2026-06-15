@@ -77,7 +77,7 @@ impl eframe::App for Roseate {
         let central_panel_frame = Frame::default()
             .inner_margin(Margin::ZERO)
             .outer_margin(Margin::ZERO)
-            .fill(Color32::from_hex(&self.theme.pallet.primary.to_hex_string()).unwrap());
+            .fill(Color32::from_hex(&self.theme.palette.primary.to_hex_string()).unwrap());
 
         egui::CentralPanel::default()
             .frame(central_panel_frame)
@@ -253,7 +253,7 @@ impl eframe::App for Roseate {
                                 &mut self.notifier,
                                 &self.monitor_size,
                                 config.image.backend.get_decoding_backend(),
-                                &self.theme.pallet.accent,
+                                &self.theme.palette.accent,
                                 &mut self.show_settings,
 
                                 config.ui.home_menu.show_open_image_button,
@@ -273,14 +273,14 @@ impl eframe::App for Roseate {
             .show(ctx, |ui| {
                 if let Some(loading) = &self.notifier.loading {
                     Frame::default()
-                        .fill(Color32::from_hex(&self.theme.pallet.primary.to_hex_string()).unwrap())
+                        .fill(Color32::from_hex(&self.theme.palette.primary.to_hex_string()).unwrap())
                         .inner_margin(Margin::same(8))
                         .corner_radius(CornerRadius {ne: 10, ..Default::default()})
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
                                 ui.add(
                                     egui::Spinner::new()
-                                        .color(Color32::from_hex(&self.theme.pallet.accent.to_hex_string()).unwrap())
+                                        .color(Color32::from_hex(&self.theme.palette.accent.to_hex_string()).unwrap())
                                         .size(20.0)
                                 );
 
