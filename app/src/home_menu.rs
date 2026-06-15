@@ -2,7 +2,7 @@ use std::{time::Duration};
 
 use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render, widgets::settings::button::SettingsButton};
 use cirrus_theming::colour::Colour;
-use egui::{Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
+use eframe::egui::{self, Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 use rfd::FileDialog;
 

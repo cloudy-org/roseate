@@ -48,7 +48,6 @@ cirrus_soft_binds = { package = "cirrus_soft_binds_v1", path = "../cirrus/soft_b
 
 roseate-core = { path = "../core" }
 
-egui = "=0.33.2"
 eframe = { version = "=0.33.2", default-features = false, optional = true, features = [
     "accesskit",
     "default_fonts",
@@ -79,8 +78,8 @@ rand = "0.9.4"
 rustls-webpki = "0.103.13"
 
 # additional crates
-reverse_geocoder = {version = "4.1.1", optional = true}
 country-emoji = {version = "0.3.2", optional = true}
+reverse_geocoder = {version = "4.1.1", optional = true}
 
 
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.

@@ -3677,7 +3677,6 @@ dependencies = [
  "derive_more",
  "dirs",
  "eframe",
- "egui",
  "egui-notify",
  "egui_animation",
  "egui_extras",

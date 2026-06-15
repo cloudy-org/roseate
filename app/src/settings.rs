@@ -1,7 +1,7 @@
 use cirrus_config::{config_key_path, template::Template};
 use cirrus_egui::widgets::settings::{Settings, any_section::AnySection, section::{Section, SectionDisplayInfo, SectionOverrides}};
 use cirrus_theming::theme::Theme;
-use egui::Ui;
+use eframe::egui::Ui;
 
 use crate::{TEMPLATE_CONFIG_TOML_STRING, config::config::Config};
 

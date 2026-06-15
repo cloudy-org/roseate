@@ -1,5 +1,5 @@
 use eframe::egui::{self, Vec2};
-use egui::{Align2, CursorIcon, Ui};
+use eframe::egui::{Align2, CursorIcon, Ui};
 
 use crate::{viewport::Viewport};
 

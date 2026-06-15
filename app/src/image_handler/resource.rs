@@ -1,5 +1,5 @@
 use cirrus_egui::notifier::Notifier;
-use egui::{Color32, Context, TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
+use eframe::egui::{self, Color32, Context, TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, Pixels}};
 

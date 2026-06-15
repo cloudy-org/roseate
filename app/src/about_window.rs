@@ -1,7 +1,7 @@
 use cirrus_authors::Authors;
 use cirrus_egui::{widgets::about::{About, AboutApplicationInfo}};
 use eframe::egui::{self, Response, Vec2};
-use egui::Ui;
+use eframe::egui::Ui;
 
 use crate::files;
 

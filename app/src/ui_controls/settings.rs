@@ -1,4 +1,4 @@
-use egui::{Align2, Ui, Vec2};
+use eframe::egui::{self, Align2, Ui, Vec2};
 
 use cirrus_egui::widgets::settings::button::SettingsButton as CirrusSettingsButton;
 

@@ -7,7 +7,7 @@ use log::debug;
 use roseate_core::decoded_image::ImageSize;
 use std::hash::Hasher;
 use cirrus_egui::{notifier::{Notifier, banner::BannerPlacement}, scheduler::Scheduler};
-use egui::{CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
+use eframe::egui::{self, CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
 use crate::{image_handler::resource::ImageResource};
 

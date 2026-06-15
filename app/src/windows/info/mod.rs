@@ -2,7 +2,7 @@ use std::{alloc, sync::{Arc, TryLockError}};
 
 use cap::Cap;
 use eframe::egui::{self, Response};
-use egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
+use eframe::egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use roseate_core::image_info::{info::ImageInfo};
 
 use crate::{image::Image, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};

@@ -3,7 +3,7 @@ use std::time::Duration;
 use cirrus_authors::Authors;
 use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, banner::{BannerPlacement, BannerText}}, widgets::settings::Settings};
 use cirrus_theming::theme::Theme;
-use egui::{Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
+use eframe::egui::{self, Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 
 use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, image_handler::ImageHandler, home_menu::HomeMenu, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 

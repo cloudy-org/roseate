@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use cirrus_egui::{notifier::{Notifier, banner::{BannerPlacement, BannerText}}};
 use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
-use egui::{Context, InputState, Key, Ui};
+use eframe::egui::{Context, InputState, Key, Ui};
 use egui_notify::ToastLevel;
 
 use crate::{ui_controls::{fullscreen::FullscreenButton, magnification_panel::MagnificationPanel, settings::SettingsButton}, viewport::Viewport};

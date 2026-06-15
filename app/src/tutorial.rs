@@ -1,5 +1,5 @@
 use cirrus_egui::config_manager::ConfigManager;
-use egui::{Align2, Area, Id, Order, Sense, TextWrapMode, Ui, UiKind, Vec2, include_image};
+use eframe::egui::{Align2, Area, Id, Order, Sense, TextWrapMode, Ui, UiKind, Vec2, include_image};
 
 use crate::config::config::Config;
 

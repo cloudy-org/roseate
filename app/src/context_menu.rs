@@ -1,4 +1,4 @@
-use egui::{Context, CornerRadius, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
+use eframe::egui::{self, Context, CornerRadius, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
 
 use crate::windows::WindowsManager;
 

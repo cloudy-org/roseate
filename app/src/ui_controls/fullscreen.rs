@@ -1,4 +1,4 @@
-use egui::{Align2, CursorIcon, Ui, Vec2, ViewportCommand};
+use eframe::egui::{self, Align2, CursorIcon, Ui, Vec2, ViewportCommand};
 
 pub struct FullscreenButton {}
 
