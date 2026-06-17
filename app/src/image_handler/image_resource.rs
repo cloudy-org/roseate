@@ -1,9 +1,7 @@
-use cirrus_egui::notifier::Notifier;
-use eframe::egui::{self, Color32, Context, TextureFilter, TextureHandle, TextureOptions, TextureWrapMode};
+use eframe::egui::{self, Color32, Context, TextureHandle, TextureOptions};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, Pixels}};
 
-use crate::{image_handler::ImageHandler};
 
 #[derive(Clone)]
 pub enum ImageResource {
@@ -12,69 +10,12 @@ pub enum ImageResource {
     // Vector(egui::Image<'static>)
 }
 
-impl ImageHandler {
-    pub(super) fn load_resource_update(&mut self, ctx: &Context, notifier: &mut Notifier) {
-        if let Some(image) = &self.image {
-            let reload_texture = match self.load_image_texture.try_lock() {
-                Ok(load_image_texture_mutex) => *load_image_texture_mutex,
-                Err(_) => false,
-            };
-
-            if reload_texture == false {
-                return;
-            }
-
-            let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
-
-            if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
-                notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
-
-                self.decoded_image_info = Some(decoded_image.info.clone());
-
-                let texture_options = TextureOptions {
-                    magnification: TextureFilter::Linear,
-                    minification: TextureFilter::Linear,
-                    wrap_mode: TextureWrapMode::ClampToEdge,
-                    mipmap_mode: None,
-                };
-
-                let is_rgba = matches!(
-                    decoded_image.info.colour_type,
-                    ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F
-                );
-
-                self.resource = match can_free_memory_or_consume && is_rgba {
-                    true => Some(
-                        Self::rgba_zero_copy_decoded_image_to_resource(ctx, decoded_image, texture_options)
-                    ),
-                    false => Some(Self::decoded_image_to_resource(ctx, &decoded_image, texture_options)),
-                };
-
-                // Texture handle doesn't need forgetting like egui::Image 
-                // as it's smart enough to free itself from memory.
-
-                ctx.forget_all_images(); // we want to free the rose image in 
-                // image selection menu and all other potential images from memory 
-                // that we no longer require loaded.
-
-                notifier.unset_loading();
-            }
-
-            if can_free_memory_or_consume {
-                debug!("Freeing decoded image from memory...");
-                *image.decoded.lock().unwrap() = None;
-            }
-
-            *self.load_image_texture.lock().unwrap() = false;
-            self.image_loading = false;
-        }
-    }
-
-    fn decoded_image_to_resource(
+impl ImageResource {
+    pub fn from_decoded_image(
         ctx: &Context,
         decoded_image: &DecodedImage,
         texture_options: TextureOptions
-    ) -> ImageResource {
+    ) -> Self {
         debug!("Copying image's '{}' pixels into RGBA egui texture...", decoded_image.info.colour_type);
 
         match &decoded_image.content {
@@ -85,7 +26,7 @@ impl ImageHandler {
                     ctx, decoded_image, &pixels, texture_options
                 );
 
-                ImageResource::Texture(texture)
+                Self::Texture(texture)
             },
             DecodedImageContent::Animated(frames) => {
                 debug!("Handing animated image textures to egui's backend to upload to the GPU...");
@@ -101,46 +42,23 @@ impl ImageHandler {
                     );
                 }
 
-                ImageResource::AnimatedTexture(textures)
+                Self::AnimatedTexture(textures)
             },
         }
     }
 
-    fn decoded_image_pixels_to_egui_texture(ctx: &Context, decoded_image: &DecodedImage, pixels: &Pixels, texture_options: TextureOptions) -> TextureHandle {
-        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
-
-        let texture = ctx.load_texture(
-            "static_image",
-            match decoded_image.info.colour_type {
-                ImageColourType::Grey8 | ImageColourType::Grey16 | ImageColourType::Grey32F | 
-                ImageColourType::GreyA8 | ImageColourType::GreyA16 | ImageColourType::GreyA32F => {
-                    egui::ColorImage::from_gray(image_size, &pixels)
-                },
-                ImageColourType::Rgb8 | ImageColourType::Rgb16 | ImageColourType::Rgb32F => {
-                    egui::ColorImage::from_rgb(image_size, &pixels)
-                },
-                ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F => {
-                    egui::ColorImage::from_rgba_unmultiplied(image_size, &pixels)
-                },
-            },
-            texture_options
-        );
-
-        texture
-    }
-
-    fn rgba_zero_copy_decoded_image_to_resource(
+    pub fn from_rgba_decoded_image_zero_copy(
         ctx: &Context,
         decoded_image: &mut DecodedImage,
         texture_options: TextureOptions
-    ) -> ImageResource {
+    ) -> Self {
         debug!("Image pixels will be directly consumed and uploaded to gpu to avoid memory spike...");
 
         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
         assert!(
             matches!(decoded_image.info.colour_type, ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F),
-            "Wrong into egui texture function was called, this is a logic error!"
+            "Wrong image resource from function was called, this is a logic error!"
         );
 
         let content = std::mem::replace(
@@ -188,7 +106,30 @@ impl ImageHandler {
         }
     }
 
-    pub fn rgba8_pixels_direct_consume_into_color32(mut pixels: Pixels) -> Vec<Color32> {
+    fn decoded_image_pixels_to_egui_texture(ctx: &Context, decoded_image: &DecodedImage, pixels: &Pixels, texture_options: TextureOptions) -> TextureHandle {
+        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
+
+        let texture = ctx.load_texture(
+            "static_image",
+            match decoded_image.info.colour_type {
+                ImageColourType::Grey8 | ImageColourType::Grey16 | ImageColourType::Grey32F | 
+                ImageColourType::GreyA8 | ImageColourType::GreyA16 | ImageColourType::GreyA32F => {
+                    egui::ColorImage::from_gray(image_size, &pixels)
+                },
+                ImageColourType::Rgb8 | ImageColourType::Rgb16 | ImageColourType::Rgb32F => {
+                    egui::ColorImage::from_rgb(image_size, &pixels)
+                },
+                ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F => {
+                    egui::ColorImage::from_rgba_unmultiplied(image_size, &pixels)
+                },
+            },
+            texture_options
+        );
+
+        texture
+    }
+
+    fn rgba8_pixels_direct_consume_into_color32(mut pixels: Pixels) -> Vec<Color32> {
         assert!(pixels.len() % 4 == 0);
 
         let pointer = pixels.as_mut_ptr() as *mut Color32;

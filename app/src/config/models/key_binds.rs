@@ -9,13 +9,16 @@ pub struct KeyBinds {
     #[serde(default = "reset_viewport")]
     pub reset_viewport: String,
     #[serde(default = "show_ui_controls")]
-    pub show_ui_controls: String
+    pub show_ui_controls: String,
+    #[serde(default = "open_image")]
+    pub open_image: String,
 }
 
 fn show_image_info() -> String { "I".into() }
 fn show_extra_image_info() -> String { "CTRL+I".into() }
 fn reset_viewport() -> String { "R".into() }
 fn show_ui_controls() -> String { "C".into() }
+fn open_image() -> String { "CTRL+O".into() }
 
 impl Default for KeyBinds {
     fn default() -> Self {
@@ -23,7 +26,8 @@ impl Default for KeyBinds {
             show_image_info: show_image_info(),
             show_extra_image_info: show_extra_image_info(),
             reset_viewport: reset_viewport(),
-            show_ui_controls: show_ui_controls()
+            show_ui_controls: show_ui_controls(),
+            open_image: open_image(),
         }
     }
 }

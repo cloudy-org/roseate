@@ -11,7 +11,6 @@ pub enum DecodedImageContent {
     Animated(Vec<(Pixels, f32)>),
 }
 
-// TODO: Add back size to decoded image
 pub struct DecodedImage {
     pub info: ImageInfo,
 

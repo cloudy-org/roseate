@@ -36,24 +36,7 @@ fn decoder_default() -> String {
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct ImageLoading {
     #[serde(default)]
-    pub gui: LoadingGUISettings,
-    #[serde(default)]
     pub initial: InitialSettings,
-}
-
-
-#[derive(Serialize, Deserialize, Hash, Clone)]
-pub struct LoadingGUISettings {
-    #[serde(default = "super::true_default")]
-    pub lazy_loading: bool,
-}
-
-impl Default for LoadingGUISettings {
-    fn default() -> Self {
-        Self {
-            lazy_loading: true,
-        }
-    }
 }
 
 

@@ -18,7 +18,7 @@ use clap::Parser;
 use app::Roseate;
 use monitor_size::MonitorSize;
 
-use crate::image::image::Image;
+use crate::image_selector::ImageSelector;
 
 mod app;
 mod utils;
@@ -36,6 +36,7 @@ mod settings;
 mod about_window;
 mod context_menu;
 mod tutorial;
+mod image_selector;
 
 const APP_NAME: &str = "roseate";
 const AUTHORS_TXT_STRING: &str = include_str!("../../AUTHORS.txt");
@@ -153,43 +154,38 @@ fn main() -> eframe::Result {
         return Ok(());
     }
 
-    let image_path = cli_args.image;
-
     let image_optimizations = config.image.optimizations.get_optimizations()
         .normalize();
 
-    let mut image_handler = match image_path {
-        Some(path) => {
-            info!("Image '{}' loading from path...", path);
+    let mut image_selector = ImageSelector::new();
+    // TODO: rename to ImageLoader and make ImageSelector what stores and owns the Image struct
+    let mut image_loader = ImageHandler::new(image_optimizations);
 
-            let path = Path::new(&path).to_owned();
+    if let Some(image_path_string) = cli_args.image {
+        info!("Image '{}' loading from path...", image_path_string);
 
-            let image = match Image::new(path) {
-                Ok(image) => Some(image),
-                Err(error) => {
-                    notifier.toast(
-                        Box::new(error),
-                        ToastLevel::Error,
-                        |toast| {
-                            toast.duration(Some(Duration::from_secs(10)));
-                        }
-                    );
+        let image_path = Path::new(&image_path_string).to_owned();
 
-                    None
-                },
-            };
+        if let Err(error) = image_selector.select_image_from_path(image_path) {
+            notifier.toast(
+                Box::new(error),
+                ToastLevel::Error,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(10)));
+                }
+            );
+        }
 
-            ImageHandler::new(image, image_optimizations)
-        },
-        None => ImageHandler::new(None, image_optimizations),
-    };
-
-    image_handler.load_image(
-        config.image.loading.initial.lazy_loading,
-        config.image.backend.get_decoding_backend(),
-        &monitor_size,
-        &mut notifier,
-    );
+        if let Some(image) = image_selector.get_mutable_image() {
+            image_loader.load_image(
+                image,
+                config.image.loading.initial.lazy_loading,
+                config.image.backend.get_decoding_backend(),
+                &monitor_size,
+                &mut notifier,
+            );
+        }
+    }
 
     let theme_fallbacks = ThemeFallbacks {
         system_derived_accent_colour: Colour::from_hex(0xe05f78),
@@ -214,7 +210,8 @@ fn main() -> eframe::Result {
                 .apply(&cc.egui_ctx);
 
             let app = Roseate::new(
-                image_handler,
+                image_selector,
+                image_loader,
                 monitor_size,
                 theme,
                 notifier,

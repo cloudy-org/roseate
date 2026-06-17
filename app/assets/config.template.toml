@@ -10,16 +10,6 @@ version = 1
 # on peak memory hence it's "false" by default.
 initial.lazy_loading = false
 
-# Load image on separate thread when selected within GUI.
-# 
-# Same as the above but this is now for when you select and load an image from the GUI.
-# 
-# For example: Picking an image from the file picker or dropping an image into the window.
-# 
-# Not setting this to "true" will avoid spawning a separate thread for image loading but will
-# cause the GUI to freeze up (or appear as if it's not responding) until the image has been loaded.
-gui.lazy_loading = true
-
 [image.backend]
 # Change image decoder backend.
 # 
@@ -151,6 +141,7 @@ show_extra_image_info = "CTRL+I"
 reset_viewport = "R"
 # Key bind to toggle all your UI controls like the magnification panel.
 show_ui_controls = "C"
+open_image = "CTRL+O"
 
 [misc]
 # All other configs that don't yet have a specific place or are experimental.

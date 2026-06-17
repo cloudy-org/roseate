@@ -2,7 +2,7 @@ use std::{fmt::Display, fs::File, io::Read, path::PathBuf};
 
 use crate::{decoded_image::ImageSize, error::{Error, Result}};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Hash)]
 pub enum ImageFormat {
     Png,
     Jpeg,

@@ -180,29 +180,15 @@ impl SettingsMenu {
         );
 
         settings.add_section(
-            AnySection::ChildSections {
-                title: String::from("Lazy Image Loading"),
-                sections: vec![
-                    Section::new(
-                        config_key_path!(config.image.loading.initial.lazy_loading),
-                        &mut config.image.loading.initial.lazy_loading,
-                        SectionOverrides::default(),
-                        SectionDisplayInfo {
-                            name: Some("Lazy load image initially".into()),
-                            ..Default::default()
-                        }
-                    ).into(),
-                    Section::new(
-                        config_key_path!(config.image.loading.gui.lazy_loading),
-                        &mut config.image.loading.gui.lazy_loading,
-                        SectionOverrides::default(),
-                        SectionDisplayInfo {
-                            name: Some("Lazy load Image in GUI".into()),
-                            ..Default::default()
-                        }
-                    ).into()
-                ]
-            }
+            Section::new(
+                config_key_path!(config.image.loading.initial.lazy_loading),
+                &mut config.image.loading.initial.lazy_loading,
+                SectionOverrides::default(),
+                SectionDisplayInfo {
+                    name: Some("Lazy load image initially".into()),
+                    ..Default::default()
+                }
+            )
         );
 
         settings.add_section(

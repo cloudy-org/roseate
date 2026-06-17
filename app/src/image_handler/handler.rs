@@ -1,16 +1,16 @@
-use std::{collections::HashSet, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
 use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
-use eframe::egui::Context;
+use cirrus_soft_binds::egui::BoxedEguiInputReaderFunc;
+use eframe::egui::{Context, TextureFilter, TextureOptions, TextureWrapMode, Ui};
+use egui_notify::ToastLevel;
 use log::{debug, info, warn};
-use roseate_core::{decoded_image::ImageSize, format::ImageFormat, image_info::info::ImageInfo, modifications::{ImageModification, ImageModifications}};
+use roseate_core::{colour_type::ImageColourType, decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DecodingBackend}, image_handler::{optimization::ImageOptimizations, resource::ImageResource}, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DecodingBackend}, image_handler::{loaded_image::LoadedImage, optimization::ImageOptimizations, image_resource::ImageResource}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct ImageHandler {
-    pub image: Option<Image>,
-    pub resource: Option<ImageResource>,
-    pub decoded_image_info: Option<ImageInfo>,
+    pub loaded_image: Option<LoadedImage>,
 
     pub image_loading: bool,
 
@@ -25,14 +25,13 @@ pub struct ImageHandler {
 }
 
 impl ImageHandler {
-    pub fn new(image: Option<Image>, image_optimizations: ImageOptimizations) -> Self {
+    pub fn new(image_optimizations: ImageOptimizations) -> Self {
         Self {
-            image: image,
-            image_optimizations,
+            loaded_image: None,
 
-            resource: None,
             image_loading: false,
-            decoded_image_info: None,
+            
+            image_optimizations,
 
             dynamic_sample_schedule: None,
             last_zoom_factor: 1.0,
@@ -45,19 +44,55 @@ impl ImageHandler {
         }
     }
 
+    pub fn handle_input(
+        &mut self,
+        ui: &Ui,
+        image_selector: &mut ImageSelector,
+        monitor_size: &MonitorSize,
+        backend: DecodingBackend,
+        notifier: &mut Notifier,
+
+        open_image_input_reader: &mut BoxedEguiInputReaderFunc
+    ) {
+        if ui.input(open_image_input_reader) {
+            if let Err(error) = image_selector.select_image_from_file_explorer() {
+                notifier.toast(
+                    Box::new(error),
+                    ToastLevel::Error,
+                    |toast| {
+                        toast.duration(Duration::from_secs(5));
+                    }
+                );
+
+                return;
+            }
+
+            if let Some(image) = image_selector.get_mutable_image() {
+                self.load_image(
+                    image,
+                    true,
+                    backend,
+                    monitor_size,
+                    notifier,
+                );
+            }
+        }
+    }
+
     pub fn update(
         &mut self,
         ctx: &Context,
         zoom_factor: &f32,
         is_panning: bool,
+        image_selector: &mut ImageSelector,
         monitor_size: &MonitorSize,
         backend: DecodingBackend,
         notifier: &mut Notifier,
     ) {
-        self.load_resource_update(ctx, notifier);
-        self.dynamic_sampling_update(zoom_factor, monitor_size);
+        self.load_resource_update(ctx, image_selector, notifier);
+        self.dynamic_sampling_update(zoom_factor, image_selector, monitor_size);
 
-        if self.image.is_some() {
+        if let Some(image) = image_selector.get_mutable_image() {
 
             if let Some(schedule) = &mut self.dynamic_sample_schedule {
                 // TODO: if we are still panning once we have stopped 
@@ -75,6 +110,7 @@ impl ImageHandler {
                         }
 
                         self.load_image(
+                            image,
                             true,
                             backend,
                             monitor_size,
@@ -88,6 +124,7 @@ impl ImageHandler {
 
     pub fn load_image(
         &mut self,
+        image: &mut Image,
         lazy_load: bool,
         backend: DecodingBackend,
         monitor_size: &MonitorSize,
@@ -98,132 +135,137 @@ impl ImageHandler {
             return;
         }
 
-        if let Some(image) = self.image.clone() {
-            let mut image_modifications = self.get_image_modifications(
-                &image.size,
-                monitor_size,
-            );
+        let mut image_modifications = self.get_image_modifications(
+            &image.size,
+            monitor_size,
+        );
 
-            let image_modifications_debug = format!("{:?}", image_modifications);
+        let image_modifications_debug = format!("{:?}", image_modifications);
 
-            let use_experimental_multi_threaded_downsampling = match &self.image_optimizations.multi_threaded_sampling {
-                Some(multi_threaded_sampling) => {
-                    Self::snatch_resize_modification_and_get_size(&mut image_modifications)
-                        .and_then(|target_size| Some((target_size, multi_threaded_sampling.number_of_threads)))
-                },
-                None => None,
-            };
+        let use_experimental_multi_threaded_downsampling = match &self.image_optimizations.multi_threaded_sampling {
+            Some(multi_threaded_sampling) => {
+                Self::snatch_resize_modification_and_get_size(&mut image_modifications)
+                    .and_then(|target_size| Some((target_size, multi_threaded_sampling.number_of_threads)))
+            },
+            None => None,
+        };
 
-            self.image_loading = true;
+        self.image_loading = true;
 
-            notifier.set_loading(
-                Some("Gathering necessary image modifications...")
-            );
+        notifier.set_loading(
+            Some("Gathering necessary image modifications...")
+        );
 
-            // Our svg implementation is very experimental. 
-            // Also broken! https://github.com/cloudy-org/roseate/issues/66 
-            // Let's warn the user.
-            if ImageFormat::Svg == image.format {
-                notifier.toast(
-                    "SVG files are experimental and broken! \
-                    Expect many bugs, inconstancies and performance / memory issues.",
-                    egui_notify::ToastLevel::Warning,
-                    |toast| {
-                        toast.duration(Some(Duration::from_secs(8)));
-                    }
-                );
-            }
-
-            // let image_loaded_arc = self.image_loaded_arc.clone();
-            let mut image_clone = image.clone();
-            let mut notifier_clone = notifier.clone();
-            let load_image_texture_clone = self.load_image_texture.clone();
-
-            let image_loaded = self.resource.is_some();
-
-            let loading_logic = move || {
-                let now = Instant::now();
-
-                let result = match image_loaded {
-                    true => {
-                        notifier_clone.set_loading(Some("Reloading image..."));
-
-                        let result = image_clone.load(
-                            image_modifications,
-                            &backend,
-                            true,
-                            &mut notifier_clone
-                        );
-
-                        debug!(
-                            "Image reloaded in '{}' seconds using '{}' backend.",
-                            now.elapsed().as_secs_f32(),
-                            backend
-                        );
-
-                        result
-                    },
-                    false => {
-                        notifier_clone.set_loading(Some("Loading image..."));
-
-                        let result = image_clone.load(
-                            image_modifications,
-                            &backend,
-                            false,
-                            &mut notifier_clone,
-                        );
-
-                        info!(
-                            "Image loaded in '{}' seconds using '{}' backend.", 
-                            now.elapsed().as_secs_f32(), backend
-                        );
-
-                        result
-                    }
-                };
-
-                match result {
-                    Ok(()) => {
-                        if let Some((target_size, number_of_threads)) = use_experimental_multi_threaded_downsampling {
-                            notifier_clone.set_loading(Some("Performing fast multi-threaded downsampling..."));
-                            Self::perform_multi_threaded_downsample(
-                                target_size,
-                                &mut image_clone,
-                                number_of_threads
-                            );
-                            notifier_clone.unset_loading();
-                        }
-
-                        *load_image_texture_clone.lock().unwrap() = true;
-
-                        debug!("Image debug: {:?}", image_clone);
-                        debug!("Image modifications debug: {}", image_modifications_debug);
-                    },
-                    Err(error) => {
-                        notifier_clone.toast(
-                            Box::new(error),
-                            egui_notify::ToastLevel::Error,
-                            |toast| {
-                                toast.duration(Some(Duration::from_secs(10)));
-                            }
-                        );
-                    },
+        // Our svg implementation is very experimental. 
+        // Also broken! https://github.com/cloudy-org/roseate/issues/66 
+        // Let's warn the user.
+        if ImageFormat::Svg == image.format {
+            notifier.toast(
+                "SVG files are experimental and broken! \
+                Expect many bugs, inconstancies and performance / memory issues.",
+                egui_notify::ToastLevel::Warning,
+                |toast| {
+                    toast.duration(Some(Duration::from_secs(8)));
                 }
-
-                notifier_clone.unset_loading();
-            };
-
-            if lazy_load {
-                debug!("Lazy loading image (in a thread)...");
-                thread::spawn(loading_logic);
-            } else {
-                debug!("Loading image in main thread...");
-                loading_logic();
-            }
-
+            );
         }
 
+        // let image_loaded_arc = self.image_loaded_arc.clone();
+        let mut image_clone = image.clone();
+        let mut notifier_clone = notifier.clone();
 
+        let load_image_texture_arc = self.load_image_texture.clone();
+
+        let reload_image = match &self.loaded_image {
+            Some(loaded_image) => {
+                let mut hasher = DefaultHasher::new();
+                image.hash(&mut hasher);
+
+                // if this is not the same image perform a full load instead of a reload.
+                loaded_image.image_hash == hasher.finish()
+            },
+            None => false,
+        };
+
+        let loading_logic = move || {
+            let now = Instant::now();
+
+            let result = match reload_image {
+                true => {
+                    notifier_clone.set_loading(Some("Reloading image..."));
+
+                    let result = image_clone.load(
+                        image_modifications,
+                        &backend,
+                        true,
+                        &mut notifier_clone
+                    );
+
+                    debug!(
+                        "Image reloaded in '{}' seconds using '{}' backend.",
+                        now.elapsed().as_secs_f32(),
+                        backend
+                    );
+
+                    result
+                },
+                false => {
+                    notifier_clone.set_loading(Some("Loading image..."));
+
+                    let result = image_clone.load(
+                        image_modifications,
+                        &backend,
+                        false,
+                        &mut notifier_clone,
+                    );
+
+                    info!(
+                        "Image loaded in '{}' seconds using '{}' backend.", 
+                        now.elapsed().as_secs_f32(), backend
+                    );
+
+                    result
+                }
+            };
+
+            match result {
+                Ok(()) => {
+                    if let Some((target_size, number_of_threads)) = use_experimental_multi_threaded_downsampling {
+                        notifier_clone.set_loading(Some("Performing fast multi-threaded downsampling..."));
+                        Self::perform_multi_threaded_downsample(
+                            target_size,
+                            &mut image_clone,
+                            number_of_threads
+                        );
+                        notifier_clone.unset_loading();
+                    }
+
+                    *load_image_texture_arc.lock().unwrap() = true;
+
+                    debug!("Image debug: {:?}", image_clone);
+                    debug!("Image modifications debug: {}", image_modifications_debug);
+                },
+                Err(error) => {
+                    notifier_clone.toast(
+                        Box::new(error),
+                        egui_notify::ToastLevel::Error,
+                        |toast| {
+                            toast.duration(Some(Duration::from_secs(10)));
+                        }
+                    );
+                },
+            }
+
+            notifier_clone.unset_loading();
+        };
+
+        if lazy_load {
+            debug!("Lazy loading image (in a thread)...");
+            thread::spawn(loading_logic);
+        } else {
+            debug!("Loading image in main thread...");
+            loading_logic();
+        }
     }
 
     /// Method that handles choosing which type of modifications 
@@ -310,5 +352,70 @@ impl ImageHandler {
         }
 
         image_modifications
+    }
+
+    fn load_resource_update(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &mut Notifier) {
+        if let Some(image) = image_selector.get_image() {
+            let reload_texture = match self.load_image_texture.try_lock() {
+                Ok(load_image_texture_mutex) => *load_image_texture_mutex,
+                Err(_) => false,
+            };
+
+            if reload_texture == false {
+                return;
+            }
+
+            let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
+
+            if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
+                notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
+
+                let texture_options = TextureOptions {
+                    magnification: TextureFilter::Linear,
+                    minification: TextureFilter::Linear,
+                    wrap_mode: TextureWrapMode::ClampToEdge,
+                    mipmap_mode: None,
+                };
+
+                let is_rgba = matches!(
+                    decoded_image.info.colour_type,
+                    ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F
+                );
+
+                self.loaded_image = Some(
+                    LoadedImage {
+                        resource: match can_free_memory_or_consume && is_rgba {
+                            true => ImageResource::from_rgba_decoded_image_zero_copy(ctx, decoded_image, texture_options),
+                            false => ImageResource::from_decoded_image(ctx, &decoded_image, texture_options),
+                        },
+                        image_info: decoded_image.info.clone(),
+                        image_hash: {
+                            let mut hasher = DefaultHasher::new();
+
+                            image.hash(&mut hasher);
+
+                            hasher.finish()
+                        }
+                    }
+                );
+
+                // Texture handle doesn't need forgetting like egui::Image 
+                // as it's smart enough to free itself from memory.
+
+                ctx.forget_all_images(); // we want to free the rose image in 
+                // image selection menu and all other potential images from memory 
+                // that we no longer require loaded.
+
+                notifier.unset_loading();
+            }
+
+            if can_free_memory_or_consume {
+                debug!("Freeing decoded image from memory...");
+                *image.decoded.lock().unwrap() = None;
+            }
+
+            *self.load_image_texture.lock().unwrap() = false;
+            self.image_loading = false;
+        }
     }
 }

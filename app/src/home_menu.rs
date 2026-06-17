@@ -1,12 +1,13 @@
-use std::{time::Duration};
+
+
+use std::time::Duration;
 
 use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render, widgets::settings::button::SettingsButton};
 use cirrus_theming::colour::Colour;
 use eframe::egui::{self, Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
-use rfd::FileDialog;
 
-use crate::{error::{Error, Result}, files::get_rose_image, image::{Image, backend::DecodingBackend}, image_handler::ImageHandler, monitor_size::MonitorSize};
+use crate::{files::get_rose_image, image::{backend::DecodingBackend}, image_handler::ImageHandler, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct HomeMenu {}
 
@@ -18,17 +19,20 @@ impl HomeMenu {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        image_handler: &mut ImageHandler,
+        image_selector: &mut ImageSelector,
+        image_loader: &mut ImageHandler,
         notifier: &mut Notifier,
         monitor_size: &MonitorSize,
         backend: DecodingBackend,
         accent_colour: &Colour,
+
         show_settings: &mut bool,
+
         show_settings_button: bool,
         show_open_image_button: bool,
     ) {
         let (rose_or_button_response, rose_rect) = ui_multiple_centered_double_render(ui, |ui| {
-            if image_handler.image.is_some() {
+            if image_loader.image_loading {
                 ui.disable();
             }
 
@@ -61,27 +65,27 @@ impl HomeMenu {
         }).inner;
 
         if rose_or_button_response.clicked() {
-            match Self::select_image() {
-                Ok(image) => {
-                    image_handler.image = Some(image);
+            if let Err(error) = image_selector.select_image_from_file_explorer() {
+                notifier.toast(
+                    Box::new(error),
+                    ToastLevel::Error,
+                    |toast| {
+                        toast.duration(Duration::from_secs(5));
+                    }
+                );
 
-                    image_handler.load_image(
-                        true,
-                        backend,
-                        monitor_size,
-                        notifier,
-                    );
-                },
-                Err(error) => {
-                    notifier.toast(
-                        Box::new(error),
-                        ToastLevel::Error,
-                        |toast| {
-                            toast.duration(Duration::from_secs(5));
-                        }
-                    );
-                },
-            };
+                return;
+            }
+
+            if let Some(image) = image_selector.get_mutable_image() {
+                image_loader.load_image(
+                    image,
+                    true,
+                    backend,
+                    monitor_size,
+                    notifier,
+                );
+            }
         }
 
         if show_settings_button {
@@ -130,17 +134,6 @@ impl HomeMenu {
                     )
                 );
             }
-        }
-    }
-
-    fn select_image() -> Result<Image> {
-        let image_path = FileDialog::new()
-            .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
-            .pick_file();
-
-        match image_path {
-            Some(path) => Ok(Image::new(path)?),
-            None => Err(Error::FileNotSelected)
         }
     }
 }

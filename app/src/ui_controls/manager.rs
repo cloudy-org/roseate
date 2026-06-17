@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use cirrus_egui::{notifier::{Notifier, banner::{BannerPlacement, BannerText}}};
-use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
-use eframe::egui::{Context, InputState, Key, Ui};
+use cirrus_soft_binds::egui::{BoxedEguiInputReaderFunc, parse_and_get_egui_input_reader_from_string};
+use eframe::egui::{Context, Key, Ui};
 use egui_notify::ToastLevel;
 
 use crate::{ui_controls::{fullscreen::FullscreenButton, magnification_panel::MagnificationPanel, settings::SettingsButton}, viewport::Viewport};
@@ -12,7 +12,7 @@ pub struct UIControlsManager {
     fullscreen_button: FullscreenButton,
     settings_button: SettingsButton,
 
-    show_controls_reader: Option<Box<dyn FnMut(&InputState) -> bool>>,
+    show_controls_reader: Option<BoxedEguiInputReaderFunc>,
 
     show_controls: Option<bool>,
 }

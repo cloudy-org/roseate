@@ -5,14 +5,14 @@ use eframe::egui::Vec2;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
 
-use crate::{monitor_size::MonitorSize};
+use crate::{image_selector::ImageSelector, monitor_size::MonitorSize};
 
 use super::ImageHandler;
 
 impl ImageHandler {
-    pub(super) fn dynamic_sampling_update(&mut self, zoom_factor: &f32, monitor_size: &MonitorSize) {
+    pub(super) fn dynamic_sampling_update(&mut self, zoom_factor: &f32, image_selector: &ImageSelector, monitor_size: &MonitorSize) {
 
-        if let Some(image) = &self.image {
+        if let Some(image) = image_selector.get_image() {
             let is_enabled = self.image_optimizations.dynamic_sampling.is_some();
 
             if !is_enabled || !self.monitor_downsampling_required {

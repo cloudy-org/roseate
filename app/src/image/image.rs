@@ -1,8 +1,8 @@
-use std::{collections::HashSet, fmt::Debug, fs::File, io::BufReader, path::PathBuf, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fmt::Debug, fs::File, hash::Hash, io::BufReader, path::PathBuf, sync::{Arc, Mutex}};
 
 use log::debug;
 use cirrus_egui::notifier::Notifier;
-use roseate_core::{backends::backend::DecodeBackend, colour_type::ImageColourType, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
+use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
 
 use crate::{error::{Error, Result}, image::backend::DecodingBackend};
 
@@ -14,6 +14,14 @@ pub struct Image {
     pub decoded: Arc<Mutex<Option<DecodedImage>>>,
 
     last_modifications: ImageModifications,
+}
+
+impl Hash for Image {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.path.hash(state);
+        self.size.hash(state);
+        self.format.hash(state);
+    }
 }
 
 impl Debug for Image {

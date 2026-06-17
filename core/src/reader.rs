@@ -1,4 +1,4 @@
-use std::{io::{BufReader, Read, Seek}, sync::Arc};
+use std::{io::{BufReader, Read, Seek}};
 
 use crate::{format::ImageFormat, decoded_image::DecodedImage};
 
