@@ -55,6 +55,16 @@ impl ImageHandler {
         open_image_input_reader: &mut BoxedEguiInputReaderFunc
     ) {
         if ui.input(open_image_input_reader) {
+            if image_selector.get_image().is_some() {
+                notifier.toast(
+                    "Loading a new image is currently experimental, expect bugs.",
+                    ToastLevel::Warning,
+                    |toast| {
+                        toast.duration(Duration::from_secs(30));
+                    }
+                );
+            }
+
             if let Err(error) = image_selector.select_image_from_file_explorer() {
                 notifier.toast(
                     Box::new(error),
