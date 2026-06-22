@@ -4,9 +4,8 @@ use cirrus_egui::notifier::{Notifier, banner::{BannerPlacement, BannerText}};
 use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
 use eframe::egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
-use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_loader::{optimization::ImageOptimizations, image_resource::ImageResource}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
+use crate::{image_loader::{optimization::ImageOptimizations, uploaded_image::UploadedImage}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
 
 mod info;
 
@@ -114,11 +113,10 @@ impl WindowsManager {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        image_resource: &ImageResource,
+        uploaded_image: &UploadedImage,
         image_optimizations: &ImageOptimizations,
-        image: &Image,
-        image_info: &ImageInfo,
         monitor_size: &MonitorSize,
+        notifier: &mut Notifier,
         show_location_in_image_info: bool
     ) {
         let mut new_rect: Rect = Rect::NOTHING;
@@ -126,11 +124,10 @@ impl WindowsManager {
         if self.show_info {
             let response = self.info_window.show(
                 ui,
-                image_resource,
+                uploaded_image,
                 image_optimizations,
-                image,
-                image_info,
                 monitor_size,
+                notifier,
                 self.show_extra_info,
                 show_location_in_image_info,
             );

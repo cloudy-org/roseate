@@ -250,11 +250,10 @@ impl eframe::App for Roseate {
 
                                 self.windows_manager.show(
                                     ui,
-                                    &uploaded_image.resource,
+                                    &uploaded_image,
                                     &image_optimizations,
-                                    &uploaded_image.image,
-                                    &uploaded_image.image_info,
                                     &self.monitor_size,
+                                    &mut self.notifier,
                                     config.ui.image_info.show_location,
                                 );
 

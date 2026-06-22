@@ -1,10 +1,9 @@
-use std::{path::PathBuf, sync::{Arc, Mutex}};
+use std::{sync::{Arc, Mutex}};
 
 use log::debug;
 use chrono::{DateTime, Local, NaiveDateTime};
-use roseate_core::image_info::metadata::ImageMetadata;
 
-use crate::{image_loader::image_resource::ImageResource};
+use crate::{image_loader::{image_resource::ImageResource, uploaded_image::UploadedImage}};
 
 pub struct ExpensiveData {
     pub file_name: String,
@@ -14,11 +13,16 @@ pub struct ExpensiveData {
     pub file_modified_time: Option<String>,
     pub memory_allocated_for_image: f64,
 
-    pub location: Arc<Mutex<Option<(String, String)>>>
+    pub location: Arc<Mutex<Option<(String, String)>>>,
+
+    pub image_hash: u64,
 }
 
 impl ExpensiveData {
-    pub fn new(image_path: &Arc<PathBuf>, image_resource: &ImageResource, image_metadata: &ImageMetadata) -> Self {
+    pub fn new(uploaded_image: &UploadedImage) -> Self {
+        let image_path = &uploaded_image.image.path;
+        let image_metadata = &uploaded_image.image_info.metadata;
+
         let file_name = image_path.file_name().unwrap().to_string_lossy().to_string();
         let file_relative_path = image_path.to_string_lossy().to_string();
 
@@ -86,7 +90,7 @@ impl ExpensiveData {
             file_relative_path,
             image_created_time,
             file_modified_time,
-            memory_allocated_for_image: match image_resource {
+            memory_allocated_for_image: match &uploaded_image.resource {
                 ImageResource::Texture(texture_handle) => texture_handle.byte_size() as f64,
                 ImageResource::AnimatedTexture(frames) => {
                     let mut size = 0;
@@ -99,7 +103,9 @@ impl ExpensiveData {
                 },
             },
 
-            location: Arc::new(Mutex::new(None))
+            location: Arc::new(Mutex::new(None)),
+
+            image_hash: uploaded_image.image_hash,
         }
     }
 }

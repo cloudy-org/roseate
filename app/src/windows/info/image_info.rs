@@ -1,11 +1,12 @@
 use std::{alloc, sync::{Arc, TryLockError}};
 
 use cap::Cap;
+use cirrus_egui::notifier::Notifier;
 use eframe::egui::{self, Response};
 use eframe::egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
-use roseate_core::image_info::{info::ImageInfo};
+use log::debug;
 
-use crate::{image::Image, image_loader::{optimization::ImageOptimizations, image_resource::ImageResource}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
+use crate::{image_loader::{image_resource::ImageResource, optimization::ImageOptimizations, uploaded_image::UploadedImage}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -26,40 +27,46 @@ pub struct ImageInfoWindow {
 impl ImageInfoWindow {
     pub fn new() -> Self {
         Self {
-            data: None
+            data: None,
         }
     }
 
     pub fn show(
         &mut self,
         ui: &Ui,
-        image_resource: &ImageResource,
+        uploaded_image: &UploadedImage,
         image_optimizations: &ImageOptimizations,
-        image: &Image,
-        image_info: &ImageInfo,
         monitor_size: &MonitorSize,
+        notifier: &mut Notifier,
         show_extra: bool,
         show_location_in_image_info: bool,
     ) -> Response {
-        // TODO: refetch the data if a new image is loaded
-        let image_info_data = self.data.get_or_insert_with(
-            || {
-                let mut data = ExpensiveData::new(
-                    &image.path,
-                    image_resource,
-                    &image_info.metadata
+        let fetch_expensive_data = || {
+            notifier.set_loading(
+                Some("Fetching extra image info...")
+            );
+
+            let mut data = ExpensiveData::new(uploaded_image);
+
+            #[cfg(feature = "geo")]
+            if show_location_in_image_info {
+                data.start_location_lookup_thread(
+                    &uploaded_image.image_info.metadata
                 );
-
-                #[cfg(feature = "geo")]
-                if show_location_in_image_info {
-                    data.start_location_lookup_thread(
-                        &image_info.metadata
-                    );
-                }
-
-                data
             }
-        );
+
+            notifier.unset_loading();
+
+            data
+        };
+
+        let expensive_image_data = self.data.get_or_insert_with(fetch_expensive_data);
+
+        // refetch data if new image
+        if expensive_image_data.image_hash != uploaded_image.image_hash {
+            debug!("Re-fetching image data as we have a new image...");
+            *expensive_image_data = fetch_expensive_data();
+        }
 
         let main_frame = egui::Frame::group(&ui.style())
             .inner_margin(8.0);
@@ -106,7 +113,7 @@ impl ImageInfoWindow {
 
                         match show_extra {
                             true => {
-                                let texture_handle: Option<&TextureHandle> = match image_resource {
+                                let texture_handle: Option<&TextureHandle> = match &uploaded_image.resource {
                                     ImageResource::Texture(texture_handle) => Some(texture_handle),
                                     ImageResource::AnimatedTexture(frames) => {
                                         frames.get(0)
@@ -149,9 +156,8 @@ impl ImageInfoWindow {
                                             .show(ui, |ui| {
                                                 Self::show_misc_info_grid(
                                                     ui,
-                                                    image_info_data,
-                                                    image,
-                                                    image_info,
+                                                    expensive_image_data,
+                                                    uploaded_image,
                                                     soon_text.clone(),
                                                     app_memory_allocated as f64,
                                                 );
@@ -167,9 +173,8 @@ impl ImageInfoWindow {
                                         .show_viewport(ui, |ui, _| {
                                             Self::show_image_info_grid(
                                                 ui,
-                                                image_info_data,
-                                                image,
-                                                image_info,
+                                                expensive_image_data,
+                                                uploaded_image,
                                                 160.0,
                                                 soon_text.clone(),
                                                 show_extra,
@@ -182,9 +187,8 @@ impl ImageInfoWindow {
                                 ui.vertical(|ui| {
                                     Self::show_image_info_grid(
                                         ui,
-                                        image_info_data,
-                                        image,
-                                        image_info,
+                                        expensive_image_data,
+                                        uploaded_image,
                                         160.0,
                                         soon_text,
                                         show_extra,
@@ -258,13 +262,15 @@ impl ImageInfoWindow {
     fn show_image_info_grid(
         ui: &mut Ui,
         expensive_data: &ExpensiveData,
-        image: &Image,
-        image_info: &ImageInfo,
+        uploaded_image: &UploadedImage,
         max_grid_width: f32,
         soon_text: Arc<RichText>,
         show_extra: bool,
         show_location_in_image_info: bool,
     ) {
+        let image = &uploaded_image.image;
+        let image_info = &uploaded_image.image_info;
+
         egui::Grid::new("base_image_info_grid")
             .striped(true)
             .max_col_width(max_grid_width)
@@ -356,8 +362,7 @@ impl ImageInfoWindow {
     fn show_misc_info_grid(
         ui: &mut Ui,
         expensive_data: &ExpensiveData,
-        image: &Image,
-        image_info: &ImageInfo,
+        uploaded_image: &UploadedImage,
         soon_text: Arc<RichText>,
         app_memory_allocated: f64,
     ) {
