@@ -168,6 +168,9 @@ impl eframe::App for Roseate {
                 // on it's own so that we can choose to only listen to keybinds in one section but not 
                 // the other.
                 if self.show_settings {
+                    self.notifier.show(ui); // notifier shows itself after the settings menu, 
+                    // the settings menu sort of lives in it's own scene so we should show it here. 
+
                     // we only want to run the config manager's
                     // update loop when were are in the settings menu
                     self.config_manager.update(ctx, &mut self.notifier);
