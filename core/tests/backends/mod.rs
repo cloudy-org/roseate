@@ -35,6 +35,7 @@ pub fn save_image<P: image::Pixel<Subpixel = u8> + image::PixelWithColorType>(de
                             ImageFormat::Svg => "svg",
                             ImageFormat::Gif => "gif",
                             ImageFormat::Webp => "wedp",
+                            ImageFormat::Pdf => "pdf",
                         }
                     ));
 
