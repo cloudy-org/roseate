@@ -116,7 +116,6 @@ impl WindowsManager {
         uploaded_image: &UploadedImage,
         image_optimizations: &ImageOptimizations,
         monitor_size: &MonitorSize,
-        notifier: &mut Notifier,
         show_location_in_image_info: bool
     ) {
         let mut new_rect: Rect = Rect::NOTHING;
@@ -127,7 +126,6 @@ impl WindowsManager {
                 uploaded_image,
                 image_optimizations,
                 monitor_size,
-                notifier,
                 self.show_extra_info,
                 show_location_in_image_info,
             );

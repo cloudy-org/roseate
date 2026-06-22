@@ -63,7 +63,7 @@ impl ImageLoader {
                     "Loading a new image is currently experimental, expect bugs.",
                     ToastLevel::Warning,
                     |toast| {
-                        toast.duration(Duration::from_secs(60));
+                        toast.duration(Duration::from_secs(40));
                     }
                 );
 

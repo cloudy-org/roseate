@@ -12,21 +12,46 @@ pub struct ImageOptimizations {
 }
 
 impl ImageOptimizations {
+    pub fn balanced() -> Self {
+        Self {
+            monitor_downsampling: Some(MonitorDownsampling::default()),
+            dynamic_sampling: None,
+            consume_pixels_during_gpu_upload: true,
+            multi_threaded_sampling: None
+        }
+    }
+
     pub fn speed() -> Self {
         Self {
-            consume_pixels_during_gpu_upload: true,
+            monitor_downsampling: None,
             dynamic_sampling: None,
             multi_threaded_sampling: None,
-            monitor_downsampling: None,
+            consume_pixels_during_gpu_upload: true,
         }
     }
 
     pub fn quality() -> Self {
         Self {
             monitor_downsampling: None,
-            ..Self::default()
+            ..Self::balanced()
         }
     }
+
+    // NOTE: Efficient mode will be added when support for loading
+    // multiple images is added. Efficient mode will try to disable 
+    // anything that is inefficient in the slightest and set optimizations 
+    // like 'consume_pixels_during_gpu_upload' to FALSE so decoded images stay 
+    // in cpu memory for rapid and efficient reuploading to the gpu while 
+    // cycling through images a carousel mode.
+
+    // pub fn efficient() -> Self {
+    //     Self {
+    //         monitor_downsampling: None,
+    //         dynamic_sampling: None,
+    //         consume_pixels_during_gpu_upload: false,
+    //         multi_threaded_sampling: None
+    //     }
+    // }
 
     // might move this into something like 
     // 'ImageOptimizations::from_config()' in the future.
@@ -40,17 +65,6 @@ impl ImageOptimizations {
         }
 
         self
-    }
-}
-
-impl Default for ImageOptimizations {
-    fn default() -> Self {
-        Self {
-            monitor_downsampling: Some(MonitorDownsampling::default()),
-            dynamic_sampling: None,
-            consume_pixels_during_gpu_upload: true,
-            multi_threaded_sampling: None
-        }
     }
 }
 

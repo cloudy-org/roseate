@@ -37,15 +37,10 @@ impl ImageInfoWindow {
         uploaded_image: &UploadedImage,
         image_optimizations: &ImageOptimizations,
         monitor_size: &MonitorSize,
-        notifier: &mut Notifier,
         show_extra: bool,
         show_location_in_image_info: bool,
     ) -> Response {
         let fetch_expensive_data = || {
-            notifier.set_loading(
-                Some("Fetching extra image info...")
-            );
-
             let mut data = ExpensiveData::new(uploaded_image);
 
             #[cfg(feature = "geo")]
@@ -54,8 +49,6 @@ impl ImageInfoWindow {
                     &uploaded_image.image_info.metadata
                 );
             }
-
-            notifier.unset_loading();
 
             data
         };

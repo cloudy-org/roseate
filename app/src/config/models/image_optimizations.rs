@@ -37,7 +37,7 @@ impl ImageOptimizations {
                 match mode.to_lowercase().as_str() {
                     "s" | "speed" => optimization::ImageOptimizations::speed(),
                     "q" | "quality" => optimization::ImageOptimizations::quality(),
-                    "d" | "default" | &_ => optimization::ImageOptimizations::default(),
+                    "b" | "balanced" | &_ => optimization::ImageOptimizations::balanced(),
                 }
             },
             None => {

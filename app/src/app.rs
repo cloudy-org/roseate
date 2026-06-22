@@ -253,7 +253,6 @@ impl eframe::App for Roseate {
                                     &uploaded_image,
                                     &image_optimizations,
                                     &self.monitor_size,
-                                    &mut self.notifier,
                                     config.ui.image_info.show_location,
                                 );
 

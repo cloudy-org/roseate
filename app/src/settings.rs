@@ -34,7 +34,7 @@ impl SettingsMenu {
                 SectionOverrides {
                     choices: Some(
                         vec![
-                            String::from("default").into(),
+                            String::from("balanced").into(),
                             String::from("speed").into(),
                             String::from("quality").into(),
                         ]
