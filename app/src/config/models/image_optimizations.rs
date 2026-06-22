@@ -1,7 +1,7 @@
 use std::{hash::Hash, thread::available_parallelism};
 use log::warn;
 use serde::{Deserialize, Deserializer, Serialize};
-use crate::{image_handler::optimization};
+use crate::{image_loader::optimization};
 
 #[derive(Serialize, Deserialize, Hash, Clone)]
 pub struct ImageOptimizations {

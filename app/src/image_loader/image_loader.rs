@@ -2,35 +2,35 @@ use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, sync::{Arc,
 
 use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
 use cirrus_soft_binds::egui::BoxedEguiInputReaderFunc;
-use eframe::egui::{Context, TextureFilter, TextureOptions, TextureWrapMode, Ui};
+use eframe::egui::Ui;
 use egui_notify::ToastLevel;
 use log::{debug, info, warn};
-use roseate_core::{colour_type::ImageColourType, decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
+use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DecodingBackend}, image_handler::{loaded_image::LoadedImage, optimization::ImageOptimizations, image_resource::ImageResource}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
-pub struct ImageHandler {
-    pub loaded_image: Option<LoadedImage>,
-
+pub struct ImageLoader {
     pub image_loading: bool,
-
     pub image_optimizations: ImageOptimizations,
+
     pub(super) dynamic_sample_schedule: Option<Scheduler>,
     pub(super) last_zoom_factor: f32,
     pub(super) dynamic_sampling_new_resolution: ImageSize,
     pub(super) dynamic_sampling_old_resolution: ImageSize,
     pub(super) accumulated_zoom_factor_change: f32,
     pub(super) monitor_downsampling_required: bool,
-    pub(super) load_image_texture: Arc<Mutex<bool>>,
+
+    pub(super) uploaded_image: Option<UploadedImage>,
+    pub(super) load_image_to_gpu: Arc<Mutex<bool>>,
+
+    new_image_experimental_warning_shown: bool,
 }
 
-impl ImageHandler {
+impl ImageLoader {
     pub fn new(image_optimizations: ImageOptimizations) -> Self {
         Self {
-            loaded_image: None,
-
             image_loading: false,
-            
+
             image_optimizations,
 
             dynamic_sample_schedule: None,
@@ -40,7 +40,10 @@ impl ImageHandler {
             accumulated_zoom_factor_change: 0.0,
             monitor_downsampling_required: false,
 
-            load_image_texture: Arc::new(Mutex::new(false))
+            uploaded_image: None,
+            load_image_to_gpu: Arc::new(Mutex::new(false)),
+
+            new_image_experimental_warning_shown: false
         }
     }
 
@@ -55,14 +58,16 @@ impl ImageHandler {
         open_image_input_reader: &mut BoxedEguiInputReaderFunc
     ) {
         if ui.input(open_image_input_reader) {
-            if image_selector.get_image().is_some() {
+            if image_selector.get_image().is_some() && !self.new_image_experimental_warning_shown {
                 notifier.toast(
                     "Loading a new image is currently experimental, expect bugs.",
                     ToastLevel::Warning,
                     |toast| {
-                        toast.duration(Duration::from_secs(30));
+                        toast.duration(Duration::from_secs(60));
                     }
                 );
+
+                self.new_image_experimental_warning_shown = true;
             }
 
             if let Err(error) = image_selector.select_image_from_file_explorer() {
@@ -78,7 +83,17 @@ impl ImageHandler {
             }
 
             if let Some(image) = image_selector.get_mutable_image() {
-                self.load_image(
+                // reset the image loader (set all values back to default)
+                self.dynamic_sample_schedule = None;
+                self.last_zoom_factor = 1.0;
+                self.dynamic_sampling_new_resolution = ImageSize::default();
+                self.dynamic_sampling_old_resolution = ImageSize::default();
+                self.accumulated_zoom_factor_change = 0.0;
+                self.monitor_downsampling_required = false;
+                // self.uploaded_image = None;
+                // self.load_image_to_gpu = Arc::new(Mutex::new(false));
+
+                self.load(
                     image,
                     true,
                     backend,
@@ -89,50 +104,7 @@ impl ImageHandler {
         }
     }
 
-    pub fn update(
-        &mut self,
-        ctx: &Context,
-        zoom_factor: &f32,
-        is_panning: bool,
-        image_selector: &mut ImageSelector,
-        monitor_size: &MonitorSize,
-        backend: DecodingBackend,
-        notifier: &mut Notifier,
-    ) {
-        self.load_resource_update(ctx, image_selector, notifier);
-        self.dynamic_sampling_update(zoom_factor, image_selector, monitor_size);
-
-        if let Some(image) = image_selector.get_mutable_image() {
-
-            if let Some(schedule) = &mut self.dynamic_sample_schedule {
-                // TODO: if we are still panning once we have stopped 
-                // defer some addition seconds to the dynamic_sample_schedule.
-                if !is_panning {
-                    if schedule.update().is_some() {
-                        if self.dynamic_sampling_new_resolution == self.dynamic_sampling_old_resolution {
-                            debug!(
-                                "Will not schedule this dynamic sample ({:?} -> {:?}) \
-                                as it's going to sample to the same resolution!",
-                                self.dynamic_sampling_old_resolution,
-                                self.dynamic_sampling_new_resolution
-                            );
-                            return;
-                        }
-
-                        self.load_image(
-                            image,
-                            true,
-                            backend,
-                            monitor_size,
-                            notifier,
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn load_image(
+    pub fn load(
         &mut self,
         image: &mut Image,
         lazy_load: bool,
@@ -184,15 +156,15 @@ impl ImageHandler {
         let mut image_clone = image.clone();
         let mut notifier_clone = notifier.clone();
 
-        let load_image_texture_arc = self.load_image_texture.clone();
+        let load_image_to_gpu_arc = self.load_image_to_gpu.clone();
 
-        let reload_image = match &self.loaded_image {
-            Some(loaded_image) => {
+        let reload_image = match &self.uploaded_image {
+            Some(uploaded_image) => {
                 let mut hasher = DefaultHasher::new();
                 image.hash(&mut hasher);
 
                 // if this is not the same image perform a full load instead of a reload.
-                loaded_image.image_hash == hasher.finish()
+                uploaded_image.image_hash == hasher.finish()
             },
             None => false,
         };
@@ -250,7 +222,7 @@ impl ImageHandler {
                         notifier_clone.unset_loading();
                     }
 
-                    *load_image_texture_arc.lock().unwrap() = true;
+                    *load_image_to_gpu_arc.lock().unwrap() = true;
 
                     debug!("Image debug: {:?}", image_clone);
                     debug!("Image modifications debug: {}", image_modifications_debug);
@@ -362,70 +334,5 @@ impl ImageHandler {
         }
 
         image_modifications
-    }
-
-    fn load_resource_update(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &mut Notifier) {
-        if let Some(image) = image_selector.get_image() {
-            let reload_texture = match self.load_image_texture.try_lock() {
-                Ok(load_image_texture_mutex) => *load_image_texture_mutex,
-                Err(_) => false,
-            };
-
-            if reload_texture == false {
-                return;
-            }
-
-            let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
-
-            if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
-                notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
-
-                let texture_options = TextureOptions {
-                    magnification: TextureFilter::Linear,
-                    minification: TextureFilter::Linear,
-                    wrap_mode: TextureWrapMode::ClampToEdge,
-                    mipmap_mode: None,
-                };
-
-                let is_rgba = matches!(
-                    decoded_image.info.colour_type,
-                    ImageColourType::Rgba8 | ImageColourType::Rgba16 | ImageColourType::Rgba32F
-                );
-
-                self.loaded_image = Some(
-                    LoadedImage {
-                        resource: match can_free_memory_or_consume && is_rgba {
-                            true => ImageResource::from_rgba_decoded_image_zero_copy(ctx, decoded_image, texture_options),
-                            false => ImageResource::from_decoded_image(ctx, &decoded_image, texture_options),
-                        },
-                        image_info: decoded_image.info.clone(),
-                        image_hash: {
-                            let mut hasher = DefaultHasher::new();
-
-                            image.hash(&mut hasher);
-
-                            hasher.finish()
-                        }
-                    }
-                );
-
-                // Texture handle doesn't need forgetting like egui::Image 
-                // as it's smart enough to free itself from memory.
-
-                ctx.forget_all_images(); // we want to free the rose image in 
-                // image selection menu and all other potential images from memory 
-                // that we no longer require loaded.
-
-                notifier.unset_loading();
-            }
-
-            if can_free_memory_or_consume {
-                debug!("Freeing decoded image from memory...");
-                *image.decoded.lock().unwrap() = None;
-            }
-
-            *self.load_image_texture.lock().unwrap() = false;
-            self.image_loading = false;
-        }
     }
 }

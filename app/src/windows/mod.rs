@@ -6,7 +6,7 @@ use eframe::egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 use roseate_core::image_info::info::ImageInfo;
 
-use crate::{image::Image, image_handler::{optimization::ImageOptimizations, image_resource::ImageResource}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
+use crate::{image::Image, image_loader::{optimization::ImageOptimizations, image_resource::ImageResource}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
 
 mod info;
 

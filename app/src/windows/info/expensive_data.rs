@@ -4,7 +4,7 @@ use log::debug;
 use chrono::{DateTime, Local, NaiveDateTime};
 use roseate_core::image_info::metadata::ImageMetadata;
 
-use crate::{image_handler::image_resource::ImageResource};
+use crate::{image_loader::image_resource::ImageResource};
 
 pub struct ExpensiveData {
     pub file_name: String,

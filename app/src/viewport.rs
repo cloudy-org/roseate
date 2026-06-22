@@ -9,7 +9,7 @@ use std::hash::Hasher;
 use cirrus_egui::{notifier::{Notifier, banner::BannerPlacement}, scheduler::Scheduler};
 use eframe::egui::{self, CursorIcon, InputState, Key, Rect, Sense, Ui, Vec2};
 
-use crate::{image_handler::image_resource::ImageResource};
+use crate::{image_loader::image_resource::ImageResource};
 
 pub struct Viewport {
     pub zoom: f32,

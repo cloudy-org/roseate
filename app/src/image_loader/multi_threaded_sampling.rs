@@ -1,9 +1,9 @@
 use log::debug;
 use roseate_core::{decoded_image::{DecodedImageContent, ImageSize}, fast_downsample::experimental_fast_downsample, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::Image, image_handler::ImageHandler};
+use crate::{image::Image, image_loader::ImageLoader};
 
-impl ImageHandler {
+impl ImageLoader {
     pub fn snatch_resize_modification_and_get_size(image_modifications: &mut ImageModifications) -> Option<ImageSize> {
         for modification in image_modifications.clone().iter() {
             #[allow(irrefutable_let_patterns)]

@@ -7,7 +7,7 @@ use cirrus_theming::theme::Theme;
 use eframe::egui::{self, Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
 use egui_notify::ToastLevel;
 
-use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, home_menu::HomeMenu, image_handler::ImageHandler, image_selector::ImageSelector, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
+use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, home_menu::HomeMenu, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
 
 pub struct Roseate {
     theme: Theme,
@@ -17,7 +17,7 @@ pub struct Roseate {
 
     viewport: Viewport,
     about_window: AboutWindow,
-    image_handler: ImageHandler,
+    image_loader: ImageLoader,
     image_selector: ImageSelector,
     monitor_size: MonitorSize,
     settings_menu: SettingsMenu,
@@ -37,7 +37,7 @@ pub struct Roseate {
 impl Roseate {
     pub fn new(
         image_selector: ImageSelector,
-        image_handler: ImageHandler,
+        image_loader: ImageLoader,
         monitor_size: MonitorSize,
         theme: Theme,
         notifier: Notifier,
@@ -61,7 +61,7 @@ impl Roseate {
             viewport,
             about_window,
             image_selector,
-            image_handler,
+            image_loader,
             monitor_size,
             settings_menu,
             home_menu,
@@ -218,7 +218,7 @@ impl eframe::App for Roseate {
                     );
                 }
 
-                self.image_handler.handle_input(
+                self.image_loader.handle_input(
                     ui,
                     &mut self.image_selector,
                     &self.monitor_size,
@@ -228,8 +228,7 @@ impl eframe::App for Roseate {
                     open_image_input_reader
                 );
 
-                self.image_handler.update(
-                    &ctx,
+                self.image_loader.dynamic_sampling_update(
                     &self.viewport.zoom,
                     self.viewport.is_busy,
                     &mut self.image_selector,
@@ -238,10 +237,11 @@ impl eframe::App for Roseate {
                     &mut self.notifier,
                 );
 
-                match (self.image_selector.get_image().as_ref(), self.image_handler.loaded_image.as_ref()) {
-                    // TODO: in the future we'll have some sort of value
-                    // that tells use that the image exists and is loading.
-                    (Some(image), Some(loaded_image))=> {
+                let image_optimizations = self.image_loader.image_optimizations.clone();
+
+                // TODO: should we pass optimizations into .upload() and hold them in app.rs??
+                match self.image_loader.upload(ctx, &self.image_selector, &mut self.notifier) {
+                    Some(uploaded_image) => {
                         egui::Frame::NONE
                             .show(ui, |ui| {
                                 // handle inputs here that you do not
@@ -250,10 +250,10 @@ impl eframe::App for Roseate {
 
                                 self.windows_manager.show(
                                     ui,
-                                    &loaded_image.resource,
-                                    &self.image_handler.image_optimizations,
-                                    image,
-                                    &loaded_image.image_info,
+                                    &uploaded_image.resource,
+                                    &image_optimizations,
+                                    &uploaded_image.image,
+                                    &uploaded_image.image_info,
                                     &self.monitor_size,
                                     config.ui.image_info.show_location,
                                 );
@@ -273,8 +273,8 @@ impl eframe::App for Roseate {
 
                                 self.viewport.show(
                                     ui,
-                                    &image.size,
-                                    loaded_image.resource.clone(), // ImageResource is safe to clone without expensive dup
+                                    &uploaded_image.image.size,
+                                    uploaded_image.resource.clone(), // ImageResource is safe to clone without expensive dup
                                     &mut self.notifier,
                                     proper_padding_percentage,
                                     config.ui.viewport.zoom_into_cursor,
@@ -289,13 +289,13 @@ impl eframe::App for Roseate {
                         // just in case one doesn't happen when the window is resized in a certain circumstance
                         // (i.e. the user maximizes the window and doesn't interact with it). I'm not sure how else we can fix it.
                     },
-                    _ => {
+                    None => {
                         egui::Frame::NONE
                             .show(ui, |ui| {
                                 self.home_menu.show(
                                     ui,
                                     &mut self.image_selector,
-                                    &mut self.image_handler,
+                                    &mut self.image_loader,
                                     &mut self.notifier,
                                     &self.monitor_size,
                                     config.image.backend.get_decoding_backend(),

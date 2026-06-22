@@ -9,7 +9,7 @@ use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::
 use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks}, manager::ThemeManager};
 use config::config::Config;
 use env_logger::Builder;
-use image_handler::{ImageHandler};
+use image_loader::ImageLoader;
 use log::{LevelFilter, info};
 use eframe::egui;
 use egui_notify::ToastLevel;
@@ -27,7 +27,7 @@ mod image;
 mod error;
 mod config;
 mod windows;
-mod image_handler;
+mod image_loader;
 mod ui_controls;
 mod home_menu;
 mod monitor_size;
@@ -159,7 +159,7 @@ fn main() -> eframe::Result {
 
     let mut image_selector = ImageSelector::new();
     // TODO: rename to ImageLoader and make ImageSelector what stores and owns the Image struct
-    let mut image_loader = ImageHandler::new(image_optimizations);
+    let mut image_loader = ImageLoader::new(image_optimizations);
 
     if let Some(image_path_string) = cli_args.image {
         info!("Image '{}' loading from path...", image_path_string);
@@ -177,7 +177,7 @@ fn main() -> eframe::Result {
         }
 
         if let Some(image) = image_selector.get_mutable_image() {
-            image_loader.load_image(
+            image_loader.load(
                 image,
                 config.image.loading.initial.lazy_loading,
                 config.image.backend.get_decoding_backend(),

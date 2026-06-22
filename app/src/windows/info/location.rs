@@ -46,7 +46,6 @@ impl ExpensiveData {
                     *location_mutex = Some((formatted_location, url));
                 }
             }
-
         });
 
         self

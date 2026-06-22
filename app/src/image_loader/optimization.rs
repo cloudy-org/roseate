@@ -3,7 +3,7 @@ use roseate_core::decoded_image::ImageSize;
 
 use crate::monitor_size::MonitorSize;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ImageOptimizations {
     pub monitor_downsampling: Option<MonitorDownsampling>,
     pub dynamic_sampling: Option<DynamicSampling>,
@@ -54,7 +54,7 @@ impl Default for ImageOptimizations {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MonitorDownsampling { pub marginal_allowance: f32 }
 
 impl Default for MonitorDownsampling {
@@ -78,8 +78,8 @@ impl MonitorDownsampling {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DynamicSampling { pub up: bool, pub down: bool }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MultiThreadedSampling { pub number_of_threads: Option<usize> }

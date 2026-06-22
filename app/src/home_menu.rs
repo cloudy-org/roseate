@@ -7,7 +7,7 @@ use cirrus_theming::colour::Colour;
 use eframe::egui::{self, Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{files::get_rose_image, image::{backend::DecodingBackend}, image_handler::ImageHandler, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{files::get_rose_image, image::{backend::DecodingBackend}, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct HomeMenu {}
 
@@ -20,7 +20,7 @@ impl HomeMenu {
         &mut self,
         ui: &mut Ui,
         image_selector: &mut ImageSelector,
-        image_loader: &mut ImageHandler,
+        image_loader: &mut ImageLoader,
         notifier: &mut Notifier,
         monitor_size: &MonitorSize,
         backend: DecodingBackend,
@@ -78,7 +78,7 @@ impl HomeMenu {
             }
 
             if let Some(image) = image_selector.get_mutable_image() {
-                image_loader.load_image(
+                image_loader.load(
                     image,
                     true,
                     backend,
