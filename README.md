@@ -72,6 +72,9 @@ Ignore all deps under "Linux" if you're not on **Linux**.
 git clone https://github.com/cloudy-org/roseate
 cd roseate
 
+# latest tagged version
+git checkout v0.1.0-alpha.23
+
 git submodule update --init --recursive
 ```
 
