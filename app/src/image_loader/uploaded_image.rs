@@ -7,6 +7,7 @@ use roseate_core::{colour_type::ImageColourType, image_info::info::ImageInfo};
 
 use crate::{image::Image, image_loader::{ImageLoader, image_resource::ImageResource}, image_selector::ImageSelector};
 
+/// Image uploaded to the GPU.
 pub struct UploadedImage {
     pub image: Image,
     pub resource: ImageResource,
@@ -15,6 +16,9 @@ pub struct UploadedImage {
 }
 
 impl ImageLoader {
+    /// Uploads the decoded image when available to the GPU.
+    /// 
+    /// Returns `None` when no image is selected or image has not been decoded yet.
     pub fn upload(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &Notifier) -> Option<&UploadedImage> {
         match image_selector.get_image() {
             Some(image) => {
@@ -83,5 +87,4 @@ impl ImageLoader {
             None => None,
         }
     }
-
 }
