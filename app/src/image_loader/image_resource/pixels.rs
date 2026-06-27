@@ -8,14 +8,16 @@ impl ImageResource {
     pub(super) fn decoded_image_pixels_to_egui_texture(ctx: &Context, decoded_image: &DecodedImage, pixels: &Pixels, texture_options: TextureOptions) -> TextureHandle {
         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
-        // TODO: I think this is where we do our bit depth conversion (convert U16 and F32 bit depths to U8)
-
         let texture = ctx.load_texture(
             "static_image",
             match pixels {
                 Pixels::U8(pixels) => Self::u8_pixels_into_egui_color_image(pixels, image_size, decoded_image.info.colour_type),
-                // NOTE: displaying HDR images is not supported yet so 
-                // these two match statements may cause some images to wash out.
+                // NOTE: U16 and F32 images may display completely washed out.
+                // 
+                // Currently we do not handle any kind of HDR data and u16 
+                // and f32 images just get linearly converted to u8 or clamped.
+                // 
+                // Also i'm currently still learning about bit depth and everything else around it. ~ Goldy
                 Pixels::U16(pixels) => {
                     let u8_pixels: Vec<u8> = pixels
                         .iter()
@@ -31,7 +33,7 @@ impl ImageResource {
                 Pixels::F32(pixels) => {
                     let u8_pixels: Vec<u8> = pixels
                         .iter()
-                        .map(|&p| (p.clamp(0.0, 1.0) * 255.0).round() as u8)
+                        .map(|&pixel| (pixel.clamp(0.0, 1.0) * 255.0).round() as u8)
                         .collect();
 
                     Self::u8_pixels_into_egui_color_image(
