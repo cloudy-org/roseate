@@ -5,6 +5,15 @@ use crate::{
     error::{Error, Result},
 };
 
+pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
+    "png",
+    "jpg", "jpeg",
+    // "svg",
+    "gif",
+    "webp",
+    "tiff", "tif"
+];
+
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub enum ImageFormat {
     Png,

@@ -34,7 +34,7 @@ decoder = "image-rs"
 mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
 
 # Downsamples the image roughly to the resolution of your monitor.
-#
+# 
 # Images don't always have to be displayed at their full native resolution, especially when
 # the image is significantly bigger than your monitor can even display, so to save GPU memory
 # we downsample the image. Downsampling decreases the amount of GPU memory eaten up by the image
@@ -44,23 +44,23 @@ mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the o
 # of decoding a specific size of an image (thumbnail) from the get go, which means CPU time is
 # actually never wasted but rather significantly reduced (making image loading even faster with
 # monitor downsampling enabled).
-#
+# 
 # If you do not wish for such memory savings (like those with a beefy GPU) and
 # you prefer overall faster image load times disable this optimization.
-#
+# 
 # If you want your image quality back when zooming into your image,
 # you might want to also enable the "dynamic_sampling" image optimization.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Enabling this allows Roseate to upload RGBA decoded images directly
-# to the GPU without duplicating it's memory (zero-copy). If the image is
-# RGBA, peak heap memory (on the CPU side) will be almost HALVED, it's very
+# Enabling this allows Roseate to upload RGBA 8 bit decoded images directly
+# to the GPU without duplicating it's memory (zero-copy). If the image is RGBA and 
+# 8 bit depth, peak heap memory (on the CPU side) will be almost HALVED, it's very
 # memory efficient.
-#
-# If your image is not in the RGBA colour format, zero-copy will NOT be possible
+# 
+# If your image is not in the 8 bit RGBA format, zero-copy will NOT be possible 
 # (memory will peak for a very short moment), however you will still benefit as
 # memory for the decoded image will still be immediately freed AFTER GPU upload.
-#
+# 
 # This optimization is disabled if you enable "dynamic_sampling" as 
 # dynamic sampling benefits from the decoded image not being freed from memory.
 experimental_consume_pixels_during_gpu_upload = true
@@ -68,23 +68,23 @@ experimental_consume_pixels_during_gpu_upload = true
 # Enabling this will enable the extremely experimental
 # dynamic sampling feature that upsamples your image when you zoom in
 # to bring back the detail lost from monitor downsampling when necessary.
-#
+# 
 # Disabled if "monitor_downsampling" is not enabled.
-#
+# 
 # Again, this is VERY experimental, incomplete and untested!
 # Expect a very broken implementation and bugs.
 experimental_dynamic_sampling = {enabled = false, also_downsample = true}
 
 # If you enable this Roseate will use it's fast
 # multi-threaded function when downsampling images.
-#
+# 
 # If you want to limit or increase the amount of threads used for parallelisation,
 # you may with the "threads" key. Otherwise please leave the key undefined, Roseate
 # will consult with your operating system on how many threads it may use and it will
 # always use two threads less than it's allowed.
-#
+# 
 # experimental_multi_threaded_sampling = {enabled = false, threads = 8}
-#
+# 
 # This is VERY experimental and can break.
 experimental_multi_threaded_sampling = false
 

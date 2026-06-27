@@ -28,9 +28,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::DecodingFailure { .. } => write!(
+            Error::DecodingFailure { error } => write!(
                 f,
-                "Decoder failed to decode the image! The image could be corrupted."
+                "Decoder failed to decode the image! The image could be corrupted. \n\nError: {error}"
             ),
             Error::DecoderInitFailure { error } => write!(
                 f,

@@ -8,7 +8,7 @@ use image::{
 use log::debug;
 
 use crate::{
-    backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize, Pixels}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}
+    backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, pixels::Pixels, reader::{ImageReader, ImageReaderData, ReadSeek}
 };
 
 mod colour;
@@ -43,6 +43,8 @@ pub struct ImageRSBackend {
 }
 
 impl DecodeBackend for ImageRSBackend {
+    // TODO: allow user to set and change memory allocation limitations on decoders 
+    // and return an special error when the decoder fails due to it exceeding that limit.
     fn from_reader(image_reader: ImageReader) -> Result<Self> {
         match image_reader.data {
             ImageReaderData::BufReader(buf_reader) => {
@@ -89,7 +91,7 @@ impl DecodeBackend for ImageRSBackend {
                 match decoded_image.content {
                     DecodedImageContent::Static(pixels) => {
                         // If we're coming from a decoded image it won't support any other pixel variants other than u8.
-                        let image_buffer = BufferImage::from_u8_pixels(
+                        let image_buffer = BufferImage::from_pixels(
                             pixels,
                             decoded_image.size,
                             decoded_image.colour_type,
@@ -109,7 +111,7 @@ impl DecodeBackend for ImageRSBackend {
                         let mut animated_buffers = Vec::new();
 
                         for (pixels, delay) in frames {
-                            let image_buffer = BufferImage::from_u8_pixels(
+                            let image_buffer = BufferImage::from_pixels(
                                 pixels,
                                 decoded_image.size,
                                 decoded_image.colour_type,
@@ -221,7 +223,7 @@ impl DecodeBackend for ImageRSBackend {
                     Buffer::Image(mut buffer_image) => {
                         Self::apply_modifications_to_buffer_image(self.modifications, &mut buffer_image);
 
-                        let (pixels, size, colour_type) = buffer_image.to_u8_pixels();
+                        let (pixels, size, colour_type) = buffer_image.to_pixels();
 
                         Ok(
                             DecodedImage::new(
@@ -244,7 +246,7 @@ impl DecodeBackend for ImageRSBackend {
                                 &mut buffer_image,
                             );
 
-                            let (pixels, _, _) = buffer_image.to_u8_pixels();
+                            let (pixels, _, _) = buffer_image.to_pixels();
 
                             animated_pixels.push((pixels, delay));
                         }
@@ -310,7 +312,7 @@ impl ImageRSBackend {
                 Self::apply_modifications_to_buffer_image(modifications.clone(), &mut buffer_image);
             }
 
-            let (pixels, size, _) = buffer_image.to_u8_pixels();
+            let (pixels, size, _) = buffer_image.to_pixels();
 
             image_size_and_metadata.get_or_insert_with(
                 || init_size_and_metadata(size)
@@ -343,10 +345,13 @@ impl ImageRSBackend {
     ) -> Result<DecodedImage> {
         log::debug!("Decoding image with image-rs decoder...");
 
-        let mut image_pixels: Vec<u8> = vec![0; image_decoder.total_bytes() as usize];
-
         let image_size = image_decoder.dimensions();
         let image_colour_type = ImageColourType::try_from(image_decoder.color_type())?;
+
+        let mut image_pixels = Pixels::new(
+            &image_colour_type,
+            image_decoder.total_bytes() as usize
+        );
 
         if let Err(error) = image_decoder.read_image(&mut image_pixels) {
             // TODO: map extract image rs error to a roseate-core error.
@@ -385,7 +390,7 @@ impl ImageRSBackend {
             "We have image modifications. Constructing image-rs image buffer to apply modifications..."
         );
 
-        let mut buffer_image = BufferImage::from_u8_pixels(
+        let mut buffer_image = BufferImage::from_pixels(
             image_pixels,
             image_size,
             image_colour_type,
@@ -397,7 +402,7 @@ impl ImageRSBackend {
 
         log::debug!("Converting image buffer back to pixels to construct into decoded image...");
 
-        let (image_pixels, image_size, image_colour_type) = buffer_image.to_u8_pixels();
+        let (image_pixels, image_size, image_colour_type) = buffer_image.to_pixels();
 
         Ok(
             DecodedImage::new(

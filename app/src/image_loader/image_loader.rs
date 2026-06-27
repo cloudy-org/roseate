@@ -235,6 +235,11 @@ impl ImageLoader {
                             toast.duration(Some(Duration::from_secs(10)));
                         }
                     );
+
+                    // TODO: we need to set image loading back to false on 
+                    // decoder errors, otherwise the home menu will be frozen.
+
+                    // self.image_loading = false;
                 },
             }
 

@@ -1,7 +1,6 @@
-use crate::{colour_type::ImageColourType, format::ImageFormat, image_info::{info::ImageInfo, metadata::ImageMetadata}};
+use crate::{colour_type::ImageColourType, format::ImageFormat, image_info::{info::ImageInfo, metadata::ImageMetadata}, pixels::Pixels};
 
 pub type ImageSize = (u32, u32);
-pub type Pixels<Channel = u8> = Vec<Channel>;
 
 #[derive(Debug)]
 pub enum DecodedImageContent {
@@ -31,9 +30,9 @@ impl DecodedImage {
     ) -> Self {
         let info = ImageInfo {
             size: size.clone(),
-            format: format.clone(),
+            format: format,
             colour_type: colour_type.clone(),
-            metadata: metadata.clone(),
+            metadata: metadata,
         };
 
         Self {
