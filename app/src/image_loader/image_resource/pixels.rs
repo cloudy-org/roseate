@@ -12,7 +12,7 @@ impl ImageResource {
             "static_image",
             match pixels {
                 Pixels::U8(pixels) => Self::u8_pixels_into_egui_color_image(pixels, image_size, decoded_image.info.colour_type),
-                // NOTE: U16 and F32 images may display completely washed out.
+                // NOTE: U16 and F32 images will display completely washed out.
                 // 
                 // Currently we do not handle any kind of HDR data and u16 
                 // and f32 images just get linearly converted to u8 or clamped.
