@@ -12,7 +12,7 @@ kamadak-exif = "0.6.1"
 bytemuck = { version = "1.14" }
 
 # decoder backends
-image = {version = "0.25.9", features = ["rayon", "png", "jpeg", "gif", "webp", "tiff"], default-features = false}
+image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp", "tiff"], default-features = false}
 zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
 
 [dev-dependencies]
