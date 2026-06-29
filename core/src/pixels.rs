@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::{fmt::Display, ops::{Deref, DerefMut}};
 
 use crate::colour_type::ImageColourType;
 
@@ -7,6 +7,16 @@ pub enum Pixels {
     U8(Vec<u8>),
     U16(Vec<u16>),
     F32(Vec<f32>)
+}
+
+impl Display for Pixels {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Pixels::U8(_) => write!(f, "pixels (with u8 bit depth)"),
+            Pixels::U16(_) => write!(f, "pixels (with u16 bit depth)"),
+            Pixels::F32(_) => write!(f, "pixels (with f32 bit depth)"),
+        }
+    }
 }
 
 impl Pixels {

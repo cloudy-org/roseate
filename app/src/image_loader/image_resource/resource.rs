@@ -22,7 +22,10 @@ impl ImageResource {
                 debug!("Handing image texture to egui's backend to upload to the GPU...");
 
                 let texture = Self::decoded_image_pixels_to_egui_texture(
-                    ctx, decoded_image, &pixels, texture_options
+                    ctx,
+                    decoded_image,
+                    pixels,
+                    texture_options
                 );
 
                 Self::Texture(texture)
@@ -35,7 +38,12 @@ impl ImageResource {
                 for (pixels, delay) in frames {
                     textures.push(
                         (
-                            Self::decoded_image_pixels_to_egui_texture(ctx, decoded_image, &pixels, texture_options),
+                            Self::decoded_image_pixels_to_egui_texture(
+                                ctx,
+                                decoded_image,
+                                pixels,
+                                texture_options
+                            ),
                             *delay
                         )
                     );
