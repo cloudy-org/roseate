@@ -4,7 +4,7 @@ use log::debug;
 use cirrus_egui::notifier::Notifier;
 use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
 
-use crate::{error::{Error, Result}, image::backend::DecodingBackend};
+use crate::{error::{Error, Result}, image::backend::DefaultDecodingBackend};
 
 #[derive(Clone)]
 pub struct Image {
@@ -78,7 +78,7 @@ impl Image {
         )
     }
 
-    pub fn load(&mut self, modifications: ImageModifications, backend: &DecodingBackend, reload: bool, notifier: &mut Notifier) -> Result<()> {
+    pub fn load(&mut self, modifications: ImageModifications, backend: &DefaultDecodingBackend, reload: bool, notifier: &mut Notifier) -> Result<()> {
         notifier.set_loading(
             Some(
                 format!(
@@ -106,7 +106,11 @@ impl Image {
         let image_reader = ImageReader::new(image_reader_data, self.format.clone());
 
         notifier.set_loading(Some("Initializing decoder to use for decoding..."));
-        let mut backend = backend.init_decoder(image_reader)?;
+        let mut backend = backend.init_default_backend_or_fallback_if_not_supported(
+            image_reader,
+            notifier,
+            true
+        )?;
 
         notifier.set_loading(Some("Passing image modifications to decoder..."));
         self.last_modifications = modifications.clone();

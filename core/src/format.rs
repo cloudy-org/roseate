@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::Read, path::PathBuf};
+use std::{fmt::{Display, write}, fs::File, io::Read, path::PathBuf};
 
 use crate::{
     decoded_image::ImageSize,
@@ -70,9 +70,11 @@ pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(Im
         imagesize::ImageType::Webp => ImageFormat::Webp,
         imagesize::ImageType::Tiff => ImageFormat::Tiff,
         unsupported_format => {
-            return Err(Error::ImageFormatNotSupported {
-                image_format: format!("{:?}", unsupported_format),
-            });
+            return Err(
+                Error::ImageFormatNotSupported {
+                    image_format: format!("{:?}", unsupported_format),
+                }
+            );
         }
     };
 

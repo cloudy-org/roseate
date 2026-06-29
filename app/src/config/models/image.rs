@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::{config::models::image_optimizations::ImageOptimizations, image::backend::DecodingBackend};
+use crate::{config::models::image_optimizations::ImageOptimizations, image::backend::DefaultDecodingBackend};
 use std::hash::Hash;
 
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
@@ -19,11 +19,11 @@ pub struct Backend {
 }
 
 impl Backend {
-    pub fn get_decoding_backend(&self) -> DecodingBackend {
+    pub fn get_decoding_backend(&self) -> DefaultDecodingBackend {
         match self.decoder.as_str() {
-            "image-rs" => DecodingBackend::ImageRS,
-            "zune-image" => DecodingBackend::ZuneImage,
-            _ => DecodingBackend::ImageRS
+            "image-rs" => DefaultDecodingBackend::ImageRS,
+            "zune-image" => DefaultDecodingBackend::ZuneImage,
+            _ => DefaultDecodingBackend::ImageRS
         }
     }
 }
