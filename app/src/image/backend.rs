@@ -47,6 +47,7 @@ impl DefaultDecodingBackend {
 
         for backend in prioritized_backends {
             if backend.is_image_format_supported(&image_reader.image_format) {
+                // TODO: if decoder fails to init, also fallback to the next decoder
                 return backend.init_backend_decoder(image_reader);
             }
 

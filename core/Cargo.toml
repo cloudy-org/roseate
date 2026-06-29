@@ -3,16 +3,25 @@ name = "roseate-core"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = [
+    "image-rs-extra-formats",
+    "zune-image-extra-formats"
+]
+
+image-rs-extra-formats = ["image/tiff"]
+zune-image-extra-formats = []
+
 [dependencies]
 log = "0.4"
 rayon = "1.11.0"
 imagesize = "0.14.0" # zero deps is crazy
 svg_metadata = "0.5.1"
 kamadak-exif = "0.6.1"
-bytemuck = { version = "1.14" }
+bytemuck = { version = "1.24" }
 
 # decoder backends
-image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp", "tiff"], default-features = false}
+image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp"], default-features = false}
 zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use image::{ImageBuffer, Rgba};
+use image::{ImageBuffer};
 use roseate_core::{
     decoded_image::{DecodedImage, DecodedImageContent},
     format::ImageFormat,

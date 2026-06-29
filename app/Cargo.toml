@@ -10,13 +10,14 @@ rust-version = "1.89"
 [features]
 default = ["full", "eframe-linux"]
 
-# Use this feature if you want a lean image viewer that 
+# Use "basic" feature if you want a lean image viewer that 
 # only supports the most common image formats and you don't 
 # care about the additional features in the 'full' feature.
 basic = []
 full = [
     "basic",
     "geo",
+    "extra-formats",
 ]
 # A set of opinionated extra features I like to compile on my system 
 # but may be out of the scope for the product I actually want to 
@@ -27,6 +28,14 @@ geo = [
     "dep:reverse_geocoder",
     "dep:country-emoji",
 ]
+
+extra-formats = [
+    "image-rs-extra-formats",
+    "zune-image-extra-formats"
+]
+
+image-rs-extra-formats = ["roseate-core/image-rs-extra-formats"]
+zune-image-extra-formats = ["roseate-core/zune-image-extra-formats"]
 
 # Special linux eframe feature flags
 # https://cloudy-org.github.io/wiki/apps/roseate/advanced_installs/#display-server-specific-x11-wayland
@@ -46,7 +55,7 @@ cirrus_clap_cli = { package = "cirrus_clap_cli_v1", path = "../cirrus/clap_cli/v
 cirrus_authors = { package = "cirrus_authors_v1", path = "../cirrus/authors/v1" }
 cirrus_soft_binds = { package = "cirrus_soft_binds_v1", path = "../cirrus/soft_binds/v1", features = ["egui"] }
 
-roseate-core = { path = "../core" }
+roseate-core = { path = "../core", default-features = false }
 
 eframe = { version = "=0.33.2", default-features = false, optional = true, features = [
     "accesskit",

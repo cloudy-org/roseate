@@ -2,9 +2,18 @@ use std::{collections::HashSet, io::BufReader};
 
 use image::{
     AnimationDecoder, ImageDecoder, ImageError, codecs::{
-        gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, tiff::TiffDecoder, webp::WebPDecoder,
+        gif::GifDecoder,
+        jpeg::JpegDecoder,
+        png::PngDecoder,
+        webp::WebPDecoder,
     },
 };
+
+#[cfg(feature = "image-rs-extra-formats")]
+use image::codecs::{
+    tiff::TiffDecoder
+};
+
 use log::debug;
 
 use crate::{
@@ -18,6 +27,7 @@ enum Decoder {
     Jpeg(JpegDecoder<BufReader<Box<dyn ReadSeek>>>),
     Webp(WebPDecoder<BufReader<Box<dyn ReadSeek>>>),
     Gif(GifDecoder<BufReader<Box<dyn ReadSeek>>>),
+    #[cfg(feature = "image-rs-extra-formats")]
     Tiff(TiffDecoder<BufReader<Box<dyn ReadSeek>>>),
 }
 
@@ -44,7 +54,8 @@ impl DecodeBackend for ImageRSBackend {
         ImageFormat::Png,
         ImageFormat::Jpeg,
         ImageFormat::Webp,
-        ImageFormat::Tiff
+        #[cfg(feature = "image-rs-extra-formats")]
+        ImageFormat::Tiff,
     ];
 
     // TODO: allow user to set and change memory allocation limitations on decoders 
@@ -63,6 +74,7 @@ impl DecodeBackend for ImageRSBackend {
                     ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
+                    #[cfg(feature = "image-rs-extra-formats")]
                     ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?),
                     unsupported_format => {
                         return Err(
@@ -79,6 +91,7 @@ impl DecodeBackend for ImageRSBackend {
                     Decoder::Jpeg(jpeg_decoder) => jpeg_decoder.exif_metadata(),
                     Decoder::Webp(web_pdecoder) => web_pdecoder.exif_metadata(),
                     Decoder::Gif(gif_decoder) => gif_decoder.exif_metadata(),
+                    #[cfg(feature = "image-rs-extra-formats")]
                     Decoder::Tiff(tiff_decoder) => tiff_decoder.exif_metadata(),
                 }.map_err(|error| Error::DecoderRetrieveExifFailure { error: error.to_string() })?;
 
@@ -211,6 +224,7 @@ impl DecodeBackend for ImageRSBackend {
                     self.image_format,
                     self.image_exif_chunk
                 ),
+                #[cfg(feature = "image-rs-extra-formats")]
                 Decoder::Tiff(tiff_decoder) => {
                     Self::decode_image(
                         tiff_decoder,
