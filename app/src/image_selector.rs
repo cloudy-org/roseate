@@ -2,6 +2,7 @@ use std::{path::PathBuf};
 
 use eframe::egui::ahash::HashMap;
 use rfd::FileDialog;
+use roseate_core::format::IMAGE_FORMAT_EXTENSIONS;
 
 use crate::{error::{Error, Result}, image::Image};
 
@@ -38,7 +39,7 @@ impl ImageSelector {
 
     pub fn select_image_from_file_explorer(&mut self) -> Result<()> {
         let image_path = FileDialog::new()
-            .add_filter("images", &["png", "jpeg", "jpg", "webp", "gif", "svg"])
+            .add_filter("images", IMAGE_FORMAT_EXTENSIONS)
             .pick_file();
 
         match image_path {

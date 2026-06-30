@@ -7,7 +7,7 @@ use cirrus_theming::colour::Colour;
 use eframe::egui::{self, Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{files::get_rose_image, image::{backend::DecodingBackend}, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{files::get_rose_image, image::{backend::DefaultDecodingBackend}, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct HomeMenu {}
 
@@ -23,7 +23,7 @@ impl HomeMenu {
         image_loader: &mut ImageLoader,
         notifier: &mut Notifier,
         monitor_size: &MonitorSize,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         accent_colour: &Colour,
 
         show_settings: &mut bool,

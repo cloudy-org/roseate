@@ -1,6 +1,6 @@
 use log::debug;
 use rayon::{ThreadPoolBuilder, prelude::*};
-use crate::decoded_image::{ImageSize, Pixels};
+use crate::{decoded_image::ImageSize, pixels::Pixels};
 use std::{f32::consts::PI, sync::{Arc, Mutex}};
 
 use crate::{colour_type::ImageColourType};
@@ -66,7 +66,10 @@ pub fn experimental_fast_downsample(
 
     let downsampled_pixels_buffer = Arc::new(
         Mutex::new(
-            vec![0u8; (new_width * new_height * index_times) as usize]
+            // For now we'll keep this as u8, this will fail for some images. Fast downsample 
+            // feature is experimental for multiple reasons like this. The codebase has 
+            // evolved around it a lot and I haven't had the time to take care of it.
+            Pixels::new(colour_type, (new_width * new_height * index_times) as usize)
         )
     );
 

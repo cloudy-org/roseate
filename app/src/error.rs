@@ -1,8 +1,8 @@
-use std::{io, result::Result as StdResult};
+use std::{result::Result as StdResult};
 
 use cirrus_error::error::CError;
 
-use roseate_core::error::Error as CoreError;
+use roseate_core::{error::Error as CoreError, format::ImageFormat};
 use cirrus_path::error::Error as PathError;
 use cirrus_soft_binds::error::Error as SoftBindsError;
 
@@ -44,6 +44,10 @@ pub enum Error {
     #[display("Experimental SVG support has been temporary removed from \
     Roseate! We're still working on SVG support, it will be back when it's ready.")]
     SvgNotSupportedYet,
+
+    #[display("There is no backend available that supports the \
+    '{image_format}' image format in this version of Roseate!")]
+    BackendForImageFormatNotAvailable { image_format: ImageFormat },
 
     // External errors (some to later be handled better).
     #[from]

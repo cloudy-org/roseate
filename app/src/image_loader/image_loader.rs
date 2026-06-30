@@ -7,7 +7,7 @@ use egui_notify::ToastLevel;
 use log::{debug, info, warn};
 use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct ImageLoader {
     pub image_loading: bool,
@@ -52,7 +52,7 @@ impl ImageLoader {
         ui: &Ui,
         image_selector: &mut ImageSelector,
         monitor_size: &MonitorSize,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         notifier: &mut Notifier,
 
         open_image_input_reader: &mut BoxedEguiInputReaderFunc
@@ -108,7 +108,7 @@ impl ImageLoader {
         &mut self,
         image: &mut Image,
         lazy_load: bool,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         monitor_size: &MonitorSize,
         notifier: &mut Notifier
     ) {
@@ -235,6 +235,11 @@ impl ImageLoader {
                             toast.duration(Some(Duration::from_secs(10)));
                         }
                     );
+
+                    // TODO: we need to set image loading back to false on 
+                    // decoder errors, otherwise the home menu will be frozen.
+
+                    // self.image_loading = false;
                 },
             }
 

@@ -5,7 +5,7 @@ use eframe::egui::Vec2;
 use log::debug;
 use roseate_core::decoded_image::ImageSize;
 
-use crate::{image::{Image, backend::DecodingBackend}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DefaultDecodingBackend}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 use super::ImageLoader;
 
@@ -16,7 +16,7 @@ impl ImageLoader {
         is_panning: bool,
         image_selector: &mut ImageSelector,
         monitor_size: &MonitorSize,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         notifier: &mut Notifier,
     ) {
         if let Some(image) = image_selector.get_mutable_image() {

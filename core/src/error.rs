@@ -13,8 +13,8 @@ pub enum Error {
     DecodingFailure { error: String },
     DecoderInitFailure { error: String },
     DecoderRetrieveExifFailure { error: String },
-    DecoderNotSupported { image_format: String, backend: String },
     DecoderAnimationCheckFailure { error: String },
+    DecoderImageFormatNotSupported { image_format: String, backend: String },
 
     ImageHeaderReadFailure { stage: String, error: Option<String> },
     ImageFormatNotSupported { image_format: String },
@@ -28,9 +28,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::DecodingFailure { .. } => write!(
+            Error::DecodingFailure { error } => write!(
                 f,
-                "Decoder failed to decode the image! The image could be corrupted."
+                "Decoder failed to decode the image! The image could be corrupted. \n\nError: {error}"
             ),
             Error::DecoderInitFailure { error } => write!(
                 f,
@@ -44,9 +44,9 @@ impl Display for Error {
                 f,
                 "The backend's decoder unexpectedly failed to check if the image was animated! \n\nError: {error}",
             ),
-            Error::DecoderNotSupported { image_format, backend } => write!(
+            Error::DecoderImageFormatNotSupported { image_format, backend } => write!(
                 f,
-                "The '{}' backend, currently does not support the '{}' image format!",
+                "The '{}' backend does not support the '{}' image format!",
                 image_format,
                 backend
             ),
@@ -60,8 +60,7 @@ impl Display for Error {
             ),
             Error::ImageFormatNotSupported { image_format } => write!(
                 f,
-                "The image format '{image_format}' is not supported! \
-                However support may be added in the near future."
+                "The image format '{image_format}' is not supported!"
             ),
             Error::ExifReaderImageMetadataParseFailure { error} => write!(
                 f,
