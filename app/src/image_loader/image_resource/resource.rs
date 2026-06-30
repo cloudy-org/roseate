@@ -1,4 +1,4 @@
-use eframe::egui::{self, Context, TextureHandle, TextureOptions};
+use eframe::egui::{Context, TextureHandle, TextureOptions};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent}, pixels::Pixels};
 
@@ -19,7 +19,7 @@ impl ImageResource {
 
         match &decoded_image.content {
             DecodedImageContent::Static(pixels) => {
-                debug!("Handing image texture to egui's backend to upload to the GPU...");
+                debug!("Transforming static image pixels to egui image texture for uploading to the GPU...");
 
                 let texture = Self::decoded_image_pixels_to_egui_texture(
                     ctx,
@@ -31,7 +31,7 @@ impl ImageResource {
                 Self::Texture(texture)
             },
             DecodedImageContent::Animated(frames) => {
-                debug!("Handing animated image textures to egui's backend to upload to the GPU...");
+                debug!("Transforming animated image pixels to egui image texture for uploading to the GPU...");
 
                 let mut textures: Vec<(TextureHandle, f32)> = Vec::new();
 
@@ -61,8 +61,6 @@ impl ImageResource {
     ) -> Self {
         debug!("Image pixels will be directly consumed and uploaded to gpu to avoid memory spike...");
 
-        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
-
         assert!(
             matches!(decoded_image.info.colour_type, ImageColourType::Rgba8),
             "Wrong image resource from function was called, this is a logic error!"
@@ -80,12 +78,10 @@ impl ImageResource {
             DecodedImageContent::Static(pixels) => {
                 debug!("Handing image texture to egui's backend to upload to the GPU...");
 
-                let colour_32_pixels = Self::rgba8_pixels_direct_consume_into_egui_color32(pixels);
-                let colour_image = egui::ColorImage::new(image_size, colour_32_pixels);
-
-                let texture = ctx.load_texture(
-                    "static_image",
-                    colour_image,
+                let texture = Self::rgba8_pixels_direct_consume_into_egui_texture(
+                    ctx,
+                    decoded_image,
+                    pixels,
                     texture_options
                 );
 
@@ -97,12 +93,10 @@ impl ImageResource {
                 let mut textures: Vec<(TextureHandle, f32)> = Vec::new();
 
                 for (pixels, delay) in frames {
-                    let colour_32_pixels = Self::rgba8_pixels_direct_consume_into_egui_color32(pixels);
-                    let colour_image = egui::ColorImage::new(image_size, colour_32_pixels);
-
-                    let texture = ctx.load_texture(
-                        "static_image",
-                        colour_image,
+                    let texture = Self::rgba8_pixels_direct_consume_into_egui_texture(
+                        ctx,
+                        decoded_image,
+                        pixels,
                         texture_options
                     );
 

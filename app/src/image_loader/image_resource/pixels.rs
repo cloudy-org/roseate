@@ -1,4 +1,5 @@
 use eframe::egui::{self, Color32, Context, TextureHandle, TextureOptions};
+use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::DecodedImage, pixels::Pixels, processing::quantization::squish_pixels_to_u8};
 
 use crate::image_loader::image_resource::ImageResource;
@@ -28,8 +29,12 @@ impl ImageResource {
                 // 
                 // Also i'm currently still learning about bit depth and everything else around it. ~ Goldy
                 higher_bit_depth_pixels => {
+                    let raw_vec_u8_pixels = squish_pixels_to_u8(higher_bit_depth_pixels);
+
+                    debug!("Done squishing to u8 pixels, transforming to egui colour image now...");
+
                     Self::u8_pixels_into_egui_color_image(
-                        &squish_pixels_to_u8(higher_bit_depth_pixels),
+                        &raw_vec_u8_pixels,
                         image_size,
                         decoded_image.info.colour_type
                     )
@@ -41,7 +46,12 @@ impl ImageResource {
         texture
     }
 
-    pub(super) fn rgba8_pixels_direct_consume_into_egui_color32(mut pixels: Pixels) -> Vec<Color32> {
+    pub(super) fn rgba8_pixels_direct_consume_into_egui_texture(
+        ctx: &Context,
+        decoded_image: &DecodedImage,
+        mut pixels: Pixels,
+        texture_options: TextureOptions
+    ) -> TextureHandle {
         assert!(pixels.len() % 4 == 0);
 
         let length = pixels.len() / 4;
@@ -59,7 +69,7 @@ impl ImageResource {
             Pixels::F32(_) => unreachable!(),
         }
 
-        let mut colour_32_vec: Vec<Color32> = unsafe { Vec::from_raw_parts(pointer, length, capacity) };
+        let mut colour_32_pixels: Vec<Color32> = unsafe { Vec::from_raw_parts(pointer, length, capacity) };
 
         // "Color32" wants premultiplied RGBA only and zero copying copies in 
         // unmultiplied RGBA so we need to convert it to a premultiplied RGBA colour.
@@ -71,14 +81,21 @@ impl ImageResource {
         // https://doc.rust-lang.org/stable/std/iter/trait.FromIterator.html#impl-FromIterator%3CT%3E-for-Vec%3CT%3E
         // 
         // I fucking love compilers! https://stackoverflow.com/a/78682795
-        colour_32_vec = colour_32_vec.iter()
+        colour_32_pixels = colour_32_pixels.iter()
             .map(|colour| Color32::from_rgba_unmultiplied(
                 colour.r(), colour.g(), colour.b(), colour.a()
             ))
             .collect();
 
-        colour_32_vec.shrink_to_fit();
-        colour_32_vec
+        colour_32_pixels.shrink_to_fit();
+
+        let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
+
+        ctx.load_texture(
+            "static_image",
+            egui::ColorImage::new(image_size, colour_32_pixels),
+            texture_options
+        )
     }
 
     fn u8_pixels_into_egui_color_image(raw_vec_pixels: &Vec<u8>, image_size: [usize; 2], colour_type: ImageColourType) -> egui::ColorImage {

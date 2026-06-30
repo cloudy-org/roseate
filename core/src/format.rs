@@ -1,4 +1,6 @@
-use std::{fmt::{Display, write}, fs::File, io::Read, path::PathBuf};
+use std::{fmt::{Display}, fs::File, io::Read, path::PathBuf};
+
+use imagesize::Compression;
 
 use crate::{
     decoded_image::ImageSize,
@@ -11,6 +13,7 @@ pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
     // "svg",
     "gif",
     "webp",
+    "avif",
     "tiff", "tif"
 ];
 
@@ -21,6 +24,7 @@ pub enum ImageFormat {
     Svg,
     Gif,
     Webp,
+    Avif,
     Tiff,
 }
 
@@ -32,6 +36,7 @@ impl Display for ImageFormat {
             ImageFormat::Svg => write!(f, "SVG (Scalable Vector Graphics)"),
             ImageFormat::Gif => write!(f, "GIF (Graphics Interchange Format)"),
             ImageFormat::Webp => write!(f, "WEBP (Web Picture)"),
+            ImageFormat::Avif => write!(f, "AVIF (AV1 Image File Format)"),
             ImageFormat::Tiff => write!(f, "TIFF (Tagged Image File Format)"),
         }
     }
@@ -68,6 +73,7 @@ pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(Im
         imagesize::ImageType::Jpeg => ImageFormat::Jpeg,
         imagesize::ImageType::Png => ImageFormat::Png,
         imagesize::ImageType::Webp => ImageFormat::Webp,
+        imagesize::ImageType::Heif(Compression::Av1) => ImageFormat::Avif,
         imagesize::ImageType::Tiff => ImageFormat::Tiff,
         unsupported_format => {
             return Err(

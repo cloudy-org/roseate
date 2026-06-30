@@ -4,8 +4,10 @@ use crate::colour_type::ImageColourType;
 
 #[derive(Debug)]
 pub enum Pixels {
+    /// A low dynamic range pixel container, 8 bit depth (aka SDR).
     U8(Vec<u8>),
     U16(Vec<u16>),
+    /// A high dynamic range pixel container, float 32 bit depth.
     F32(Vec<f32>)
 }
 
