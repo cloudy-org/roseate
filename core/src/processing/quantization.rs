@@ -14,7 +14,7 @@ pub fn squish_pixels_to_u8(pixels: &Pixels) -> Vec<u8> {
         ),
         Pixels::U16(pixels) => pixels
             .iter()
-            .map(|&pixel| (pixel / 257) as u8)
+            .map(|&pixel| (pixel >> 8) as u8)
             .collect(),
         Pixels::F32(pixels) => pixels.iter()
             .map(|&pixel| (pixel.clamp(0.0, 1.0) * 255.0).round() as u8)
