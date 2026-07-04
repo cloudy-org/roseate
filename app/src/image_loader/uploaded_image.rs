@@ -19,7 +19,7 @@ impl ImageLoader {
     /// Uploads the decoded image when available to the GPU.
     /// 
     /// Returns `None` when no image is selected or image has not been decoded yet.
-    pub fn upload(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &Notifier) -> Option<&UploadedImage> {
+    pub fn upload(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &mut Notifier) -> Option<&UploadedImage> {
         match image_selector.get_image() {
             Some(image) => {
                 let load_image_to_gpu = match self.load_image_to_gpu.try_lock() {
@@ -47,7 +47,7 @@ impl ImageLoader {
                                 image: image.clone(),
                                 resource: match can_free_memory_or_consume && is_rgba_8 {
                                     true => ImageResource::from_rgba8_decoded_image_zero_copy(ctx, decoded_image, texture_options),
-                                    false => ImageResource::from_decoded_image(ctx, &decoded_image, texture_options),
+                                    false => ImageResource::from_decoded_image(ctx, &decoded_image, texture_options, notifier),
                                 },
                                 image_info: decoded_image.info.clone(),
                                 image_hash: {

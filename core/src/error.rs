@@ -28,21 +28,21 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::DecodingFailure { error } => write!(
+            Error::DecodingFailure { .. } => write!(
                 f,
-                "Decoder failed to decode the image! The image could be corrupted. \n\nError: {error}"
+                "Decoder failed to decode the image! The image could be corrupted."
             ),
-            Error::DecoderInitFailure { error } => write!(
+            Error::DecoderInitFailure { .. } => write!(
                 f,
-                "Failed to a initialize decoder! \n\nError: {error}"
+                "Failed to a initialize decoder!"
             ),
-            Error::DecoderRetrieveExifFailure { error } => write!(
+            Error::DecoderRetrieveExifFailure { .. } => write!(
                 f,
-                "Decoder failed to retrieve image exif chunk! \n\nError: {error}"
+                "Decoder failed to retrieve image exif chunk!"
             ),
-            Error::DecoderAnimationCheckFailure { error } => write!(
+            Error::DecoderAnimationCheckFailure { .. } => write!(
                 f,
-                "The backend's decoder unexpectedly failed to check if the image was animated! \n\nError: {error}",
+                "The backend's decoder unexpectedly failed to check if the image was animated!",
             ),
             Error::DecoderImageFormatNotSupported { image_format, backend } => write!(
                 f,
@@ -62,9 +62,9 @@ impl Display for Error {
                 f,
                 "The image format '{image_format}' is not supported!"
             ),
-            Error::ExifReaderImageMetadataParseFailure { error} => write!(
+            Error::ExifReaderImageMetadataParseFailure { ..} => write!(
                 f,
-                "Exif reader failed to parse image exif tags! \n\nError: {error}"
+                "Exif reader failed to parse image exif tags!"
             ),
             Error::ImageEncodeFailure { .. } => write!(
                 f,

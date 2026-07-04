@@ -1,4 +1,8 @@
+use std::time::Duration;
+
+use cirrus_egui::notifier::Notifier;
 use eframe::egui::{self, Color32, Context, TextureHandle, TextureOptions};
+use egui_notify::ToastLevel;
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::DecodedImage, pixels::Pixels, processing::quantization::squish_pixels_to_u8};
 
@@ -9,7 +13,8 @@ impl ImageResource {
         ctx: &Context,
         decoded_image: &DecodedImage,
         pixels: &Pixels,
-        texture_options: TextureOptions
+        texture_options: TextureOptions,
+        notifier: &mut Notifier,
     ) -> TextureHandle {
         let image_size = [decoded_image.size.0 as usize, decoded_image.size.1 as usize];
 
@@ -29,6 +34,14 @@ impl ImageResource {
                 // 
                 // Also i'm currently still learning about bit depth and everything else around it. ~ Goldy
                 higher_bit_depth_pixels => {
+                    notifier.show_toast(
+                        "U16 and F32 bit depth images are experimental, they may display incorrectly or washed out!",
+                        ToastLevel::Warning,
+                        |toast| {
+                            toast.duration(Duration::from_secs(10));
+                        }
+                    );
+
                     let raw_vec_u8_pixels = squish_pixels_to_u8(higher_bit_depth_pixels);
 
                     debug!("Done squishing to u8 pixels, transforming to egui colour image now...");

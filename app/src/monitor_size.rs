@@ -1,6 +1,6 @@
 use std::{fs::{self, File, OpenOptions}, io::{BufReader, Read, Seek, Write}, time::{Duration, Instant}};
 
-use cirrus_egui::notifier::Notifier;
+use cirrus_egui::notifier::{Notifier, toast::ToastText};
 use cirrus_path::get_user_cache_cloudy_folder_path;
 use egui_notify::ToastLevel;
 use eframe::egui::Context;
@@ -249,8 +249,10 @@ impl MonitorSize {
             },
             Err(error) => {
                 // TODO: test this and see how it looks.
-                notifier.toast(
-                    Box::new(Error::PathError(error)),
+                let error = Error::PathError(error);
+
+                notifier.show_toast(
+                    ToastText::Error(error.into()),
                     ToastLevel::Error,
                     |_| {}
                 );

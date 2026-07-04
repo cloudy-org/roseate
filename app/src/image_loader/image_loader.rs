@@ -1,6 +1,6 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
+use cirrus_egui::{notifier::{Notifier, toast::ToastText}, scheduler::Scheduler};
 use cirrus_soft_binds::egui::BoxedEguiInputReaderFunc;
 use eframe::egui::Ui;
 use egui_notify::ToastLevel;
@@ -59,7 +59,7 @@ impl ImageLoader {
     ) {
         if ui.input(open_image_input_reader) {
             if image_selector.get_image().is_some() && !self.new_image_experimental_warning_shown {
-                notifier.toast(
+                notifier.show_toast(
                     "Loading a new image is currently experimental, expect bugs.",
                     ToastLevel::Warning,
                     |toast| {
@@ -72,7 +72,7 @@ impl ImageLoader {
 
             if let Err(error) = image_selector.select_image_from_file_explorer() {
                 notifier.toast(
-                    Box::new(error),
+                    ToastText::Error(error.into()),
                     ToastLevel::Error,
                     |toast| {
                         toast.duration(Duration::from_secs(5));
@@ -228,8 +228,8 @@ impl ImageLoader {
                     debug!("Image modifications debug: {}", image_modifications_debug);
                 },
                 Err(error) => {
-                    notifier_clone.toast(
-                        Box::new(error),
+                    notifier_clone.show_toast(
+                        ToastText::Error(error.into()),
                         egui_notify::ToastLevel::Error,
                         |toast| {
                             toast.duration(Some(Duration::from_secs(10)));

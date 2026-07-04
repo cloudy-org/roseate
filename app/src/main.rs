@@ -5,7 +5,7 @@ use std::{path::Path, time::Duration};
 use cirrus_authors::Authors;
 use cirrus_clap_cli::EditArgs;
 use cirrus_edit::{Preference, open_editor};
-use cirrus_egui::{config_manager::{ConfigManager}, notifier::Notifier, styling::Styling};
+use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, toast::ToastText}, styling::Styling};
 use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks}, manager::ThemeManager};
 use config::config::Config;
 use env_logger::Builder;
@@ -73,11 +73,8 @@ fn main() -> eframe::Result {
     let config_manager: ConfigManager<Config> = match ConfigManager::new(APP_NAME, TEMPLATE_CONFIG_TOML_STRING) {
         Ok(config_manager) => config_manager,
         Err(error) => {
-            notifier.toast(
-                format!(
-                    "Error occurred initializing roseate's config file! \
-                    Falling back to default config! Error: {}", error.human_message()
-                ),
+            notifier.show_toast(
+                error,
                 ToastLevel::Error,
                 |toast| {
                     toast.duration(Some(Duration::from_secs(10)));
@@ -102,7 +99,7 @@ fn main() -> eframe::Result {
     monitor_size.fetch_from_cache();
 
     if !monitor_size.exists() {
-        notifier.toast(
+        notifier.show_toast(
             "The monitor size was not cached yet so the \
             image MAY appear a little blurry or over sharpened at first. Roseate will \
             clear this up and this should never happen again the next time you launch Roseate.",
@@ -167,8 +164,8 @@ fn main() -> eframe::Result {
         let image_path = Path::new(&image_path_string).to_owned();
 
         if let Err(error) = image_selector.select_image_from_path(image_path) {
-            notifier.toast(
-                Box::new(error),
+            notifier.show_toast(
+                ToastText::Error(error.into()),
                 ToastLevel::Error,
                 |toast| {
                     toast.duration(Some(Duration::from_secs(10)));

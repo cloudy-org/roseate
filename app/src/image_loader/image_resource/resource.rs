@@ -1,3 +1,4 @@
+use cirrus_egui::notifier::Notifier;
 use eframe::egui::{Context, TextureHandle, TextureOptions};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent}, pixels::Pixels};
@@ -13,7 +14,8 @@ impl ImageResource {
     pub fn from_decoded_image(
         ctx: &Context,
         decoded_image: &DecodedImage,
-        texture_options: TextureOptions
+        texture_options: TextureOptions,
+        notifier: &mut Notifier,
     ) -> Self {
         debug!("Copying image's '{}' pixels into RGBA egui texture...", decoded_image.info.colour_type);
 
@@ -25,7 +27,8 @@ impl ImageResource {
                     ctx,
                     decoded_image,
                     pixels,
-                    texture_options
+                    texture_options,
+                    notifier,
                 );
 
                 Self::Texture(texture)
@@ -42,7 +45,8 @@ impl ImageResource {
                                 ctx,
                                 decoded_image,
                                 pixels,
-                                texture_options
+                                texture_options,
+                                notifier,
                             ),
                             *delay
                         )
@@ -57,7 +61,7 @@ impl ImageResource {
     pub fn from_rgba8_decoded_image_zero_copy(
         ctx: &Context,
         decoded_image: &mut DecodedImage,
-        texture_options: TextureOptions
+        texture_options: TextureOptions,
     ) -> Self {
         debug!("Image pixels will be directly consumed and uploaded to gpu to avoid memory spike...");
 
