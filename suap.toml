@@ -8,6 +8,11 @@ mime_types = [
     "image/gif",
     "image/png",
     "image/webp",
+    "image/avif",
+    "image/tiff",
+    "image/x-qoi",
+    "image/bmp",
+    "image/x-icon"
 ]
 
 [project.cargo]

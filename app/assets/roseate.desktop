@@ -7,5 +7,5 @@ Exec=roseate %f
 Icon=roseate
 Terminal=false
 Categories=Rust;Graphics;Viewer;
-MimeType=image/jpeg;image/gif;image/png;image/webp;image/avif;image/tiff
+MimeType=image/jpeg;image/gif;image/png;image/webp;image/avif;image/tiff;image/x-qoi;image/bmp;image/x-icon;
 Keywords=image;view;roseate;picture;gif;jpeg;
