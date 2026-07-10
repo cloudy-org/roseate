@@ -14,7 +14,10 @@ pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
     "gif",
     "webp",
     "avif",
-    "tiff", "tif"
+    "tiff", "tif",
+    "qoi",
+    "bmp",
+    "ico",
 ];
 
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -26,6 +29,9 @@ pub enum ImageFormat {
     Webp,
     Avif,
     Tiff,
+    Qoi,
+    Bmp,
+    Ico
 }
 
 impl Display for ImageFormat {
@@ -38,6 +44,9 @@ impl Display for ImageFormat {
             ImageFormat::Webp => write!(f, "WEBP (Web Picture)"),
             ImageFormat::Avif => write!(f, "AVIF (AV1 Image File Format)"),
             ImageFormat::Tiff => write!(f, "TIFF (Tagged Image File Format)"),
+            ImageFormat::Qoi => write!(f, "QOI (Quite OK Image Format)"),
+            ImageFormat::Bmp => write!(f, "BMP (Bitmap)"),
+            ImageFormat::Ico => write!(f, "ICO (Microsoft Icon)"),
         }
     }
 }
@@ -75,6 +84,9 @@ pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(Im
         imagesize::ImageType::Webp => ImageFormat::Webp,
         imagesize::ImageType::Heif(Compression::Av1) => ImageFormat::Avif,
         imagesize::ImageType::Tiff => ImageFormat::Tiff,
+        imagesize::ImageType::Qoi => ImageFormat::Qoi,
+        imagesize::ImageType::Bmp => ImageFormat::Bmp,
+        imagesize::ImageType::Ico => ImageFormat::Ico,
         unsupported_format => {
             return Err(
                 Error::ImageFormatNotSupported {

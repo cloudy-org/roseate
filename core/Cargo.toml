@@ -11,7 +11,7 @@ default = [
 
 # decoders for formats that are either obscure or not as 
 # common while being bulky and requiring additional dependencies.
-image-rs-extra-formats = ["image/tiff", "image/avif-native"]
+image-rs-extra-formats = ["image/tiff", "image/avif-native", "image/ico", "image/bmp"]
 zune-image-extra-formats = []
 
 [dependencies]
@@ -23,7 +23,7 @@ kamadak-exif = "0.6.1"
 bytemuck = { version = "1.24" }
 
 # decoder backends
-image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp"], default-features = false}
+image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp", "qoi"], default-features = false}
 zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
 
 [dev-dependencies]

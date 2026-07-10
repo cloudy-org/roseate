@@ -39,6 +39,9 @@ pub fn save_image<P: image::Pixel<Subpixel = u8> + image::PixelWithColorType>(de
                         ImageFormat::Webp => "webp",
                         ImageFormat::Avif => "avif",
                         ImageFormat::Tiff => "tif",
+                        ImageFormat::Qoi => "qoi",
+                        ImageFormat::Bmp => "bmp",
+                        ImageFormat::Ico => "ico",
                     },
                 ));
 

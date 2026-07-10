@@ -154,8 +154,8 @@ impl ImageLoader {
         // let image_loaded_arc = self.image_loaded_arc.clone();
         let mut image_clone = image.clone();
         let mut notifier_clone = notifier.clone();
-        let mut image_loader_state_clone = self.state.inner_state.clone();
 
+        let image_loader_state_arc = self.state.inner_state.clone();
         let load_image_to_gpu_arc = self.state.load_image_to_gpu.clone();
 
         let reload_image = match &self.uploaded_image {
@@ -238,7 +238,7 @@ impl ImageLoader {
 
                     // set state back to idling to indicate nothing is 
                     // loading any more since we abruptly failed decoding
-                    *image_loader_state_clone.lock().unwrap() = InnerState::Idling;
+                    *image_loader_state_arc.lock().unwrap() = InnerState::Idling;
                 },
             }
 
