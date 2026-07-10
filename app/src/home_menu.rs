@@ -2,12 +2,12 @@
 
 use std::time::Duration;
 
-use cirrus_egui::{notifier::Notifier, ui_utils::center_multi::ui_multiple_centered_double_render, widgets::settings::button::SettingsButton};
+use cirrus_egui::{notifier::{Notifier, toast::ToastText}, ui_utils::center_multi::ui_multiple_centered_double_render, widgets::settings::button::SettingsButton};
 use cirrus_theming::colour::Colour;
 use eframe::egui::{self, Align2, Button, Color32, CursorIcon, Id, RichText, Sense, Stroke, Ui, Vec2};
 use egui_notify::ToastLevel;
 
-use crate::{files::get_rose_image, image::{backend::DecodingBackend}, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{files::get_rose_image, image::{backend::DefaultDecodingBackend}, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct HomeMenu {}
 
@@ -23,7 +23,7 @@ impl HomeMenu {
         image_loader: &mut ImageLoader,
         notifier: &mut Notifier,
         monitor_size: &MonitorSize,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         accent_colour: &Colour,
 
         show_settings: &mut bool,
@@ -67,7 +67,7 @@ impl HomeMenu {
         if rose_or_button_response.clicked() {
             if let Err(error) = image_selector.select_image_from_file_explorer() {
                 notifier.toast(
-                    Box::new(error),
+                    ToastText::Error(error.into()),
                     ToastLevel::Error,
                     |toast| {
                         toast.duration(Duration::from_secs(5));

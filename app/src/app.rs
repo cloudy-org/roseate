@@ -196,7 +196,7 @@ impl eframe::App for Roseate {
                         ) {
                             Ok(reader) => Box::new(reader),
                             Err(error) => {
-                                self.notifier.toast(
+                                self.notifier.show_toast(
                                     error.to_string(),
                                     ToastLevel::Error,
                                     |_| {}
@@ -347,8 +347,7 @@ impl eframe::App for Roseate {
 
         if let Err(error) = self.config_manager.save_if_changed() {
             log::error!(
-                "Error occurred while saving config on exit! Error: {}",
-                error.human_message()
+                "Error occurred while saving config on exit! Error: {error}"
             );
         }
     }

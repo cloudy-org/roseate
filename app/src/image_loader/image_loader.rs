@@ -1,13 +1,13 @@
 use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
 
-use cirrus_egui::{notifier::Notifier, scheduler::Scheduler};
+use cirrus_egui::{notifier::{Notifier, toast::ToastText}, scheduler::Scheduler};
 use cirrus_soft_binds::egui::BoxedEguiInputReaderFunc;
 use eframe::egui::Ui;
 use egui_notify::ToastLevel;
 use log::{debug, info, warn};
 use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct ImageLoader {
     pub image_loading: bool,
@@ -52,14 +52,14 @@ impl ImageLoader {
         ui: &Ui,
         image_selector: &mut ImageSelector,
         monitor_size: &MonitorSize,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         notifier: &mut Notifier,
 
         open_image_input_reader: &mut BoxedEguiInputReaderFunc
     ) {
         if ui.input(open_image_input_reader) {
             if image_selector.get_image().is_some() && !self.new_image_experimental_warning_shown {
-                notifier.toast(
+                notifier.show_toast(
                     "Loading a new image is currently experimental, expect bugs.",
                     ToastLevel::Warning,
                     |toast| {
@@ -72,7 +72,7 @@ impl ImageLoader {
 
             if let Err(error) = image_selector.select_image_from_file_explorer() {
                 notifier.toast(
-                    Box::new(error),
+                    ToastText::Error(error.into()),
                     ToastLevel::Error,
                     |toast| {
                         toast.duration(Duration::from_secs(5));
@@ -108,7 +108,7 @@ impl ImageLoader {
         &mut self,
         image: &mut Image,
         lazy_load: bool,
-        backend: DecodingBackend,
+        backend: DefaultDecodingBackend,
         monitor_size: &MonitorSize,
         notifier: &mut Notifier
     ) {
@@ -228,13 +228,18 @@ impl ImageLoader {
                     debug!("Image modifications debug: {}", image_modifications_debug);
                 },
                 Err(error) => {
-                    notifier_clone.toast(
-                        Box::new(error),
+                    notifier_clone.show_toast(
+                        ToastText::Error(error.into()),
                         egui_notify::ToastLevel::Error,
                         |toast| {
                             toast.duration(Some(Duration::from_secs(10)));
                         }
                     );
+
+                    // TODO: we need to set image loading back to false on 
+                    // decoder errors, otherwise the home menu will be frozen.
+
+                    // self.image_loading = false;
                 },
             }
 

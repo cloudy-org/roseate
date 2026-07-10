@@ -1,6 +1,8 @@
-use crate::{decoded_image::DecodedImage, error::Result, modifications::ImageModification, reader::ImageReader};
+use crate::{decoded_image::DecodedImage, error::Result, format::ImageFormat, modifications::ImageModification, reader::ImageReader};
 
 pub trait DecodeBackend {
+    const SUPPORTED_FORMATS: &[ImageFormat];
+
     fn from_reader(image_reader: ImageReader) -> Result<Self> where Self: Sized;
     fn modify<I>(&mut self, modifications: I)
     where

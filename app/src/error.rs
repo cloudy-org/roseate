@@ -1,8 +1,8 @@
-use std::{io, result::Result as StdResult};
+use std::{result::Result as StdResult};
 
 use cirrus_error::error::CError;
 
-use roseate_core::error::Error as CoreError;
+use roseate_core::{error::Error as CoreError, format::ImageFormat};
 use cirrus_path::error::Error as PathError;
 use cirrus_soft_binds::error::Error as SoftBindsError;
 
@@ -13,7 +13,7 @@ pub type Result<T, E = Error> = StdResult<T, E>;
 // I'm experimenting with "derive_more" for improved error handling all over the codebase.
 // My end goal is to cover as many errors as possible with detailed messages for the end user.
 
-#[derive(Debug, Display, From)]
+#[derive(Display, Debug, From)]
 pub enum Error {
     #[display("The image file at '{path}' does not exist!")]
     FileNotFound { path: String },
@@ -45,6 +45,10 @@ pub enum Error {
     Roseate! We're still working on SVG support, it will be back when it's ready.")]
     SvgNotSupportedYet,
 
+    #[display("There is no backend available that supports the \
+    '{image_format}' image format in this version of Roseate!")]
+    BackendForImageFormatNotAvailable { image_format: ImageFormat },
+
     // External errors (some to later be handled better).
     #[from]
     Core(CoreError),
@@ -57,24 +61,4 @@ pub enum Error {
     // IO(io::Error),
 }
 
-impl CError for Error {
-    fn human_message(&self) -> String {
-        // NOTE: I plan to move to the Display trait for a "human message".
-        format!("{}", self)
-    }
-
-    // TODO: Add some sort of button to the our notifier toast 
-    // that allows users to see the more verbose error message (debug) in the GUI.
-    fn actual_error(&self) -> Option<String> {
-        match self {
-            // Error::ImageOptimizationFailure { reason } => Some(reason.into()),
-            Error::Core(error) => match error {
-                CoreError::ImageHeaderReadFailure { error, .. } => error.to_owned(),
-                CoreError::ImageEncodeFailure { reason } => Some(reason.into()),
-                _ => None
-            }
-            // Error::IO(error) => todo!(),
-            _ => None
-        }
-    }
-}
+impl CError for Error {}

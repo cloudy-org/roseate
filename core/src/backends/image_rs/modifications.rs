@@ -45,6 +45,62 @@ impl ImageRSBackend {
                                 )
                             )
                         },
+                        BufferImageVariant::Grey16(image_buffer) => {
+                            BufferImageVariant::Grey16(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::Grey32F(image_buffer) => {
+                            BufferImageVariant::Grey32F(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::GreyA16(image_buffer) => {
+                            BufferImageVariant::GreyA16(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::GreyA32F(image_buffer) => {
+                            BufferImageVariant::GreyA32F(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::Rgb16(image_buffer) => {
+                            BufferImageVariant::Rgb16(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::Rgb32F(image_buffer) => {
+                            BufferImageVariant::Rgb32F(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::Rgba16(image_buffer) => {
+                            BufferImageVariant::Rgba16(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
+                        BufferImageVariant::Rgba32F(image_buffer) => {
+                            BufferImageVariant::Rgba32F(
+                                imageops::resize(
+                                    image_buffer, width, height, FilterType::Lanczos3
+                                )
+                            )
+                        },
                     };
                 },
             }
