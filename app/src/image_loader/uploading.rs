@@ -5,7 +5,7 @@ use eframe::egui::{Context, TextureFilter, TextureOptions, TextureWrapMode};
 use log::debug;
 use roseate_core::{colour_type::ImageColourType, image_info::info::ImageInfo};
 
-use crate::{image::Image, image_loader::{ImageLoader, image_resource::ImageResource}, image_selector::ImageSelector};
+use crate::{image::Image, image_loader::{ImageLoader, image_resource::ImageResource, state::InnerState}, image_selector::ImageSelector};
 
 /// Image uploaded to the GPU.
 pub struct UploadedImage {
@@ -22,15 +22,12 @@ impl ImageLoader {
     pub fn upload(&mut self, ctx: &Context, image_selector: &ImageSelector, notifier: &mut Notifier) -> Option<&UploadedImage> {
         match image_selector.get_image() {
             Some(image) => {
-                let load_image_to_gpu = match self.load_image_to_gpu.try_lock() {
-                    Ok(load_image_texture_mutex) => *load_image_texture_mutex,
-                    Err(_) => false,
-                };
-
-                if load_image_to_gpu {
+                if self.state.ready_for_uploading() {
                     let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
 
                     if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
+                        *self.state.inner_state.lock().unwrap() = InnerState::Uploading;
+
                         notifier.set_loading(Some("Converting image to texture to be uploaded to the GPU..."));
 
                         let texture_options = TextureOptions {
@@ -75,8 +72,8 @@ impl ImageLoader {
                         *image.decoded.lock().unwrap() = None;
                     }
 
-                    *self.load_image_to_gpu.lock().unwrap() = false;
-                    self.image_loading = false;
+                    *self.state.load_image_to_gpu.lock().unwrap() = false;
+                    *self.state.inner_state.lock().unwrap() = InnerState::Idling;
                 }
 
                 self.uploaded_image.as_ref()

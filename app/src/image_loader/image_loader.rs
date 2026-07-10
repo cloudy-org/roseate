@@ -1,4 +1,4 @@
-use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, sync::{Arc, Mutex}, thread, time::{Duration, Instant}};
+use std::{collections::HashSet, hash::{DefaultHasher, Hash, Hasher}, thread, time::{Duration, Instant}};
 
 use cirrus_egui::{notifier::{Notifier, toast::ToastText}, scheduler::Scheduler};
 use cirrus_soft_binds::egui::BoxedEguiInputReaderFunc;
@@ -7,10 +7,11 @@ use egui_notify::ToastLevel;
 use log::{debug, info, warn};
 use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{uploaded_image::UploadedImage, optimization::ImageOptimizations}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{optimization::ImageOptimizations, state::{ImageLoaderState, InnerState}, uploading::UploadedImage}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct ImageLoader {
-    pub image_loading: bool,
+    pub state: ImageLoaderState,
+
     pub image_optimizations: ImageOptimizations,
 
     pub(super) dynamic_sample_schedule: Option<Scheduler>,
@@ -21,7 +22,6 @@ pub struct ImageLoader {
     pub(super) monitor_downsampling_required: bool,
 
     pub(super) uploaded_image: Option<UploadedImage>,
-    pub(super) load_image_to_gpu: Arc<Mutex<bool>>,
 
     new_image_experimental_warning_shown: bool,
 }
@@ -29,7 +29,7 @@ pub struct ImageLoader {
 impl ImageLoader {
     pub fn new(image_optimizations: ImageOptimizations) -> Self {
         Self {
-            image_loading: false,
+            state: ImageLoaderState::default(),
 
             image_optimizations,
 
@@ -41,7 +41,6 @@ impl ImageLoader {
             monitor_downsampling_required: false,
 
             uploaded_image: None,
-            load_image_to_gpu: Arc::new(Mutex::new(false)),
 
             new_image_experimental_warning_shown: false
         }
@@ -112,7 +111,7 @@ impl ImageLoader {
         monitor_size: &MonitorSize,
         notifier: &mut Notifier
     ) {
-        if self.image_loading { // would we ever even hit this?
+        if self.state.is_loading() { // would we ever even hit this?
             warn!("Not loading image as one is already being loaded!");
             return;
         }
@@ -132,7 +131,7 @@ impl ImageLoader {
             None => None,
         };
 
-        self.image_loading = true;
+        *self.state.inner_state.lock().unwrap() = InnerState::Decoding;
 
         notifier.set_loading(
             Some("Gathering necessary image modifications...")
@@ -155,8 +154,9 @@ impl ImageLoader {
         // let image_loaded_arc = self.image_loaded_arc.clone();
         let mut image_clone = image.clone();
         let mut notifier_clone = notifier.clone();
+        let mut image_loader_state_clone = self.state.inner_state.clone();
 
-        let load_image_to_gpu_arc = self.load_image_to_gpu.clone();
+        let load_image_to_gpu_arc = self.state.load_image_to_gpu.clone();
 
         let reload_image = match &self.uploaded_image {
             Some(uploaded_image) => {
@@ -236,10 +236,9 @@ impl ImageLoader {
                         }
                     );
 
-                    // TODO: we need to set image loading back to false on 
-                    // decoder errors, otherwise the home menu will be frozen.
-
-                    // self.image_loading = false;
+                    // set state back to idling to indicate nothing is 
+                    // loading any more since we abruptly failed decoding
+                    *image_loader_state_clone.lock().unwrap() = InnerState::Idling;
                 },
             }
 

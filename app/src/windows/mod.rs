@@ -5,7 +5,7 @@ use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
 use eframe::egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 
-use crate::{image_loader::{optimization::ImageOptimizations, uploaded_image::UploadedImage}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
+use crate::{image_loader::{optimization::ImageOptimizations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
 
 mod info;
 

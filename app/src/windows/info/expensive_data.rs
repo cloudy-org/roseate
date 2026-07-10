@@ -3,7 +3,7 @@ use std::{sync::{Arc, Mutex}};
 use log::debug;
 use chrono::{DateTime, Local, NaiveDateTime};
 
-use crate::{image_loader::{image_resource::ImageResource, uploaded_image::UploadedImage}};
+use crate::{image_loader::{image_resource::ImageResource, uploading::UploadedImage}};
 
 pub struct ExpensiveData {
     pub file_name: String,

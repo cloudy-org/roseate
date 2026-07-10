@@ -32,7 +32,7 @@ impl HomeMenu {
         show_open_image_button: bool,
     ) {
         let (rose_or_button_response, rose_rect) = ui_multiple_centered_double_render(ui, |ui| {
-            if image_loader.image_loading {
+            if image_loader.state.is_loading() {
                 ui.disable();
             }
 

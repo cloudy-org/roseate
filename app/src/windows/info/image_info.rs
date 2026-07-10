@@ -6,7 +6,7 @@ use eframe::egui::{self, Response};
 use eframe::egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use log::debug;
 
-use crate::{image_loader::{image_resource::ImageResource, optimization::ImageOptimizations, uploaded_image::UploadedImage}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
+use crate::{image_loader::{image_resource::ImageResource, optimization::ImageOptimizations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
