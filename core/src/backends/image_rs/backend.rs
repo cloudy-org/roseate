@@ -2,13 +2,13 @@ use std::{collections::HashSet, io::BufReader};
 
 use image::{
     AnimationDecoder, ImageDecoder, ImageError, codecs::{
-        avif::AvifDecoder, gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder,
+        gif::GifDecoder, jpeg::JpegDecoder, png::PngDecoder, webp::WebPDecoder,
     },
 };
 
 #[cfg(feature = "image-rs-extra-formats")]
 use image::codecs::{
-    tiff::TiffDecoder
+    tiff::TiffDecoder, avif::AvifDecoder
 };
 
 use log::debug;
@@ -229,6 +229,7 @@ impl DecodeBackend for ImageRSBackend {
                     self.image_format,
                     self.image_exif_chunk
                 ),
+                #[cfg(feature = "image-rs-extra-formats")]
                 Decoder::Avif(avif_decoder) => Self::decode_image(
                     avif_decoder,
                     self.modifications,
