@@ -22,7 +22,9 @@ full = [
 # A set of opinionated extra features I like to compile on my system 
 # but may be out of the scope for the product I actually want to 
 # ship to end users.
-goldy = []
+goldy = [
+    "roseate-core/hayro-pdf-format"
+]
 
 geo = [
     "dep:reverse_geocoder",

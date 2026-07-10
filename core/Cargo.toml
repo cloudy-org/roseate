@@ -9,6 +9,7 @@ default = [
     "zune-image-extra-formats"
 ]
 
+hayro-pdf-format = ["dep:hayro"]
 # decoders for formats that are either obscure or not as 
 # common while being bulky and requiring additional dependencies.
 image-rs-extra-formats = ["image/tiff", "image/avif-native"]
@@ -21,6 +22,8 @@ imagesize = "0.15.0"
 svg_metadata = "0.5.1"
 kamadak-exif = "0.6.1"
 bytemuck = { version = "1.24" }
+
+hayro = { version = "0.7.1", optional = true }
 
 # decoder backends
 image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp"], default-features = false}

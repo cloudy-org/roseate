@@ -14,7 +14,8 @@ pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
     "gif",
     "webp",
     "avif",
-    "tiff", "tif"
+    "tiff", "tif",
+    "pdf"
 ];
 
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -26,6 +27,7 @@ pub enum ImageFormat {
     Webp,
     Avif,
     Tiff,
+    Pdf
 }
 
 impl Display for ImageFormat {
@@ -38,16 +40,25 @@ impl Display for ImageFormat {
             ImageFormat::Webp => write!(f, "WEBP (Web Picture)"),
             ImageFormat::Avif => write!(f, "AVIF (AV1 Image File Format)"),
             ImageFormat::Tiff => write!(f, "TIFF (Tagged Image File Format)"),
+            ImageFormat::Pdf => write!(f, "PDF (Portable Document Format)"),
         }
     }
 }
+
+// TODO: the function should be changed to return 
+// None when ImageFormat is not found instead of error.
+// 
+// TODO: then the function should be renamed to better clarify 
+// that this function will not determine non rasterized or unique image 
+// formats like SVG and PDF. We'll need this for PDF support as another function 
+// will determine the PDF format if this one (or more specifically image-size crate) fails.
 
 /// Only reads the header of an image and determines it's image format and size from that.
 /// 
 /// *It's blazzing fast... 🔥*
 pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(ImageFormat, ImageSize)> {
-    // TODO: figure out how we can share the same buf reader used
-    // for image decoding to improve speed and save on I/O calls.
+    // TODO: share the same buf reader used for image 
+    // decoding to improve speed and save on I/O calls.
     let mut buffer = [0u8; 1024];
     let number_of_bytes_read = File::open(path)
         .map_err(|error| Error::ImageHeaderReadFailure {
