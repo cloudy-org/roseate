@@ -24,6 +24,7 @@ enum Decoder {
     Jpeg(JpegDecoder<BufReader<Box<dyn ReadSeek>>>),
     Webp(WebPDecoder<BufReader<Box<dyn ReadSeek>>>),
     Gif(GifDecoder<BufReader<Box<dyn ReadSeek>>>),
+    #[cfg(feature = "image-rs-extra-formats")]
     Avif(AvifDecoder<BufReader<Box<dyn ReadSeek>>>),
     #[cfg(feature = "image-rs-extra-formats")]
     Tiff(TiffDecoder<BufReader<Box<dyn ReadSeek>>>),
@@ -52,6 +53,7 @@ impl DecodeBackend for ImageRSBackend {
         ImageFormat::Png,
         ImageFormat::Jpeg,
         ImageFormat::Webp,
+        #[cfg(feature = "image-rs-extra-formats")]
         ImageFormat::Avif,
         #[cfg(feature = "image-rs-extra-formats")]
         ImageFormat::Tiff,
@@ -73,6 +75,7 @@ impl DecodeBackend for ImageRSBackend {
                     ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
+                    #[cfg(feature = "image-rs-extra-formats")]
                     ImageFormat::Avif => Decoder::Avif(AvifDecoder::new(buf_reader).map_err(error_func)?),
                     #[cfg(feature = "image-rs-extra-formats")]
                     ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?),
@@ -91,6 +94,7 @@ impl DecodeBackend for ImageRSBackend {
                     Decoder::Jpeg(jpeg_decoder) => jpeg_decoder.exif_metadata(),
                     Decoder::Webp(web_pdecoder) => web_pdecoder.exif_metadata(),
                     Decoder::Gif(gif_decoder) => gif_decoder.exif_metadata(),
+                    #[cfg(feature = "image-rs-extra-formats")]
                     Decoder::Avif(avif_decoder) => avif_decoder.exif_metadata(),
                     #[cfg(feature = "image-rs-extra-formats")]
                     Decoder::Tiff(tiff_decoder) => tiff_decoder.exif_metadata(),
