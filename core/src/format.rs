@@ -11,7 +11,7 @@ pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
     "png",
     "jpg", "jpeg",
     // "svg",
-    "gif",
+    "gif", "gifv",
     "webp",
     "avif",
     "tiff", "tif",
