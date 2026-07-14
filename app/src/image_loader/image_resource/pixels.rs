@@ -38,7 +38,7 @@ impl ImageResource {
                         "U16 and F32 bit depth images are experimental, they may display incorrectly or washed out!",
                         ToastLevel::Warning,
                         |toast| {
-                            toast.duration(Duration::from_secs(10));
+                            toast.duration(Duration::from_secs(30));
                         }
                     );
 

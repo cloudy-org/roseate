@@ -251,7 +251,7 @@ impl MonitorSize {
                 // TODO: test this and see how it looks.
                 let error = Error::PathError(error);
 
-                notifier.show_toast(
+                notifier.toast(
                     ToastText::Error(error.into()),
                     ToastLevel::Error,
                     |_| {}

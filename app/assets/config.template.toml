@@ -147,6 +147,8 @@ open_image = "CTRL+O"
 # All other configs that don't yet have a specific place or are experimental.
 # Configs here will be moved or removed without further notice.
 
+show_detailed_errors = true
+
 # override_monitor_size = {width = 1920, height = 1080}
 
 [misc.experimental]

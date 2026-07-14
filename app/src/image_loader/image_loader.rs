@@ -62,7 +62,7 @@ impl ImageLoader {
                     "Loading a new image is currently experimental, expect bugs.",
                     ToastLevel::Warning,
                     |toast| {
-                        toast.duration(Duration::from_secs(40));
+                        toast.duration(Duration::from_secs(20));
                     }
                 );
 
@@ -228,7 +228,7 @@ impl ImageLoader {
                     debug!("Image modifications debug: {}", image_modifications_debug);
                 },
                 Err(error) => {
-                    notifier_clone.show_toast(
+                    notifier_clone.toast(
                         ToastText::Error(error.into()),
                         egui_notify::ToastLevel::Error,
                         |toast| {

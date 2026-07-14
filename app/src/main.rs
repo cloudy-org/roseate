@@ -5,7 +5,7 @@ use std::{path::Path, time::Duration};
 use cirrus_authors::Authors;
 use cirrus_clap_cli::EditArgs;
 use cirrus_edit::{Preference, open_editor};
-use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, toast::ToastText}, styling::Styling};
+use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, NotifierConfig, toast::ToastText}, styling::Styling};
 use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks}, manager::ThemeManager};
 use config::config::Config;
 use env_logger::Builder;
@@ -87,6 +87,13 @@ fn main() -> eframe::Result {
 
     let config = &config_manager.config;
 
+    notifier.set_config(
+        NotifierConfig {
+            hide_detailed_toast_errors: !config.misc.show_detailed_errors,
+            ..Default::default()
+        }
+    );
+
     // TODO: fill monitor size params with values from config
     let mut monitor_size = MonitorSize::new(
         None,
@@ -99,7 +106,7 @@ fn main() -> eframe::Result {
     monitor_size.fetch_from_cache();
 
     if !monitor_size.exists() {
-        notifier.show_toast(
+        notifier.toast(
             "The monitor size was not cached yet so the \
             image MAY appear a little blurry or over sharpened at first. Roseate will \
             clear this up and this should never happen again the next time you launch Roseate.",
@@ -164,7 +171,7 @@ fn main() -> eframe::Result {
         let image_path = Path::new(&image_path_string).to_owned();
 
         if let Err(error) = image_selector.select_image_from_path(image_path) {
-            notifier.show_toast(
+            notifier.toast(
                 ToastText::Error(error.into()),
                 ToastLevel::Error,
                 |toast| {

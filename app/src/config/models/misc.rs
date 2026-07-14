@@ -2,6 +2,8 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Misc {
+    #[serde(default = "super::true_default")]
+    pub show_detailed_errors: bool,
     #[serde(default = "super::none_default")]
     pub override_monitor_size: Option<OverrideMonitorSize>,
     #[serde(default)]
@@ -18,10 +20,9 @@ pub struct Experimental {
 impl Default for Experimental {
     fn default() -> Self {
         Self {
-            // if the whole config fails to parse or something 
-            // I don't want users being bombarded with popups
-            // 
             // TODO: move to some alternative config outside config.toml.
+            // If the whole config fails to parse or something 
+            // I don't want users being bombarded with popups
             show_ui_modes_popup: false
         }
     }
