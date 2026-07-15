@@ -14,6 +14,9 @@ default = [
 image-rs-extra-formats = ["image/tiff", "image/ico", "image/bmp"]
 zune-image-extra-formats = []
 
+# formats that cannot be cross-compiled.
+native-formats = ["image/avif-native"]
+
 [dependencies]
 log = "0.4"
 rayon = "1.11.0"
@@ -23,17 +26,8 @@ kamadak-exif = "0.6.1"
 bytemuck = { version = "1.24" }
 
 # decoder backends
-zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
-
-# we are using platform specific deps here 
-# because avif-native cannot be cross-compiled for windows
-# 
-# if you have a good fix that also allows us to cross-compile a windows bin on linux please contribute
-[target.'cfg(windows)'.dependencies]
 image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp", "qoi"], default-features = false}
-
-[target.'cfg(not(windows))'.dependencies]
-image = {version = "0.25.10", features = ["rayon", "png", "jpeg", "gif", "webp", "qoi", "avif-native"], default-features = false}
+zune-image = {version = "0.4.15", features = ["threads", "simd", "metadata", "png", "jpeg", "jpeg-xl"], default-features = false}
 
 [dev-dependencies]
 env_logger = "0.11"

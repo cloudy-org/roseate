@@ -6,7 +6,7 @@ use image::{
     },
 };
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(feature = "native-formats")]
 use image::codecs::avif::AvifDecoder;
 
 #[cfg(feature = "image-rs-extra-formats")]
@@ -28,7 +28,7 @@ enum Decoder {
     Webp(WebPDecoder<BufReader<Box<dyn ReadSeek>>>),
     Gif(GifDecoder<BufReader<Box<dyn ReadSeek>>>),
     Qoi(QoiDecoder<BufReader<Box<dyn ReadSeek>>>),
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(feature = "native-formats")]
     Avif(AvifDecoder<BufReader<Box<dyn ReadSeek>>>),
     #[cfg(feature = "image-rs-extra-formats")]
     Tiff(TiffDecoder<BufReader<Box<dyn ReadSeek>>>),
@@ -62,7 +62,7 @@ impl DecodeBackend for ImageRSBackend {
         ImageFormat::Jpeg,
         ImageFormat::Webp,
         ImageFormat::Qoi,
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(feature = "native-formats")]
         ImageFormat::Avif,
         #[cfg(feature = "image-rs-extra-formats")]
         ImageFormat::Tiff,
@@ -89,7 +89,7 @@ impl DecodeBackend for ImageRSBackend {
                     ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
                     ImageFormat::Qoi => Decoder::Qoi(QoiDecoder::new(buf_reader).map_err(error_func)?),
-                    #[cfg(not(target_os = "windows"))]
+                    #[cfg(feature = "native-formats")]
                     ImageFormat::Avif => Decoder::Avif(AvifDecoder::new(buf_reader).map_err(error_func)?),
                     #[cfg(feature = "image-rs-extra-formats")]
                     ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?),
@@ -113,7 +113,7 @@ impl DecodeBackend for ImageRSBackend {
                     Decoder::Webp(web_pdecoder) => web_pdecoder.exif_metadata(),
                     Decoder::Gif(gif_decoder) => gif_decoder.exif_metadata(),
                     Decoder::Qoi(qoi_decoder) => qoi_decoder.exif_metadata(),
-                    #[cfg(not(target_os = "windows"))]
+                    #[cfg(feature = "native-formats")]
                     Decoder::Avif(avif_decoder) => avif_decoder.exif_metadata(),
                     #[cfg(feature = "image-rs-extra-formats")]
                     Decoder::Tiff(tiff_decoder) => tiff_decoder.exif_metadata(),
@@ -258,7 +258,7 @@ impl DecodeBackend for ImageRSBackend {
                     self.image_format,
                     self.image_exif_chunk
                 ),
-                #[cfg(not(target_os = "windows"))]
+                #[cfg(feature = "native-formats")]
                 Decoder::Avif(avif_decoder) => Self::decode_image(
                     avif_decoder,
                     self.modifications,

@@ -22,7 +22,9 @@ full = [
 # A set of opinionated extra features I like to compile on my system 
 # but may be out of the scope for the product I actually want to 
 # ship to end users.
-goldy = []
+goldy = [
+    "native-formats"
+]
 
 geo = [
     "dep:reverse_geocoder",
@@ -34,8 +36,11 @@ extra-formats = [
     "zune-image-extra-formats"
 ]
 
+# go to roseate-core cargo.toml for extra details
 image-rs-extra-formats = ["roseate-core/image-rs-extra-formats"]
 zune-image-extra-formats = ["roseate-core/zune-image-extra-formats"]
+
+native-formats = ["roseate-core/native-formats"]
 
 # Special linux eframe feature flags
 # https://cloudy-org.github.io/wiki/apps/roseate/advanced_installs/#display-server-specific-x11-wayland
