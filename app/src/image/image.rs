@@ -2,7 +2,7 @@ use std::{collections::HashSet, fmt::Debug, fs::File, hash::Hash, io::BufReader,
 
 use log::debug;
 use cirrus_egui::notifier::Notifier;
-use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData}};
+use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
 
 use crate::{error::{Error, Result}, image::backend::DefaultDecodingBackend};
 
@@ -12,6 +12,8 @@ pub struct Image {
     pub size: ImageSize,
     pub format: ImageFormat,
     pub decoded: Arc<Mutex<Option<DecodedImage>>>,
+
+    raw_buf_reader: Arc<Mutex<Option<BufReader<Box<dyn ReadSeek>>>>>,
 
     last_modifications: ImageModifications,
 }
@@ -65,7 +67,18 @@ impl Image {
             return Err(Error::SvgNotSupportedYet);
         }
 
-        let (format, size) = determine_image_format_and_size_from_header(&path)?;
+        let file = File::open(&path)
+            .map_err(|error| Error::ImageFileOpenFailure {
+                error: error.to_string(),
+            })?;
+
+        let mut buf_reader = BufReader::new(Box::new(file) as Box<dyn ReadSeek>);
+
+        // This function does not consume the buf reader so 
+        // whatever is read of the header will stay in the buffer 
+        // to be read again in the image decoding stage but this time 
+        // directly from RAM, avoiding the extra I/O of reading again from disk.
+        let (format, size) = determine_image_format_and_size_from_header(&mut buf_reader)?;
 
         Ok(
             Self {
@@ -73,6 +86,8 @@ impl Image {
                 size,
                 format,
                 decoded: Arc::new(Mutex::new(None)),
+
+                raw_buf_reader: Arc::new(Mutex::new(Some(buf_reader))),
                 last_modifications: HashSet::default(),
             }
         )
@@ -139,18 +154,32 @@ impl Image {
             debug!("Decoded image is not currently loaded in memory, falling back to loading from disk...");
         }
 
-        notifier.set_loading(Some("Opening image's file for reading..."));
-
-        let file = File::open(&*self.path)
-            .map_err(
-                |error| Error::ImageFileOpenFailure { error: error.to_string() }
-            )?;
-
+        let buf_reader = self.get_file_buf_reader(notifier)?;
         notifier.unset_loading();
 
         debug!("Boxing image onto the heap to pass to buf reader...");
 
-        Ok(ImageReaderData::BufReader(BufReader::new(Box::new(file))))
+        Ok(ImageReaderData::BufReader(buf_reader))
+    }
+
+    fn get_file_buf_reader(&mut self, notifier: &mut Notifier) -> Result<BufReader<Box<dyn ReadSeek>>> {
+        match self.raw_buf_reader.lock().unwrap().take() {
+            Some(buf_reader) => {
+                debug!("Reusing same buf reader used for image size and format...");
+
+                Ok(buf_reader)
+            },
+            None => {
+                notifier.set_loading(Some("Opening image's file for reading..."));
+
+                let file = File::open(&*self.path)
+                    .map_err(
+                        |error| Error::ImageFileOpenFailure { error: error.to_string() }
+                    )?;
+
+                Ok(BufReader::new(Box::new(file)))
+            },
+        }
     }
 
     fn are_mods_out_of_mem_bounds(&mut self, modifications: &ImageModifications) -> bool {

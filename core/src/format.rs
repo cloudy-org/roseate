@@ -1,10 +1,9 @@
-use std::{fmt::{Display}, fs::File, io::Read, path::PathBuf};
+use std::{cmp::min, fmt::Display, io::{BufRead, BufReader, Read}, path::PathBuf};
 
 use imagesize::Compression;
 
 use crate::{
-    decoded_image::ImageSize,
-    error::{Error, Result},
+    decoded_image::ImageSize, error::{Error, Result},
 };
 
 pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
@@ -54,23 +53,22 @@ impl Display for ImageFormat {
 /// Only reads the header of an image and determines it's image format and size from that.
 /// 
 /// *It's blazzing fast... 🔥*
-pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(ImageFormat, ImageSize)> {
-    // TODO: figure out how we can share the same buf reader used
-    // for image decoding to improve speed and save on I/O calls.
-    let mut buffer = [0u8; 1024];
-    let number_of_bytes_read = File::open(path)
-        .map_err(|error| Error::ImageHeaderReadFailure {
-            stage: "Failed to open file!".into(),
-            error: Some(error.to_string()),
-        })?
-        .read(&mut buffer)
+pub fn determine_image_format_and_size_from_header<R: Read + ?Sized>(buf_reader: &mut BufReader<Box<R>>) -> Result<(ImageFormat, ImageSize)> {
+    // Reads I think 8 KB of the image from disk into ram.
+    // 
+    // I do this so later the image decoders don't need to read the image header again when we've 
+    // already read it here for image size and format. Instead they can just quickly read it from ram 
+    // and then read the rest of the image file from disk when it get's past the "image header" window.
+    let buffer = buf_reader.fill_buf()
         .map_err(|error| Error::ImageHeaderReadFailure {
             stage: "Failed to read header of image file!".into(),
             error: Some(error.to_string()),
         })?;
 
+    let bytes_to_read_as_header = min(buffer.len(), 1024);
+
     let image_size_image_type =
-        imagesize::image_type(&buffer[..number_of_bytes_read]).map_err(|error| {
+        imagesize::image_type(&buffer[..bytes_to_read_as_header]).map_err(|error| {
             Error::ImageHeaderReadFailure {
                 stage: "Failed to determine format of image!".into(),
                 error: Some(error.to_string()),
@@ -96,8 +94,7 @@ pub fn determine_image_format_and_size_from_header(path: &PathBuf) -> Result<(Im
         }
     };
 
-    // TODO: when we switch to shared buf reader we should stop using path
-    let image_size = imagesize::size(path)
+    let image_size = imagesize::blob_size(&buffer[..bytes_to_read_as_header])
         .map_err(|error| Error::ImageHeaderReadFailure {
             stage: "Failed to retrieve image dimensions!".into(),
             error: Some(error.to_string()),

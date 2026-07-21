@@ -2,8 +2,8 @@ use std::{io::{BufReader, Read, Seek}};
 
 use crate::{format::ImageFormat, decoded_image::DecodedImage};
 
-pub trait ReadSeek: Read + Seek {}
-impl<T: Read + Seek> ReadSeek for T {}
+pub trait ReadSeek: Read + Seek + Send {}
+impl<T: Read + Seek + Send> ReadSeek for T {}
 
 pub enum ImageReaderData {
     BufReader(BufReader<Box<dyn ReadSeek>>),
