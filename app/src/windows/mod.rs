@@ -126,6 +126,7 @@ impl WindowsManager {
                 uploaded_image,
                 image_optimizations,
                 monitor_size,
+                &mut self.show_info,
                 self.show_extra_info,
                 show_location_in_image_info,
             );

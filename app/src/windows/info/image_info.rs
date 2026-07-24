@@ -1,7 +1,6 @@
 use std::{alloc, sync::{Arc, TryLockError}};
 
 use cap::Cap;
-use cirrus_egui::notifier::Notifier;
 use eframe::egui::{self, Response};
 use eframe::egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use log::debug;
@@ -37,6 +36,7 @@ impl ImageInfoWindow {
         uploaded_image: &UploadedImage,
         image_optimizations: &ImageOptimizations,
         monitor_size: &MonitorSize,
+        show: &mut bool,
         show_extra: bool,
         show_location_in_image_info: bool,
     ) -> Response {
@@ -79,6 +79,7 @@ impl ImageInfoWindow {
             .resizable(false)
             .fade_in(false)
             .fade_out(false)
+            .open(show)
             .show(ui.ctx(), |ui| {
                 // let available_width = ui.available_width();
 
