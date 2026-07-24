@@ -4,7 +4,7 @@ use cirrus_authors::Authors;
 use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, banner::{BannerPlacement, BannerText}}, widgets::settings::Settings};
 use cirrus_soft_binds::egui::{BoxedEguiInputReaderFunc, parse_and_get_egui_input_reader_from_string};
 use cirrus_theming::theme::Theme;
-use eframe::egui::{self, Color32, Context, CornerRadius, Frame, Key, Margin, ViewportCommand};
+use eframe::egui::{self, Color32, Context, CornerRadius, Frame, Key, Margin, Vec2, ViewportCommand};
 use egui_notify::ToastLevel;
 
 use crate::{about_window::AboutWindow, config::config::Config, context_menu::ContextMenu, home_menu::HomeMenu, image_loader::ImageLoader, image_selector::ImageSelector, monitor_size::MonitorSize, settings::SettingsMenu, tutorial::Tutorial, ui_controls::UIControlsManager, viewport::Viewport, windows::WindowsManager};
@@ -219,6 +219,10 @@ impl eframe::App for Roseate {
                         &self.authors,
                         &mut self.show_license
                     );
+                }
+
+                if let Some(Vec2 { x, y }) = ui.input(|i| i.viewport().monitor_size) {
+                    self.monitor_size.update_size((x as u32, y as u32));
                 }
 
                 self.image_loader.handle_input(

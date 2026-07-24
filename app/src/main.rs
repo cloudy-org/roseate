@@ -1,11 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{path::Path, time::Duration};
+use std::{path::Path, time::{Duration}};
 
 use cirrus_authors::Authors;
 use cirrus_clap_cli::EditArgs;
 use cirrus_edit::{Preference, open_editor};
-use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, NotifierConfig, toast::ToastText}, styling::Styling};
+use cirrus_egui::{config_manager::ConfigManager, notifier::{Notifier, NotifierConfig, toast::{ToastError, ToastText}}, styling::Styling};
 use cirrus_theming::{colour::Colour, fallbacks::{ThemeFallbacks}, manager::ThemeManager};
 use config::config::Config;
 use env_logger::Builder;
@@ -94,27 +94,44 @@ fn main() -> eframe::Result {
         }
     );
 
-    // TODO: fill monitor size params with values from config
+    // TODO: I want to eventually get rid of most of this 
+    // and instead query the operating system right here going forward.
     let mut monitor_size = MonitorSize::new(
-        None,
+        (1920, 1080),
         match &config_manager.config.misc.override_monitor_size {
-            Some(size) => Some((size.width as f32, size.height as f32)),
+            Some(size) => Some((size.width, size.height)),
             None => None,
         }
     );
 
-    monitor_size.fetch_from_cache();
-
-    if !monitor_size.exists() {
-        notifier.toast(
-            "The monitor size was not cached yet so the \
-            image MAY appear a little blurry or over sharpened at first. Roseate will \
-            clear this up and this should never happen again the next time you launch Roseate.",
-            ToastLevel::Warning,
-            |toast| {
-                toast.duration(Some(Duration::from_secs(10)));
+    // this is all temporary, once again I'm going to get rid of this.
+    match monitor_size.update_size_from_cache() {
+        Ok(()) => {
+            if !monitor_size.exists() {
+                notifier.show_toast(
+                "The monitor size was not cached yet so the \
+                    image MAY appear a little blurry or over sharpened at first. \
+                    Roseate will clear this up next the next time you launch the image viewer.",
+                    ToastLevel::Warning,
+                    |toast| {
+                        toast.duration(Duration::from_secs(8));
+                    }
+                );
             }
-        );
+        },
+        Err(error) => notifier.show_toast(
+            ToastText::Error(
+                ToastError {
+                    message: String::from(
+                        "Failed to retrieve cached monitor size! The image may appear \
+                        a little blurry or over sharpened! This isn't normal, report this please."
+                    ),
+                    error: format!("{:#?}", error)
+                }
+            ),
+            ToastLevel::Error,
+            |_| {}
+        ),
     }
 
     let authors = match Authors::parse_authors_txt_string(AUTHORS_TXT_STRING) {

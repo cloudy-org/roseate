@@ -21,25 +21,20 @@ pub enum Error {
     #[display("No image was selected in the file dialogue!")]
     FileNotSelected,
 
-    #[display("We failed to open the image file for reading! \n\nError: {error}")]
+    #[display("We failed to open the image file for reading!")]
     ImageFileOpenFailure { error: String },
 
-    // #[display("We failed to perform optimizations on this image! \
-    // Roseate may run slower and use more memory than usual!")]
-    // ImageOptimizationFailure { reason: String },
-
-    // NOTE: this error will be removed soon.
-    #[display("No cache directory was found for your Operating \
-    System!? This should not happen, please report this!")]
-    CacheDirectoryNotFound,
-
-    // NOTE: same thing with this error, will also be removed soon.
-    #[display("Failed to create cache path at '{path}'! \n\nError: {error}")]
+    #[display("Failed to create cache path at '{path}'!")]
     CacheDirectoryCreationFailure { path: String, error: String },
 
-    // NOTE: anddddd.... this
-    #[display("Failed to read the '{file_name}' cache file! \n\nError: {error}")]
-    CacheFileReadFailure { file_name: String, error: String },
+    #[display("Failed to get and read monitor size cache file!")]
+    GetCachedMonitorSizeFailure { error: String },
+    #[display("Failed to write monitor size to cache file!")]
+    WriteCachedMonitorSizeFailure { error: String },
+    #[display("The 'monitor_size' cache file is currently locked by another Roseate \
+    instant, so we will have to wait until the other instance let's go of \
+    the file until we can save our monitor size state to it.")]
+    CachedMonitorSizeAlreadyLocked { error: String },
 
     #[display("Experimental SVG support has been temporary removed from \
     Roseate! We're still working on SVG support, it will be back when it's ready.")]
