@@ -263,7 +263,7 @@ impl eframe::App for Roseate {
                                     config.ui.image_info.show_location,
                                 );
 
-                                self.context_menu.show(ui, &mut self.windows_manager);
+                                self.context_menu.show(ui, &mut self.windows_manager, &mut self.ui_controls_manager);
                                 self.ui_controls_manager.show(
                                     ui,
                                     &mut self.viewport,

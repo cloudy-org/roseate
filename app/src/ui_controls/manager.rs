@@ -14,7 +14,7 @@ pub struct UIControlsManager {
 
     show_controls_reader: Option<BoxedEguiInputReaderFunc>,
 
-    show_controls: Option<bool>,
+    pub show_controls: Option<bool>,
 }
 
 impl UIControlsManager {

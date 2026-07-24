@@ -1,6 +1,6 @@
-use eframe::egui::{self, Context, CornerRadius, Id, LayerId, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Ui};
+use eframe::egui::{self, Align, Context, CornerRadius, FontId, Id, LayerId, Layout, Popup, PopupAnchor, PopupCloseBehavior, PopupKind, Pos2, Style, Ui};
 
-use crate::windows::WindowsManager;
+use crate::{ui_controls::UIControlsManager, windows::WindowsManager};
 
 pub struct ContextMenu {
     show_menu: Option<Pos2>
@@ -31,7 +31,7 @@ impl ContextMenu {
         }
     }
 
-    pub fn show(&mut self, ui: &mut Ui, windows_manager: &mut WindowsManager) {
+    pub fn show(&mut self, ui: &mut Ui, windows_manager: &mut WindowsManager, ui_controls_manager: &mut UIControlsManager) {
         if let Some(mouse_position) = self.show_menu {
             let id = Id::new("context_menu");
 
@@ -43,36 +43,63 @@ impl ContextMenu {
                 PopupAnchor::Position(mouse_position),
                 LayerId::new(egui::Order::Foreground, id)
             ).kind(PopupKind::Menu)
-                .style(egui::containers::menu::menu_style)
+                .style(|style: &mut Style| {
+                    egui::containers::menu::menu_style(style);
+
+                    // Don't want to use monospace in the context menu.
+                    // 
+                    // I might even completely move away from monospace text globally
+                    // and just switch to it for special design reasons going forward.
+                    style.override_font_id = Some(FontId::default());
+
+                    let widgets = &mut style.visuals.widgets;
+
+                    widgets.inactive.corner_radius = CornerRadius::same(3);
+                    widgets.active.corner_radius = CornerRadius::same(3);
+                    widgets.hovered.corner_radius = CornerRadius::same(3);
+                    widgets.noninteractive.corner_radius = CornerRadius::same(3);
+                    widgets.open.corner_radius = CornerRadius::same(3);
+                })
                 // doesn't work, just trying to disable "CloseOnClick"
                 .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
                 .show(|ui| {
-                    ui.scope(|ui| {
-                        let widgets = &mut ui.visuals_mut().widgets;
+                    ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
+                        // TODO: Implement "Open With" to allow opening image in another application.
+                        // TODO: Implement "Copy" button to allow for coping the image to your clipboard for pasting elsewhere.
 
-                        widgets.inactive.corner_radius = CornerRadius::same(3);
-                        widgets.active.corner_radius = CornerRadius::same(3);
-                        widgets.hovered.corner_radius = CornerRadius::same(3);
-                        widgets.noninteractive.corner_radius = CornerRadius::same(3);
-                        widgets.open.corner_radius = CornerRadius::same(3);
+                        // ui.button("Open With...");
+                        // ui.button("Copy")
 
-                        if ui.button("Toggle Image Info").clicked() {
-                            windows_manager.show_info = !windows_manager.show_info;
-                            windows_manager.show_extra_info = false;
+                        // ui.separator();
 
-                            self.show_menu = None;
-                        }
+                        ui.menu_button("Show Info", |ui| {
+                            if ui.button("Toggle Info Window").clicked() {
+                                windows_manager.show_info = !windows_manager.show_info;
+                                windows_manager.show_extra_info = false;
 
-                        if ui.button("Toggle Extra Image Info").clicked() {
-                            match windows_manager.show_info {
-                                true => {
-                                    windows_manager.show_info = false;
-                                },
-                                false => {
-                                    windows_manager.show_extra_info = true;
-                                    windows_manager.show_info = true;
-                                },
+                                self.show_menu = None;
                             }
+
+                            if ui.button("Toggle Info Window (Extra)").clicked() {
+                                match windows_manager.show_info {
+                                    true => {
+                                        windows_manager.show_info = false;
+                                    },
+                                    false => {
+                                        windows_manager.show_extra_info = true;
+                                        windows_manager.show_info = true;
+                                    },
+                                }
+
+                                self.show_menu = None;
+                            }
+                        });
+
+                        if ui.button("Toggle Controls").clicked() {
+                            ui_controls_manager.show_controls = match ui_controls_manager.show_controls {
+                                Some(show) => Some(!show),
+                                None => Some(true),
+                            };
 
                             self.show_menu = None;
                         }
