@@ -1,5 +1,4 @@
-use std::{hash::Hash, thread::available_parallelism};
-use log::warn;
+use std::{hash::Hash};
 use serde::{Deserialize, Deserializer, Serialize};
 use crate::{image_loader::optimization};
 
@@ -154,21 +153,15 @@ impl Default for MultiThreadedSampling {
 
 impl DefaultWithEnabled for MultiThreadedSampling {
     fn default_with_enabled(enabled: bool) -> Self {
-        Self { enabled, threads: multi_threaded_sampling_threads_default() }
+        Self {
+            enabled,
+            threads: multi_threaded_sampling_threads_default()
+        }
     }
 }
 
 fn multi_threaded_sampling_threads_default() -> Option<usize> {
-    match available_parallelism() {
-        Ok(non_zero) => Some((non_zero.get().saturating_sub(2)).max(2)),
-        Err(error) => {
-            warn!(
-                "Failed to retrieve available threads for parallelism from the OS! Error: {}", error.to_string()
-            );
-
-            None
-        },
-    }
+    optimization::MultiThreadedSampling::default().number_of_threads
 }
 
 

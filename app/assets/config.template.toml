@@ -39,14 +39,15 @@ mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the o
 # the image is significantly bigger than your monitor can even display, so to save GPU memory
 # we downsample the image. Downsampling decreases the amount of GPU memory eaten up by the image
 # at the cost of CPU time wasted actually resizing the image (depending on the decoder).
-# The bigger the image, the more time it will take to downsample but we think the memory savings
-# from doing so are more valuable for most users. Also some decoders have the capability
-# of decoding a specific size of an image (thumbnail) from the get go, which means CPU time is
-# actually never wasted but rather significantly reduced (making image loading even faster with
-# monitor downsampling enabled).
 # 
-# If you do not wish for such memory savings (like those with a beefy GPU) and
-# you prefer overall faster image load times disable this optimization.
+# The bigger the image, the more time it will take to downsample but we think the memory 
+# savings from doing so are more valuable for most users. Also some decoders have the capability 
+# of decoding a specific size of an image (thumbnail) from the get go and also image uploading may 
+# benefit from smaller images on some systems, which means CPU time is actually never wasted AT TIMES 
+# but rather significantly reduced (making image loading even faster with monitor downsampling enabled).
+# 
+# If you do not wish for such memory savings (like those with beefy hardware) 
+# and you prefer overall faster image load times disable this optimization.
 # 
 # If you want your image quality back when zooming into your image,
 # you might want to also enable the "dynamic_sampling" image optimization.
@@ -75,12 +76,12 @@ experimental_consume_pixels_during_gpu_upload = true
 # Expect a very broken implementation and bugs.
 experimental_dynamic_sampling = {enabled = false, also_downsample = true}
 
-# If you enable this Roseate will use it's fast
-# multi-threaded function when downsampling images.
+# If you enable this Roseate will use it's EXPERIMENTAL 
+# fast multi-threaded function when downsampling images.
 # 
-# If you want to limit or increase the amount of threads used for parallelisation,
-# you may with the "threads" key. Otherwise please leave the key undefined, Roseate
-# will consult with your operating system on how many threads it may use and it will
+# If you want to limit or increase the amount of threads used for parallelisation, 
+# you may with the "threads" key. Otherwise please leave the key undefined, Roseate 
+# will consult with your operating system on how many threads it may use and it will 
 # always use two threads less than it's allowed.
 # 
 # experimental_multi_threaded_sampling = {enabled = false, threads = 8}

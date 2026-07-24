@@ -1,3 +1,5 @@
+use std::thread::available_parallelism;
+
 use log::warn;
 use roseate_core::decoded_image::ImageSize;
 
@@ -17,22 +19,21 @@ impl ImageOptimizations {
             monitor_downsampling: Some(MonitorDownsampling::default()),
             dynamic_sampling: None,
             consume_pixels_during_gpu_upload: true,
-            multi_threaded_sampling: None
+            multi_threaded_sampling: Some(MultiThreadedSampling::default())
         }
     }
 
     pub fn speed() -> Self {
         Self {
             monitor_downsampling: None,
-            dynamic_sampling: None,
-            multi_threaded_sampling: None,
-            consume_pixels_during_gpu_upload: true,
+            ..Self::balanced()
         }
     }
 
     pub fn quality() -> Self {
         Self {
             monitor_downsampling: None,
+            multi_threaded_sampling: None,
             ..Self::balanced()
         }
     }
@@ -97,3 +98,20 @@ pub struct DynamicSampling { pub up: bool, pub down: bool }
 
 #[derive(Debug, Clone)]
 pub struct MultiThreadedSampling { pub number_of_threads: Option<usize> }
+
+impl Default for MultiThreadedSampling {
+    fn default() -> Self {
+        Self {
+            number_of_threads: match available_parallelism() {
+                Ok(non_zero) => Some((non_zero.get().saturating_sub(2)).max(2)),
+                Err(error) => {
+                    warn!(
+                        "Failed to retrieve available threads for parallelism from the OS! Error: {}", error.to_string()
+                    );
+
+                    None
+                },
+            }
+        }
+    }
+}

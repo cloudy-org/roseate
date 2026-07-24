@@ -1,4 +1,4 @@
-use std::{hash::{DefaultHasher, Hash, Hasher}};
+use std::{hash::{DefaultHasher, Hash, Hasher}, time::Instant};
 
 use cirrus_egui::notifier::Notifier;
 use eframe::egui::{Context, TextureFilter, TextureOptions, TextureWrapMode};
@@ -24,6 +24,8 @@ impl ImageLoader {
             Some(image) => {
                 if self.state.ready_for_uploading() {
                     let can_free_memory_or_consume = self.image_optimizations.consume_pixels_during_gpu_upload;
+
+                    let now = Instant::now();
 
                     if let Some(decoded_image) = image.decoded.lock().unwrap().as_mut() {
                         *self.state.inner_state.lock().unwrap() = InnerState::Uploading;
@@ -74,6 +76,11 @@ impl ImageLoader {
 
                     *self.state.load_image_to_gpu.lock().unwrap() = false;
                     *self.state.inner_state.lock().unwrap() = InnerState::Idling;
+
+                    log::info!(
+                        "Image uploaded to gpu in '{}' seconds.",
+                        now.elapsed().as_secs_f32()
+                    );
                 }
 
                 self.uploaded_image.as_ref()
