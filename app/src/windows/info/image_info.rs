@@ -211,14 +211,17 @@ impl ImageInfoWindow {
                         if let Some(monitor_downsampling) = &image_optimizations.monitor_downsampling {
                             let marginal_allowance_scale = monitor_downsampling.marginal_allowance;
                             let threshold_size = monitor_downsampling.get_size_relative_to_monitor(monitor_size);
+                            let (display_width, display_height) = monitor_size.get();
 
                             ui_non_select_label(ui, "Monitor downsampling:");
 
                             ui.label(marginal_allowance_scale.to_string())
                                 .on_hover_text(
                                     format!(
-                                        "Marginal Allowance: {}\nDownsample Threshold: {}x{}.",
+                                        "Marginal Allowance: {}\nDisplay Size: {}x{}\nAllowed Threshold: {}x{}",
                                         marginal_allowance_scale,
+                                        display_width,
+                                        display_height,
                                         threshold_size.0,
                                         threshold_size.1,
                                     )
