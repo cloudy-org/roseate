@@ -14,7 +14,7 @@ default = [
 image-rs-extra-formats = ["image/tiff", "image/ico", "image/bmp"]
 zune-image-extra-formats = []
 
-# formats that cannot be cross-compiled.
+# formats that have trouble cross-compiling.
 native-formats = ["image/avif-native"]
 
 [dependencies]
