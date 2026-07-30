@@ -1,9 +1,9 @@
-use std::{cmp::min, fmt::Display, io::{BufRead, BufReader, Read}, path::PathBuf};
+use std::{fmt::Display, io::{Seek, SeekFrom}, path::PathBuf};
 
 use imagesize::Compression;
 
 use crate::{
-    decoded_image::ImageSize, error::{Error, Result},
+    decoded_image::ImageSize, error::{Error, Result}, reader::EncodedImageReader,
 };
 
 pub const IMAGE_FORMAT_EXTENSIONS: &[&str] = &[
@@ -51,24 +51,9 @@ impl Display for ImageFormat {
 }
 
 /// Only reads the header of an image and determines it's image format and size from that.
-/// 
-/// *It's blazzing fast... 🔥*
-pub fn determine_image_format_and_size_from_header<R: Read + ?Sized>(buf_reader: &mut BufReader<Box<R>>) -> Result<(ImageFormat, ImageSize)> {
-    // Reads I think 8 KB of the image from disk into ram.
-    // 
-    // I do this so later the image decoders don't need to read the image header again when we've 
-    // already read it here for image size and format. Instead they can just quickly read it from ram 
-    // and then read the rest of the image file from disk when it get's past the "image header" window.
-    let buffer = buf_reader.fill_buf()
-        .map_err(|error| Error::ImageHeaderReadFailure {
-            stage: "Failed to read header of image file!".into(),
-            error: Some(error.to_string()),
-        })?;
-
-    let bytes_to_read_as_header = min(buffer.len(), 1024);
-
-    let image_size_image_type =
-        imagesize::image_type(&buffer[..bytes_to_read_as_header]).map_err(|error| {
+pub fn determine_image_format_and_size_from_header(encoded_image_reader: &mut EncodedImageReader) -> Result<(ImageFormat, ImageSize)> {
+    let image_size_image_type = imagesize::reader_type(&mut *encoded_image_reader)
+        .map_err(|error| {
             Error::ImageHeaderReadFailure {
                 stage: "Failed to determine format of image!".into(),
                 error: Some(error.to_string()),
@@ -94,10 +79,20 @@ pub fn determine_image_format_and_size_from_header<R: Read + ?Sized>(buf_reader:
         }
     };
 
-    let image_size = imagesize::blob_size(&buffer[..bytes_to_read_as_header])
+    // TODO: if this fails with a "failed to fill whole buffer" retry again with the whole buf reader.
+    // Some more JPEGs are failing and most TIF also are failing. 
+    let image_size = image_size_image_type.reader_size(&mut *encoded_image_reader)
         .map_err(|error| Error::ImageHeaderReadFailure {
             stage: "Failed to retrieve image dimensions!".into(),
             error: Some(error.to_string()),
+        })?;
+
+    encoded_image_reader.seek(SeekFrom::Start(0))
+        .map_err(|error| {
+            Error::ImageHeaderReadFailure {
+                stage: "Failed to seek back to start after image format and size read.".into(),
+                error: Some(error.to_string()),
+            }
         })?;
 
     Ok((

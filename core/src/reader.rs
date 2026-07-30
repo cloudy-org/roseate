@@ -1,20 +1,17 @@
-use std::{io::{BufReader, Read, Seek}};
+use std::io::{Cursor};
 
 use crate::{format::ImageFormat, decoded_image::DecodedImage};
 
-pub trait ReadSeek: Read + Seek + Send {}
-impl<T: Read + Seek + Send> ReadSeek for T {}
+pub type EncodedImageReader = Cursor<Vec<u8>>;
 
 pub enum ImageReaderData {
-    BufReader(BufReader<Box<dyn ReadSeek>>),
+    EncodedImage(EncodedImageReader),
     DecodedImage(DecodedImage),
 }
 
-impl<R: ReadSeek + 'static> From<R> for ImageReaderData {
-    fn from(reader: R) -> Self {
-        Self::BufReader(
-            BufReader::new(Box::new(reader))
-        )
+impl From<EncodedImageReader> for ImageReaderData {
+    fn from(cursor: Cursor<Vec<u8>>) -> Self {
+        Self::EncodedImage(cursor)
     }
 }
 

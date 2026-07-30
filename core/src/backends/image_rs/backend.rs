@@ -1,4 +1,4 @@
-use std::{collections::HashSet, io::BufReader};
+use std::{collections::HashSet};
 
 use image::{
     AnimationDecoder, ImageDecoder, ImageError, codecs::{
@@ -17,25 +17,25 @@ use image::codecs::{
 use log::debug;
 
 use crate::{
-    backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, pixels::Pixels, reader::{ImageReader, ImageReaderData, ReadSeek}
+    backends::{backend::DecodeBackend, image_rs::buffer_image::{BufferImage, BufferImageVariant}}, colour_type::ImageColourType, decoded_image::{DecodedImage, DecodedImageContent, ImageSize}, error::{Error, Result}, format::ImageFormat, image_info::metadata::ImageMetadata, modifications::{ImageModification, ImageModifications}, pixels::Pixels, reader::{EncodedImageReader, ImageReader, ImageReaderData}
 };
 
 // TODO: Fill with debug logs
 
 enum Decoder {
-    Png(PngDecoder<BufReader<Box<dyn ReadSeek>>>),
-    Jpeg(JpegDecoder<BufReader<Box<dyn ReadSeek>>>),
-    Webp(WebPDecoder<BufReader<Box<dyn ReadSeek>>>),
-    Gif(GifDecoder<BufReader<Box<dyn ReadSeek>>>),
-    Qoi(QoiDecoder<BufReader<Box<dyn ReadSeek>>>),
+    Png(PngDecoder<EncodedImageReader>),
+    Jpeg(JpegDecoder<EncodedImageReader>),
+    Webp(WebPDecoder<EncodedImageReader>),
+    Gif(GifDecoder<EncodedImageReader>),
+    Qoi(QoiDecoder<EncodedImageReader>),
     #[cfg(feature = "native-formats")]
-    Avif(AvifDecoder<BufReader<Box<dyn ReadSeek>>>),
+    Avif(AvifDecoder<EncodedImageReader>),
     #[cfg(feature = "image-rs-extra-formats")]
-    Tiff(TiffDecoder<BufReader<Box<dyn ReadSeek>>>),
+    Tiff(TiffDecoder<EncodedImageReader>),
     #[cfg(feature = "image-rs-extra-formats")]
-    Bmp(BmpDecoder<BufReader<Box<dyn ReadSeek>>>),
+    Bmp(BmpDecoder<EncodedImageReader>),
     #[cfg(feature = "image-rs-extra-formats")]
-    Ico(IcoDecoder<BufReader<Box<dyn ReadSeek>>>),
+    Ico(IcoDecoder<EncodedImageReader>),
 }
 
 enum Buffer {
@@ -76,7 +76,7 @@ impl DecodeBackend for ImageRSBackend {
     // and return an special error when the decoder fails due to it exceeding that limit.
     fn from_reader(image_reader: ImageReader) -> Result<Self> {
         match image_reader.data {
-            ImageReaderData::BufReader(buf_reader) => {
+            ImageReaderData::EncodedImage(cursor) => {
                 log::debug!("Initializing image-rs backend decoders with buf reader...");
 
                 let error_func = |error: ImageError| Error::DecoderInitFailure {
@@ -84,19 +84,19 @@ impl DecodeBackend for ImageRSBackend {
                 };
 
                 let mut image_decoder = match image_reader.image_format {
-                    ImageFormat::Gif => Decoder::Gif(GifDecoder::new(buf_reader).map_err(error_func)?),
-                    ImageFormat::Png => Decoder::Png(PngDecoder::new(buf_reader).map_err(error_func)?),
-                    ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(buf_reader).map_err(error_func)?),
-                    ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(buf_reader).map_err(error_func)?),
-                    ImageFormat::Qoi => Decoder::Qoi(QoiDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Gif => Decoder::Gif(GifDecoder::new(cursor).map_err(error_func)?),
+                    ImageFormat::Png => Decoder::Png(PngDecoder::new(cursor).map_err(error_func)?),
+                    ImageFormat::Jpeg => Decoder::Jpeg(JpegDecoder::new(cursor).map_err(error_func)?),
+                    ImageFormat::Webp => Decoder::Webp(WebPDecoder::new(cursor).map_err(error_func)?),
+                    ImageFormat::Qoi => Decoder::Qoi(QoiDecoder::new(cursor).map_err(error_func)?),
                     #[cfg(feature = "native-formats")]
-                    ImageFormat::Avif => Decoder::Avif(AvifDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Avif => Decoder::Avif(AvifDecoder::new(cursor).map_err(error_func)?),
                     #[cfg(feature = "image-rs-extra-formats")]
-                    ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Tiff => Decoder::Tiff(TiffDecoder::new(cursor).map_err(error_func)?),
                     #[cfg(feature = "image-rs-extra-formats")]
-                    ImageFormat::Bmp => Decoder::Bmp(BmpDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Bmp => Decoder::Bmp(BmpDecoder::new(cursor).map_err(error_func)?),
                     #[cfg(feature = "image-rs-extra-formats")]
-                    ImageFormat::Ico => Decoder::Ico(IcoDecoder::new(buf_reader).map_err(error_func)?),
+                    ImageFormat::Ico => Decoder::Ico(IcoDecoder::new(cursor).map_err(error_func)?),
                     unsupported_format => {
                         return Err(
                             Error::DecoderImageFormatNotSupported {

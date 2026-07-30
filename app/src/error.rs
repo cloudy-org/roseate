@@ -23,6 +23,8 @@ pub enum Error {
 
     #[display("We failed to open the image file for reading!")]
     ImageFileOpenFailure { error: String },
+    #[display("Failed to read the image file!")]
+    ImageFileReadFailure { error: String },
 
     #[display("Failed to create cache path at '{path}'!")]
     CacheDirectoryCreationFailure { path: String, error: String },

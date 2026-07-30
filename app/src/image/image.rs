@@ -1,8 +1,8 @@
-use std::{collections::HashSet, fmt::Debug, fs::File, hash::Hash, io::BufReader, path::PathBuf, sync::{Arc, Mutex}};
+use std::{collections::HashSet, fmt::Debug, fs::File, hash::Hash, io::{Cursor, Read}, path::PathBuf, sync::{Arc, Mutex}, time::Instant};
 
-use log::debug;
+use log::{debug, info};
 use cirrus_egui::notifier::Notifier;
-use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{ImageReader, ImageReaderData, ReadSeek}};
+use roseate_core::{backends::backend::DecodeBackend, decoded_image::{DecodedImage, ImageSize}, format::{ImageFormat, determine_image_format_and_size_from_header}, modifications::{ImageModification, ImageModifications}, reader::{EncodedImageReader, ImageReader, ImageReaderData}};
 
 use crate::{error::{Error, Result}, image::backend::DefaultDecodingBackend};
 
@@ -13,7 +13,7 @@ pub struct Image {
     pub format: ImageFormat,
     pub decoded: Arc<Mutex<Option<DecodedImage>>>,
 
-    raw_buf_reader: Arc<Mutex<Option<BufReader<Box<dyn ReadSeek>>>>>,
+    encoded_image_reader: Arc<Mutex<Option<EncodedImageReader>>>,
 
     last_modifications: ImageModifications,
 }
@@ -67,18 +67,26 @@ impl Image {
             return Err(Error::SvgNotSupportedYet);
         }
 
-        let file = File::open(&path)
+        let mut image_buffer = Vec::new();
+
+        debug!("Reading image file into buffer...");
+
+        let now = Instant::now();
+
+        File::open(&path)
             .map_err(|error| Error::ImageFileOpenFailure {
+                error: error.to_string(),
+            })?
+            .read_to_end(&mut image_buffer)
+            .map_err(|error| Error::ImageFileReadFailure {
                 error: error.to_string(),
             })?;
 
-        let mut buf_reader = BufReader::new(Box::new(file) as Box<dyn ReadSeek>);
+        let mut image_reader = EncodedImageReader::new(image_buffer);
 
-        // This function does not consume the buf reader so 
-        // whatever is read of the header will stay in the buffer 
-        // to be read again in the image decoding stage but this time 
-        // directly from RAM, avoiding the extra I/O of reading again from disk.
-        let (format, size) = determine_image_format_and_size_from_header(&mut buf_reader)?;
+        info!("Image file read in '{}' seconds.", now.elapsed().as_secs_f32());
+
+        let (format, size) = determine_image_format_and_size_from_header(&mut image_reader)?;
 
         Ok(
             Self {
@@ -87,7 +95,7 @@ impl Image {
                 format,
                 decoded: Arc::new(Mutex::new(None)),
 
-                raw_buf_reader: Arc::new(Mutex::new(Some(buf_reader))),
+                encoded_image_reader: Arc::new(Mutex::new(Some(image_reader))),
                 last_modifications: HashSet::default(),
             }
         )
@@ -154,30 +162,30 @@ impl Image {
             debug!("Decoded image is not currently loaded in memory, falling back to loading from disk...");
         }
 
-        let buf_reader = self.get_file_buf_reader(notifier)?;
+        let cursor = self.get_encoded_image_reader(notifier)?;
         notifier.unset_loading();
 
-        debug!("Boxing image onto the heap to pass to buf reader...");
-
-        Ok(ImageReaderData::BufReader(buf_reader))
+        Ok(ImageReaderData::EncodedImage(cursor))
     }
 
-    fn get_file_buf_reader(&mut self, notifier: &mut Notifier) -> Result<BufReader<Box<dyn ReadSeek>>> {
-        match self.raw_buf_reader.lock().unwrap().take() {
-            Some(buf_reader) => {
-                debug!("Reusing same buf reader used for image size and format...");
-
-                Ok(buf_reader)
-            },
+    fn get_encoded_image_reader(&mut self, notifier: &mut Notifier) -> Result<EncodedImageReader> {
+        match self.encoded_image_reader.lock().unwrap().take() {
+            Some(cursor) => Ok(cursor),
             None => {
                 notifier.set_loading(Some("Opening image's file for reading..."));
 
-                let file = File::open(&*self.path)
+                let mut image_buffer = Vec::new();
+
+                File::open(&*self.path)
                     .map_err(
                         |error| Error::ImageFileOpenFailure { error: error.to_string() }
-                    )?;
+                    )?
+                    .read_to_end(&mut image_buffer)
+                    .map_err(|error| Error::ImageFileReadFailure {
+                        error: error.to_string(),
+                    })?;
 
-                Ok(BufReader::new(Box::new(file)))
+                Ok(Cursor::new(image_buffer))
             },
         }
     }

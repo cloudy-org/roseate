@@ -23,8 +23,6 @@ pub enum Error {
     AnimatedImageHasNoFrames,
 }
 
-// CError doesn't implement Display yet so I'm implementing it myself so 
-// roseate's main error struct can just derive from this.
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -50,19 +48,16 @@ impl Display for Error {
                 image_format,
                 backend
             ),
-            // NOTE: I think I'm gonna change things everywhere to only 
-            // passing the actual error to "CError::actual_error()".
-            Error::ImageHeaderReadFailure { stage, .. } => write!(
+            Error::ImageHeaderReadFailure { .. } => write!(
                 f,
                 "We failed to read the image's header, the image is \
-                very likely corrupted! Try another image. Stage: {}",
-                stage
+                very likely corrupted! Try another image.",
             ),
             Error::ImageFormatNotSupported { image_format } => write!(
                 f,
                 "The image format '{image_format}' is not supported!"
             ),
-            Error::ExifReaderImageMetadataParseFailure { ..} => write!(
+            Error::ExifReaderImageMetadataParseFailure { .. } => write!(
                 f,
                 "Exif reader failed to parse image exif tags!"
             ),

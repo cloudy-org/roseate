@@ -14,7 +14,7 @@ fn init() {
 fn test_png_decode_1() -> Result<()> {
     let image_bytes = include_bytes!("../mov_cli_logo.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let backend = ImageRSBackend::from_reader(image_reader)?;
@@ -32,7 +32,7 @@ fn test_png_decode_1() -> Result<()> {
 fn test_png_decode_2() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let backend = ImageRSBackend::from_reader(image_reader)?;
@@ -50,7 +50,7 @@ fn test_png_decode_2() -> Result<()> {
 fn test_png_modify_and_decode_1() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;
@@ -70,7 +70,7 @@ fn test_png_modify_and_decode_1() -> Result<()> {
 fn test_png_modify_and_decode_2() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;
@@ -90,7 +90,7 @@ fn test_png_modify_and_decode_2() -> Result<()> {
 fn test_png_modify_already_decoded_image_1() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let backend = ImageRSBackend::from_reader(image_reader)?;
@@ -118,7 +118,7 @@ fn test_png_modify_already_decoded_image_1() -> Result<()> {
 fn test_png_modify_already_decoded_image_2() -> Result<()> {
     let image_bytes = include_bytes!("../mia_holding_rust_book.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let backend = ImageRSBackend::from_reader(image_reader)?;
@@ -146,7 +146,7 @@ fn test_png_modify_already_decoded_image_2() -> Result<()> {
 fn test_animated_png_decode_and_modify() -> Result<()> {
     let image_bytes = include_bytes!("../animated_png.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;
@@ -166,7 +166,7 @@ fn test_animated_png_decode_and_modify() -> Result<()> {
 fn test_gif_decode_and_modify() -> Result<()> {
     let image_bytes = include_bytes!("../sailor_moon.gif");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Gif);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;
@@ -186,7 +186,7 @@ fn test_gif_decode_and_modify() -> Result<()> {
 fn test_modifying_vertical_png() -> Result<()> {
     let image_bytes = include_bytes!("../example.png");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Png);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;
@@ -206,7 +206,7 @@ fn test_modifying_vertical_png() -> Result<()> {
 fn test_tiff_decode_and_modify() -> Result<()> {
     let image_bytes = include_bytes!("../terror_in_resonace_small_backdrop.tiff");
 
-    let cursor = Cursor::new(&image_bytes[..]);
+    let cursor = Cursor::new(image_bytes.to_vec());
     let image_reader = ImageReader::new(cursor, ImageFormat::Tiff);
 
     let mut backend = ImageRSBackend::from_reader(image_reader)?;

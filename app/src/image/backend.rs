@@ -1,8 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, time::{Duration}};
 
 use cirrus_egui::notifier::Notifier;
 use egui_notify::ToastLevel;
-use log::{debug, warn};
+use log::{debug};
 use roseate_core::{backends::{backend::DecodeBackend, image_rs::ImageRSBackend}, format::ImageFormat, reader::ImageReader};
 
 use crate::error::{Error, Result};
@@ -57,7 +57,9 @@ impl DefaultDecodingBackend {
                     this image format, falling back to another backend..."
                 ),
                 ToastLevel::Warning,
-                |_| {}
+                |toast| {
+                    toast.duration(Duration::from_secs(2));
+                }
             );
         }
 
