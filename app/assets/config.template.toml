@@ -44,7 +44,8 @@ mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the o
 # savings from doing so are more valuable for most users. Also some decoders have the capability 
 # of decoding a specific size of an image (thumbnail) from the get go and also image uploading may 
 # benefit from smaller images on some systems, which means CPU time is actually never wasted AT TIMES 
-# but rather significantly reduced (making image loading even faster with monitor downsampling enabled).
+# but rather significantly reduced (making image loading SOMETIMES faster with monitor downsampling 
+# enabled although UNCOMMON).
 # 
 # If you do not wish for such memory savings (like those with beefy hardware) 
 # and you prefer overall faster image load times disable this optimization.
