@@ -181,18 +181,6 @@ impl SettingsMenu {
 
         settings.add_section(
             Section::new(
-                config_key_path!(config.image.loading.initial.lazy_loading),
-                &mut config.image.loading.initial.lazy_loading,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some("Lazy load image initially".into()),
-                    ..Default::default()
-                }
-            )
-        );
-
-        settings.add_section(
-            Section::new(
                 config_key_path!(config.image.backend.decoder),
                 &mut config.image.backend.decoder,
                 SectionOverrides {

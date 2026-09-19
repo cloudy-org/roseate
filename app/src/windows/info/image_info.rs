@@ -235,6 +235,12 @@ impl ImageInfoWindow {
                             ui.end_row();
                         }
 
+                        if image_optimizations.initially_load_on_separate_thread {
+                            ui_non_select_label(ui, "Initial load on separate thread:");
+                            ui.label("enabled");
+                            ui.end_row();
+                        }
+
                         if image_optimizations.consume_pixels_during_gpu_upload {
                             ui_non_select_label(ui, "Consume pixels during GPU upload:");
                             ui.label("enabled");

@@ -7,13 +7,15 @@ pub struct ImageOptimizations {
     #[serde(default = "super::none_default")]
     pub mode: Option<String>,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub monitor_downsampling: MonitorDownsampling,
+    monitor_downsampling: MonitorDownsampling,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
+    initially_load_on_separate_thread: InitiallyLoadOnSeparateThread,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub experimental_dynamic_sampling: DynamicSampling,
+    experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
     #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
-    pub experimental_multi_threaded_sampling: MultiThreadedSampling,
+    experimental_dynamic_sampling: DynamicSampling,
+    #[serde(default, deserialize_with = "deserialize_image_optimization_field_value")]
+    experimental_multi_threaded_sampling: MultiThreadedSampling,
 }
 
 impl Default for ImageOptimizations {
@@ -21,6 +23,7 @@ impl Default for ImageOptimizations {
         Self {
             mode: None,
             monitor_downsampling: MonitorDownsampling::default(),
+            initially_load_on_separate_thread: InitiallyLoadOnSeparateThread::default(),
             experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload::default(),
             experimental_dynamic_sampling: DynamicSampling::default(),
             experimental_multi_threaded_sampling: MultiThreadedSampling::default(),
@@ -60,6 +63,7 @@ impl ImageOptimizations {
                         ),
                         false => None,
                     },
+                    initially_load_on_separate_thread: self.initially_load_on_separate_thread.enabled,
                     multi_threaded_sampling: match self.experimental_multi_threaded_sampling.enabled {
                         true => Some(
                             optimization::MultiThreadedSampling {
@@ -131,6 +135,25 @@ impl Default for ConsumePixelsDuringGPUUpload {
 }
 
 impl DefaultWithEnabled for ConsumePixelsDuringGPUUpload {
+    fn default_with_enabled(enabled: bool) -> Self {
+        Self { enabled }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Hash, Clone)]
+pub struct InitiallyLoadOnSeparateThread {
+    #[serde(default = "super::false_default")]
+    pub enabled: bool,
+}
+
+impl Default for InitiallyLoadOnSeparateThread {
+    fn default() -> Self {
+        Self::default_with_enabled(false)
+    }
+}
+
+impl DefaultWithEnabled for InitiallyLoadOnSeparateThread {
     fn default_with_enabled(enabled: bool) -> Self {
         Self { enabled }
     }

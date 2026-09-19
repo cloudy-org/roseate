@@ -3,11 +3,7 @@ version = 1
 [image]
 
 [image.loading]
-# Load image on separate thread during initial launch. 
-# 
-# Setting this to "true" will make the image load on a separate thread to the GUI initially. This
-# means the GUI may load up before the image is ready to display itself. This will have an impact
-# on peak memory hence it's "false" by default.
+
 initial.lazy_loading = false
 
 [image.backend]
@@ -53,6 +49,15 @@ mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the o
 # If you want your image quality back when zooming into your image,
 # you might want to also enable the "dynamic_sampling" image optimization.
 monitor_downsampling = {enabled = true, strength = 1.4}
+
+# Load image on separate thread during the initial launch. 
+# 
+# Setting this to "true" will make the image load on a separate thread to the GUI initially, decoding 
+# the image simultaneously while the GUI application launches. This optimization will certainly always 
+# lead to faster launch times, however this is at the cost of increased memory peak.
+# 
+# This optimization is only enabled by default in the 'speed' mode.
+initially_load_on_separate_thread = false
 
 # Enabling this allows Roseate to upload RGBA 8 bit decoded images directly
 # to the GPU without duplicating it's memory (zero-copy). If the image is RGBA and 

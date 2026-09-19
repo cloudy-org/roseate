@@ -5,8 +5,6 @@ use std::hash::Hash;
 #[derive(Serialize, Deserialize, Default, Hash, Clone)]
 pub struct Image {
     #[serde(default)]
-    pub loading: ImageLoading,
-    #[serde(default)]
     pub optimizations: ImageOptimizations,
     #[serde(default)]
     pub backend: Backend,
@@ -30,26 +28,4 @@ impl Backend {
 
 fn decoder_default() -> String {
     String::from("image-rs")
-}
-
-
-#[derive(Serialize, Deserialize, Default, Hash, Clone)]
-pub struct ImageLoading {
-    #[serde(default)]
-    pub initial: InitialSettings,
-}
-
-
-#[derive(Serialize, Deserialize, Hash, Clone)]
-pub struct InitialSettings {
-    #[serde(default = "super::false_default")]
-    pub lazy_loading: bool,
-}
-
-impl Default for InitialSettings {
-    fn default() -> Self {
-        Self {
-            lazy_loading: false
-        }
-    }
 }
