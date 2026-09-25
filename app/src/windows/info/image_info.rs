@@ -235,7 +235,7 @@ impl ImageInfoWindow {
                             ui.end_row();
                         }
 
-                        if image_optimizations.initially_load_on_separate_thread {
+                        if image_optimizations.load_initially_on_separate_thread {
                             ui_non_select_label(ui, "Initial load on separate thread:");
                             ui.label("enabled");
                             ui.end_row();

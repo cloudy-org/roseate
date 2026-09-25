@@ -10,7 +10,7 @@ pub struct ImageOptimizations {
     pub monitor_downsampling: Option<MonitorDownsampling>,
     pub dynamic_sampling: Option<DynamicSampling>,
     pub consume_pixels_during_gpu_upload: bool,
-    pub initially_load_on_separate_thread: bool,
+    pub load_initially_on_separate_thread: bool,
     pub multi_threaded_sampling: Option<MultiThreadedSampling>,
 }
 
@@ -20,7 +20,7 @@ impl ImageOptimizations {
             monitor_downsampling: Some(MonitorDownsampling::default()),
             dynamic_sampling: None,
             consume_pixels_during_gpu_upload: true,
-            initially_load_on_separate_thread: false,
+            load_initially_on_separate_thread: false,
             multi_threaded_sampling: Some(MultiThreadedSampling::default())
         }
     }
@@ -28,7 +28,7 @@ impl ImageOptimizations {
     pub fn speed() -> Self {
         Self {
             monitor_downsampling: None,
-            initially_load_on_separate_thread: true,
+            load_initially_on_separate_thread: true,
             ..Self::balanced()
         }
     }

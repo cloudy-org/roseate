@@ -178,7 +178,7 @@ fn main() -> eframe::Result {
     let image_optimizations = config.image.optimizations.get_optimizations()
         .normalize();
 
-    let initially_load_on_separate_thread = image_optimizations.initially_load_on_separate_thread;
+    let load_initially_on_separate_thread = image_optimizations.load_initially_on_separate_thread;
 
     let mut image_selector = ImageSelector::new();
     // TODO: rename to ImageLoader and make ImageSelector what stores and owns the Image struct
@@ -202,7 +202,7 @@ fn main() -> eframe::Result {
         if let Some(image) = image_selector.get_mutable_image() {
             image_loader.load(
                 image,
-                initially_load_on_separate_thread,
+                load_initially_on_separate_thread,
                 config.image.backend.get_decoding_backend(),
                 &monitor_size,
                 &mut notifier,

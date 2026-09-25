@@ -63,7 +63,7 @@ impl ImageOptimizations {
                         ),
                         false => None,
                     },
-                    initially_load_on_separate_thread: self.load_initially_on_separate_thread.enabled,
+                    load_initially_on_separate_thread: self.load_initially_on_separate_thread.enabled,
                     multi_threaded_sampling: match self.experimental_multi_threaded_sampling.enabled {
                         true => Some(
                             optimization::MultiThreadedSampling {
