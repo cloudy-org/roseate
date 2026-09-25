@@ -94,6 +94,28 @@ fn main() -> eframe::Result {
         }
     );
 
+    let cli_args = Args::parse();
+
+    if cli_args.edit.edit {
+        match config_manager.config_path {
+            Some(config_path) => {
+                match open_editor(&config_path, Preference::Terminal) {
+                    Ok(status) => {
+                        if let Some(code) = status.code() {
+                            if code != 0 {
+                                log::error!("Editor did not exit successfully (status code: {code})!");
+                            }
+                        }
+                    },
+                    Err(error) => log::error!("{}", error),
+                }
+            },
+            None => log::error!("Config file was not initialized so it cannot be opened!"),
+        }
+
+        return Ok(());
+    }
+
     // TODO: I want to eventually get rid of most of this 
     // and instead query the operating system right here going forward.
     let mut monitor_size = MonitorSize::new(
@@ -134,47 +156,6 @@ fn main() -> eframe::Result {
         ),
     }
 
-    let authors = match Authors::parse_authors_txt_string(AUTHORS_TXT_STRING) {
-        Ok(authors) => authors,
-        Err(error) => {
-            log::error!("Failed to parse AUTHORS.txt! Error: {}", error);
-
-            return Ok(());
-        },
-    };
-
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([800.0, 600.0])
-            .with_drag_and_drop(true)
-            .with_app_id("roseate"),
-        multisampling: 0,
-        vsync: true,
-        ..Default::default()
-    };
-
-    let cli_args = Args::parse();
-
-    if cli_args.edit.edit {
-        match config_manager.config_path {
-            Some(config_path) => {
-                match open_editor(&config_path, Preference::Terminal) {
-                    Ok(status) => {
-                        if let Some(code) = status.code() {
-                            if code != 0 {
-                                log::error!("Editor did not exit successfully (status code: {code})!");
-                            }
-                        }
-                    },
-                    Err(error) => log::error!("{}", error),
-                }
-            },
-            None => log::error!("Config file was not initialized so it cannot be opened!"),
-        }
-
-        return Ok(());
-    }
-
     let image_optimizations = config.image.optimizations.get_optimizations()
         .normalize();
 
@@ -210,6 +191,15 @@ fn main() -> eframe::Result {
         }
     }
 
+    let authors = match Authors::parse_authors_txt_string(AUTHORS_TXT_STRING) {
+        Ok(authors) => authors,
+        Err(error) => {
+            log::error!("Failed to parse AUTHORS.txt! Error: {}", error);
+
+            return Ok(());
+        },
+    };
+
     let theme_fallbacks = ThemeFallbacks {
         system_derived_accent_colour: Colour::from_hex(0xe05f78),
     };
@@ -221,6 +211,16 @@ fn main() -> eframe::Result {
         .get_theme_from_system();
 
     let theme = theme_manager.theme;
+
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([800.0, 600.0])
+            .with_drag_and_drop(true)
+            .with_app_id("roseate"),
+        multisampling: 0,
+        vsync: true,
+        ..Default::default()
+    };
 
     eframe::run_native(
         "Roseate",
