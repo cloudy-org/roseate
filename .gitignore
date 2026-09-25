@@ -1,5 +1,6 @@
 target
 tests-image-dump
+perf.data*
 
 # Just in case you switch from the web version branch.
 node_modules
