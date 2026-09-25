@@ -112,7 +112,7 @@ impl MonitorSize {
                             error: error.to_string()
                         })?;
 
-                    debug!("Cache directory created ({})!", cache_path.to_string_lossy());
+                    debug!("Cache directory created ('{}')!", cache_path.to_string_lossy());
                 }
 
                 let monitor_size_file_path = cache_path.join("monitor_size");
@@ -135,7 +135,7 @@ impl MonitorSize {
                         json_file.read_to_string(&mut json_contents)
                             .map_err(|error| Error::WriteCachedMonitorSizeFailure { error: error.to_string() })?;
 
-                        debug!("Parsing json string ({})...", json_contents);
+                        debug!("Parsing json string ('{}')...", json_contents);
 
                         let mut json_data = match serde_json::from_str::<MonitorSizeCacheData>(&json_contents) {
                             Ok(json_data) => json_data,
