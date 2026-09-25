@@ -50,14 +50,14 @@ mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the o
 # you might want to also enable the "dynamic_sampling" image optimization.
 monitor_downsampling = {enabled = true, strength = 1.4}
 
-# Load image on separate thread during the initial launch. 
+# Load image on separate thread during initial launch.
 # 
 # Setting this to "true" will make the image load on a separate thread to the GUI initially, decoding 
 # the image simultaneously while the GUI application launches. This optimization will certainly always 
 # lead to faster launch times, however this is at the cost of increased memory peak.
 # 
-# This optimization is only enabled by default in the 'speed' mode.
-initially_load_on_separate_thread = false
+# This optimization is enabled by default in 'speed' mode.
+load_initially_on_separate_thread = false
 
 # Enabling this allows Roseate to upload RGBA 8 bit decoded images directly
 # to the GPU without duplicating it's memory (zero-copy). If the image is RGBA and 
