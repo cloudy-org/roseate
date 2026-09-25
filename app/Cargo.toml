@@ -95,6 +95,8 @@ rustls-webpki = "0.103.13"
 country-emoji = {version = "0.3.2", optional = true}
 reverse_geocoder = {version = "4.1.1", optional = true}
 
+[dev-dependencies]
+toml = "1.1"
 
 # I've now disabled compiling release builds of dependencies to speed up dev compile time.
 #

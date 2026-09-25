@@ -1,33 +1,23 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
+#[serde(default)]
 pub struct KeyBinds {
-    #[serde(default = "show_image_info")]
     pub show_image_info: String,
-    #[serde(default = "show_extra_image_info")]
     pub show_extra_image_info: String,
-    #[serde(default = "reset_viewport")]
     pub reset_viewport: String,
-    #[serde(default = "show_ui_controls")]
     pub show_ui_controls: String,
-    #[serde(default = "open_image")]
     pub open_image: String,
 }
-
-fn show_image_info() -> String { "I".into() }
-fn show_extra_image_info() -> String { "CTRL+I".into() }
-fn reset_viewport() -> String { "R".into() }
-fn show_ui_controls() -> String { "C".into() }
-fn open_image() -> String { "CTRL+O".into() }
 
 impl Default for KeyBinds {
     fn default() -> Self {
         Self {
-            show_image_info: show_image_info(),
-            show_extra_image_info: show_extra_image_info(),
-            reset_viewport: reset_viewport(),
-            show_ui_controls: show_ui_controls(),
-            open_image: open_image(),
+            show_image_info: String::from("I"),
+            show_extra_image_info: String::from("CTRL+I"),
+            reset_viewport: String::from("R"),
+            show_ui_controls: String::from("C"),
+            open_image: String::from("CTRL+O"),
         }
     }
 }

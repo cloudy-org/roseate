@@ -2,18 +2,25 @@ use serde::{Deserialize, Serialize};
 use crate::{config::models::image_optimizations::ImageOptimizations, image::backend::DefaultDecodingBackend};
 use std::hash::Hash;
 
-#[derive(Serialize, Deserialize, Default, Hash, Clone)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone, Debug, PartialEq)]
+#[serde(default)]
 pub struct Image {
-    #[serde(default)]
     pub optimizations: ImageOptimizations,
-    #[serde(default)]
     pub backend: Backend,
 }
 
-#[derive(Serialize, Deserialize, Default, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
+#[serde(default)]
 pub struct Backend {
-    #[serde(default = "decoder_default")]
     pub decoder: String,
+}
+
+impl Default for Backend {
+    fn default() -> Self {
+        Self {
+            decoder: String::from("image-rs")
+        }
+    }
 }
 
 impl Backend {
@@ -24,8 +31,4 @@ impl Backend {
             _ => DefaultDecodingBackend::ImageRS
         }
     }
-}
-
-fn decoder_default() -> String {
-    String::from("image-rs")
 }

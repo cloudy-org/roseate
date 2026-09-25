@@ -74,7 +74,7 @@ fn main() -> eframe::Result {
         Ok(config_manager) => config_manager,
         Err(error) => {
             notifier.show_toast(
-                error,
+                ToastText::Error(error.into()),
                 ToastLevel::Error,
                 |toast| {
                     toast.duration(Some(Duration::from_secs(10)));

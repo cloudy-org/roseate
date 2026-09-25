@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
 pub struct Controls {
     #[serde(default = "super::false_default")]
     pub show: bool,

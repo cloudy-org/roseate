@@ -1,19 +1,27 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Default, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
+#[serde(default)]
 pub struct Misc {
-    #[serde(default = "super::true_default")]
     pub show_detailed_errors: bool,
-    #[serde(default = "super::none_default")]
     pub override_monitor_size: Option<OverrideMonitorSize>,
-    #[serde(default)]
     pub experimental: Experimental,
 }
 
+impl Default for Misc {
+    fn default() -> Self {
+        Self {
+            show_detailed_errors: true,
+            override_monitor_size: None,
+            experimental: Experimental::default()
+        }
+    }
+}
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
+#[serde(default)]
 pub struct Experimental {
-    #[serde(default = "super::true_default")]
     pub show_ui_modes_popup: bool
 }
 
@@ -23,13 +31,13 @@ impl Default for Experimental {
             // TODO: move to some alternative config outside config.toml.
             // If the whole config fails to parse or something 
             // I don't want users being bombarded with popups
-            show_ui_modes_popup: false
+            show_ui_modes_popup: true
         }
     }
 }
 
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
 pub struct OverrideMonitorSize {
     pub width: u32,
     pub height: u32

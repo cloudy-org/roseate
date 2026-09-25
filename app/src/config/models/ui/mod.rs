@@ -7,7 +7,7 @@ use crate::config::models::ui::controls::Controls;
 pub mod controls;
 pub(self) use super::{true_default, false_default};
 
-#[derive(Serialize, Deserialize, Default, Hash, Clone)]
+#[derive(Serialize, Deserialize, Default, Hash, Clone, Debug, PartialEq)]
 pub struct UI {
     #[serde(default)]
     pub controls: Controls,
@@ -20,7 +20,7 @@ pub struct UI {
 }
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Viewport {
     #[serde(default = "ui_padding")]
     pub padding: f32,
@@ -61,7 +61,7 @@ fn ui_padding() -> f32 {
 }
 
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
 pub struct HomeMenu {
     // #[serde(default = "super::none_default")]
     // pub mode: Option<String>,
@@ -83,7 +83,7 @@ impl Default for HomeMenu {
 }
 
 
-#[derive(Serialize, Deserialize, Hash, Clone)]
+#[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
 pub struct ImageInfo {
     #[serde(default = "super::true_default")]
     pub show_location: bool
