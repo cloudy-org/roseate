@@ -1,7 +1,8 @@
-use std::{fs::{self, File, OpenOptions, TryLockError}, io::{Read, Seek, Write}, thread, time::Duration};
+use std::{fs::{self, OpenOptions}, io::{Read, Seek, Write}, thread, time::Duration};
 
 use cirrus_egui::{notifier::{Notifier, ToastLevel, toast::ToastText}, scheduler::Scheduler};
 use cirrus_path::get_user_cache_cloudy_folder_path;
+use fs2::FileExt;
 
 use crate::error::{Error, Result};
 
@@ -74,17 +75,31 @@ impl MonitorSize {
     }
 
     pub fn update_size_from_cache(&mut self) -> Result<()> {
+        log::debug!("Updating monitor size from cache on disk...");
+
         let cloudy_cache_path = get_user_cache_cloudy_folder_path()
             .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?;
 
         let monitor_size_cache_path = cloudy_cache_path.join("roseate").join("monitor_size");
 
         if !monitor_size_cache_path.exists() {
+            log::warn!("Cannot pull from monitor size from cache as it does not exist yet.");
             return Ok(());
         }
 
-        let mut monitor_size_file = File::open(&monitor_size_cache_path)
+        log::debug!("Opening 'monitor_size' cache file for reading...");
+
+        let mut monitor_size_file = OpenOptions::new()
+            .read(true)
+            .open(monitor_size_cache_path)
             .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?;
+
+        log::debug!("Waiting for 'monitor_size' cache file to be unlocked by another instance...");
+
+        monitor_size_file.lock_shared()
+            .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?;
+
+        log::debug!("Reading monitor size from cache file...");
 
         let mut monitor_size_string = String::new();
 
@@ -95,6 +110,8 @@ impl MonitorSize {
                 }
             )?;
 
+        log::debug!("Parsing monitor size '({})' from cache file...", monitor_size_string);
+
         let monitor_size = match monitor_size_string.split_once("x") {
             Some((width, height)) => (
                 width.parse::<u32>()
@@ -104,8 +121,10 @@ impl MonitorSize {
             ),
             None => return Err(
                 Error::GetCachedMonitorSizeFailure {
-                    error: String::from("Failed to parse monitor size from file \
-                        correctly! 'x' to split w/h was not found in the string!")
+                    error: String::from(
+                        "Failed to parse monitor size from file \
+                        correctly! 'x' to split w/h was not found in the string!"
+                    )
                 }
             ),
         };
@@ -115,6 +134,7 @@ impl MonitorSize {
         Ok(())
     }
 
+    // NOTE: might remove this
     pub fn rewrite_size_to_disk(&self, notifier: &mut Notifier) {
         let notifier = notifier.clone();
         let monitor_size = self.get();
@@ -166,7 +186,7 @@ impl MonitorSize {
 
                 log::debug!("Appling file lock to 'monitor_size' cache file...");
 
-                match monitor_size_file.try_lock_shared() {
+                match monitor_size_file.try_lock_exclusive() {
                     Ok(_) => {
                         log::debug!("File locked successfully! Writing monitor resolution to 'monitor_size' cache file...");
 
@@ -180,7 +200,7 @@ impl MonitorSize {
 
                         Ok(())
                     },
-                    Err(TryLockError::WouldBlock) => {
+                    Err(_) => {
                         log::error!(
                             "The 'monitor_size' cache file is currently locked by another instance \
                             of Roseate, hence we cannot update the file at this moment.",
@@ -188,9 +208,6 @@ impl MonitorSize {
 
                         Ok(())
                     },
-                    Err(TryLockError::Error(error)) => Err(
-                        Error::WriteCachedMonitorSizeFailure { error: error.to_string() }
-                    ),
                 }
             },
             Err(error) => Err(
