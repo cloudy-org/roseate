@@ -1,19 +1,11 @@
-use std::{fs::{self, File, OpenOptions}, io::{Read, Seek, Write}, thread, time::Duration};
+use std::{fs::{self, File, OpenOptions, TryLockError}, io::{Read, Seek, Write}, thread, time::Duration};
 
-use cirrus_egui::{scheduler::Scheduler};
+use cirrus_egui::{notifier::{Notifier, ToastLevel, toast::ToastText}, scheduler::Scheduler};
 use cirrus_path::get_user_cache_cloudy_folder_path;
-use log::{debug, warn};
-use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 
 type Size = (u32, u32);
-
-#[derive(Debug, Serialize, Deserialize)]
-struct MonitorSizeCacheData {
-    #[serde(default)]
-    sizes: Vec<Size>,
-}
 
 #[derive(Clone)]
 pub struct MonitorSize {
@@ -48,12 +40,22 @@ impl MonitorSize {
         self.size.is_some() || self.override_size.is_some()
     }
 
-    pub fn update_size(&mut self, monitor_size: Size) {
+    pub fn update_size(&mut self, monitor_size: Size, notifier: &mut Notifier) {
         if let Some(monitor_size_to_write) = self.write_to_disk_delay_scheduler.update() {
+            let notifier = notifier.clone();
+
             thread::spawn(move || {
+                notifier.set_loading(Some("Updating monitor size on disk..."));
+
                 if let Err(error) = Self::write_size_to_disk(monitor_size_to_write) {
-                    log::error!("Failing to write to monitor size cache file! Error: {error}");
+                    notifier.show_toast(
+                        ToastText::Error(error.into()),
+                        ToastLevel::Error,
+                        |_| {}
+                    );
                 }
+
+                notifier.unset_loading();
             });
         }
 
@@ -81,22 +83,59 @@ impl MonitorSize {
             return Ok(());
         }
 
-        let monitor_size_file = File::open(&monitor_size_cache_path)
+        let mut monitor_size_file = File::open(&monitor_size_cache_path)
             .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?;
 
-        let data: MonitorSizeCacheData = serde_json::from_reader(monitor_size_file)
-            .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?;
+        let mut monitor_size_string = String::new();
 
-        // NOTE: should we make this customizable???
-        let latest_size = data.sizes.last();
+        monitor_size_file.read_to_string(&mut monitor_size_string)
+            .map_err(
+                |error| Error::GetCachedMonitorSizeFailure {
+                    error: error.to_string()
+                }
+            )?;
 
-        self.size = latest_size.copied();
+        let monitor_size = match monitor_size_string.split_once("x") {
+            Some((width, height)) => (
+                width.parse::<u32>()
+                    .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?,
+                height.parse::<u32>()
+                    .map_err(|error| Error::GetCachedMonitorSizeFailure { error: error.to_string() })?
+            ),
+            None => return Err(
+                Error::GetCachedMonitorSizeFailure {
+                    error: String::from("Failed to parse monitor size from file \
+                        correctly! 'x' to split w/h was not found in the string!")
+                }
+            ),
+        };
+
+        self.size = Some(monitor_size);
 
         Ok(())
     }
 
+    pub fn rewrite_size_to_disk(&self, notifier: &mut Notifier) {
+        let notifier = notifier.clone();
+        let monitor_size = self.get();
+
+        thread::spawn(move || {
+            notifier.set_loading(Some("Updating monitor size on disk..."));
+
+            if let Err(error) = Self::write_size_to_disk(monitor_size) {
+                notifier.show_toast(
+                    ToastText::Error(error.into()),
+                    ToastLevel::Error,
+                    |_| {}
+                );
+            }
+
+            notifier.unset_loading();
+        });
+    }
+
     fn write_size_to_disk(monitor_size: Size) -> Result<()> {
-        debug!("Writing to cached monitor size file with '{:?}'...", monitor_size);
+        log::debug!("Writing to cached monitor size file with '{:?}'...", monitor_size);
 
         match get_user_cache_cloudy_folder_path() {
             Ok(cloudy_cache_path) => {
@@ -104,7 +143,7 @@ impl MonitorSize {
 
                 // TODO: modularize into a function for reuse
                 if !cache_path.exists() {
-                    debug!("Creating cache directory for roseate at '{}'...", cache_path.to_string_lossy());
+                    log::debug!("Creating cache directory for roseate at '{}'...", cache_path.to_string_lossy());
 
                     fs::create_dir_all(&cache_path)
                         .map_err(|error| Error::CacheDirectoryCreationFailure {
@@ -112,77 +151,52 @@ impl MonitorSize {
                             error: error.to_string()
                         })?;
 
-                    debug!("Cache directory created ('{}')!", cache_path.to_string_lossy());
+                    log::debug!("Cache directory created ('{}')!", cache_path.to_string_lossy());
                 }
 
                 let monitor_size_file_path = cache_path.join("monitor_size");
 
-                debug!("Creating and opening 'monitor_size' cache file...");
-                let mut json_file = OpenOptions::new()
+                log::debug!("Creating and opening 'monitor_size' cache file...");
+                let mut monitor_size_file = OpenOptions::new()
                     .write(true)
                     .create(true)
-                    .read(true)
+                    .truncate(true)
                     .open(monitor_size_file_path)
                     .map_err(|error| Error::WriteCachedMonitorSizeFailure { error: error.to_string() })?;
 
-                debug!("Appling file lock to 'monitor_size' cache file...");
+                log::debug!("Appling file lock to 'monitor_size' cache file...");
 
-                match json_file.try_lock_shared() {
+                match monitor_size_file.try_lock_shared() {
                     Ok(_) => {
-                        debug!("File locked successfully! Reading json string from 'monitor_size' cache file...");
-                        let mut json_contents = String::new();
+                        log::debug!("File locked successfully! Writing monitor resolution to 'monitor_size' cache file...");
 
-                        json_file.read_to_string(&mut json_contents)
+                        monitor_size_file.rewind()
                             .map_err(|error| Error::WriteCachedMonitorSizeFailure { error: error.to_string() })?;
 
-                        debug!("Parsing json string ('{}')...", json_contents);
-
-                        let mut json_data = match serde_json::from_str::<MonitorSizeCacheData>(&json_contents) {
-                            Ok(json_data) => json_data,
-                            Err(error) => {
-                                // if the file is empty like when it's first created there will be a serde_json error.
-                                if !error.is_eof() {
-                                    warn!(
-                                        "Failed to parse json in 'monitor_size'! Rewriting with default values! Error: {}",
-                                        error
-                                    );
-                                }
-    
-                                MonitorSizeCacheData { sizes: Vec::default() }
-                            },
-                        };
-
-                        if let Some(latest_size) = json_data.sizes.last() {
-                            if latest_size == &monitor_size {
-                                debug!(
-                                    "The 'monitor_size' persistent cache already contains this \
-                                    monitor's size as it's last appended size so we'll skip a rewrite..."
-                                );
-
-                                return Ok(());
-                            }
-                        }
-
-                        json_data.sizes.retain(|size| *size != monitor_size);
-                        json_data.sizes.push(monitor_size);
-
-                        debug!("Writing json data to 'monitor_size' cache file...");
-
-                        json_file.rewind()
+                        monitor_size_file.write_all(format!("{}x{}", monitor_size.0, monitor_size.1).as_bytes())
                             .map_err(|error| Error::WriteCachedMonitorSizeFailure { error: error.to_string() })?;
 
-                        json_file.write(&serde_json::to_vec(&json_data).unwrap())
-                            .map_err(|error| Error::WriteCachedMonitorSizeFailure { error: error.to_string() })?;
+                        log::debug!("Monitor size written to disk successfully!");
 
                         Ok(())
                     },
-                    Err(error) => Err(
-                        Error::CachedMonitorSizeAlreadyLocked { error: error.to_string() }
+                    Err(TryLockError::WouldBlock) => {
+                        log::error!(
+                            "The 'monitor_size' cache file is currently locked by another instance \
+                            of Roseate, hence we cannot update the file at this moment.",
+                        );
+
+                        Ok(())
+                    },
+                    Err(TryLockError::Error(error)) => Err(
+                        Error::WriteCachedMonitorSizeFailure { error: error.to_string() }
                     ),
                 }
             },
             Err(error) => Err(
-                Error::WriteCachedMonitorSizeFailure { error: error.to_string() }
+                Error::WriteCachedMonitorSizeFailure {
+                    error: error.to_string()
+                }
             )
         }
     }

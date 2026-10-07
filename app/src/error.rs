@@ -33,10 +33,6 @@ pub enum Error {
     GetCachedMonitorSizeFailure { error: String },
     #[display("Failed to write monitor size to cache file!")]
     WriteCachedMonitorSizeFailure { error: String },
-    #[display("The 'monitor_size' cache file is currently locked by another Roseate \
-    instant, so we will have to wait until the other instance let's go of \
-    the file until we can save our monitor size state to it.")]
-    CachedMonitorSizeAlreadyLocked { error: String },
 
     #[display("Experimental SVG support has been temporary removed from \
     Roseate! We're still working on SVG support, it will be back when it's ready.")]

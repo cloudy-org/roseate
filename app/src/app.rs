@@ -222,7 +222,10 @@ impl eframe::App for Roseate {
                 }
 
                 if let Some(Vec2 { x, y }) = ui.input(|i| i.viewport().monitor_size) {
-                    self.monitor_size.update_size((x as u32, y as u32));
+                    self.monitor_size.update_size(
+                        (x as u32, y as u32),
+                        &mut self.notifier
+                    );
                 }
 
                 self.image_loader.handle_input(
@@ -348,6 +351,8 @@ impl eframe::App for Roseate {
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         log::info!("Cleaning up before exiting...");
+
+        self.monitor_size.rewrite_size_to_disk(&mut self.notifier);
 
         if let Err(error) = self.config_manager.save_if_changed() {
             log::error!(
