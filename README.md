@@ -1,40 +1,71 @@
 <div align="center">
 
   # 🌹 roseate
-  <sub>A fast, GPU-accelerated image viewer built for simplicity and customization. **WIP!**</sub>
+  <sub>A fast, GPU-accelerated image viewer built for simplicity and customisation. **WIP!**</sub>
 
   <img width="750px" src="./assets/alpha_preview_1.png">
 
-  <sub>Screenshot from alpha build, this is **NOT** the final product - **[Image Credit](https://commons.wikimedia.org/wiki/File:Series-N700a-Mt.Fuji.jpg)**</sub>
+  <sub>Screenshot from an alpha build, this is **NOT** the final product - **[Image Credit](https://commons.wikimedia.org/wiki/File:Series-N700a-Mt.Fuji.jpg)**</sub>
 
 </div>
 
 > [!CAUTION]
-> This project is HEAVILY a **work in progress**, it could crash or freeze up your system. Github issues are very welcome. 🤝
+> Roseate is still **work in progress** and in alpha, loading some images could crash or freeze up your system.
+> Bug reports via GitHub issues are very welcome. 🤝
 > 
-> Additionally, you are playing with alpha versions of Roseate. Many little features I intend to be available on a stable release, either don't exist yet or are unfinished. PRs for unassigned issues or issues labelled with "good first issue" are welcome. 🤝
+> As we're in alpha, many little features I intend to be available on a stable release, either don't exist yet or are unfinished.
+> PRs for unassigned issues or issues labelled with "good first issue" are welcome. 🤝
+> 
+> An AI policy for cloudy-org hasn't been laid out yet, hence until our AI policies are official expect me to **reject** AI generated code, PRs and issues.
+> 
+> Thank you!
+
+**Roseate** is a **free** and **open-source**, GPU accelerated, cross-platform and simplistic but modern looking image viewer seeking to become highly configurable and fast.
+
+```toml
+[image.optimizations]
+# The optimisation mode controls and defines how 
+# images are loaded and managed within the image viewer.
+# 
+# Balanced: A decent balance between low memory usage and speed (the default).
+# 
+# Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+# 
+# Quality: You don't care about memory usage, you just want the highest quality and sharpest image possible.
+mode = "balanced"
+```
+
+*..when a beta is ready there will be some images here demonstrating Roseate's speed...*
+
+UI is also very customisable, here's a **very** small snippet:
+
+<img width="751" alt="image of roseate ui toml config" src="https://github.com/user-attachments/assets/6350b582-6c6d-4d05-9b79-86f9fa01148b" />
+
+Supported image formats are currently:
+- **PNG**
+- **JPEG**
+- **GIF**
+- **WEBP**
+- **QOI**
+- **BMP**
+- **ICO**
+- **TIFF**
+
+..and more with currently limited support to be worked on. You can see them in the **[Supported Image Formats](https://cloudy-org.github.io/wiki/apps/roseate/supported_formats/)** wiki page.
+More formats will be supported as releases drop.
 
 # 📖 Wiki
-The wiki will provide more in-depth information moving forward: https://cloudy-org.github.io/wiki/apps/roseate/
+Moving forward the wiki will provide more in-depth information: **https://cloudy-org.github.io/wiki/apps/roseate**
 
 - **[What is Roseate?](https://cloudy-org.github.io/wiki/apps/roseate/#roseate)**
 - **[How do I use Roseate?](https://cloudy-org.github.io/wiki/apps/roseate/how_to_use/)**
 - **[Why did you make an image viewer?](https://cloudy-org.github.io/wiki/apps/roseate/#background)**
 
-# 🌟 Devlogs
-<a href="https://www.youtube.com/watch?v=8bSdw34x98k&list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-&index=2">
-  <img width="400px" src="https://img.youtube.com/vi/8bSdw34x98k/maxresdefault.jpg">
-</a>
-
-You can find devlogs **in video format** on my youtube channel.
-
-I have a playlist for it here: **https://www.youtube.com/playlist?list=PLI8mjQYZec82ZajoDnDkAicBarEZ1yPd-**
-
 # 🛠️ Installation
 Roseate is in heavy development so you won't see many packages and binaries offered, you'll mostly need to compile the application from source.
 
 > [!warning]
-> Roseate is in **ALPHA**, expect bugs during installation.
+> Roseate is in **ALPHA**, expect bugs during installation on some platforms.
 
 ## 🪟 Windows
 Head over to [github releases](https://github.com/cloudy-org/roseate/releases) and grab a windows installer from the latest alpha release in assets.
@@ -91,7 +122,7 @@ If you're on **Linux** there is a handy `make install` command to install the co
 sudo make install
 ```
 
-# Development
+# 💽 Development
 > [!NOTE]
 > Building a development build WILL SIGNIFICANTLY KILL performance!
 > Read more [here](https://github.com/cloudy-org/roseate/blob/6e7e638997110af0149f06ceadb87c3ec088cf84/Cargo.toml#L48-L53).
