@@ -2,10 +2,6 @@ version = 1
 
 [image]
 
-[image.loading]
-
-initial.lazy_loading = false
-
 [image.backend]
 # Change image decoder backend.
 # 
@@ -19,8 +15,8 @@ initial.lazy_loading = false
 decoder = "image-rs"
 
 [image.optimizations]
-# The optimization mode controls and defines what 
-# image optimizations should be enabled or disabled.
+# The optimisation mode controls and defines how 
+# images are loaded and managed within the image viewer.
 # 
 # Balanced: A decent balance between low memory usage and speed (the default).
 # 
