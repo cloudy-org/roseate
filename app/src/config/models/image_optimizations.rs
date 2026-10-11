@@ -21,7 +21,7 @@ pub struct ImageOptimizations {
 impl Default for ImageOptimizations {
     fn default() -> Self {
         Self {
-            mode: Some(String::from("balanced")),
+            mode: None,
             monitor_downsampling: MonitorDownsampling::default(),
             load_initially_on_separate_thread: LoadInitiallyOnSeparateThread::default(),
             experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload::default(),
