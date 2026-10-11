@@ -158,6 +158,7 @@ impl ImageLoader {
         let image_loader_state_arc = self.state.inner_state.clone();
         let load_image_to_gpu_arc = self.state.load_image_to_gpu.clone();
 
+        // TODO: use image selector index instead
         let reload_image = match &self.uploaded_image {
             Some(uploaded_image) => {
                 let mut hasher = DefaultHasher::new();

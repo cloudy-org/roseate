@@ -1,6 +1,5 @@
 use std::{path::PathBuf};
 
-use eframe::egui::ahash::HashMap;
 use rfd::FileDialog;
 use roseate_core::format::IMAGE_FORMAT_EXTENSIONS;
 
@@ -13,7 +12,7 @@ pub struct ImageSelector {
     // TODO: switch Image to Arc<Image>.
     selected: usize,
 
-    images: HashMap<usize, Image>,
+    images: Vec<Image>,
 }
 
 impl ImageSelector {
@@ -22,17 +21,40 @@ impl ImageSelector {
     }
 
     pub fn get_image(&self) -> Option<&Image> {
-        self.images.get(&self.selected)
+        self.images.get(self.selected)
     }
 
     pub fn get_mutable_image(&mut self) -> Option<&mut Image> {
-        self.images.get_mut(&self.selected)
+        self.images.get_mut(self.selected)
+    }
+
+    pub fn select(&mut self, index: usize) {
+        log::debug!("Selecting image at index '{index}'...");
+
+        let max_index = self.images.len() - 1;
+
+        if index > max_index {
+            log::debug!(
+                "No image exists at index '{index}' to select! Selecting last image..."
+            );
+            self.selected = max_index;
+        }
+
+        self.selected = index;
     }
 
     pub fn select_image_from_path(&mut self, path: PathBuf) -> Result<()> {
-        // NOTE: we don't support loading multiple images yet 
-        // so we're not gonna handle any of that logic yet here 
-        self.images.insert(0, Image::new(path)?);
+        for (index, image) in self.images.iter().enumerate() {
+            if *image.path == path {
+                self.select(index);
+
+                return Ok(())
+            }
+        }
+
+        self.images.push(Image::new(path)?);
+
+        self.select(self.images.len() - 1);
 
         Ok(())
     }
