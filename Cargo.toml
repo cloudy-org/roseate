@@ -2,6 +2,10 @@
 resolver = "3"
 members = ["app", "core"]
 
+[workspace.dependencies]
+log = "0.4.27"
+env_logger = "0.11.8"
+
 [profile.release]
 lto = true
 codegen-units = 1

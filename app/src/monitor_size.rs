@@ -1,8 +1,7 @@
-use std::{fs::{self, OpenOptions}, io::{Read, Seek, Write}, thread, time::Duration};
+use std::{fs::{self, OpenOptions, TryLockError}, io::{Read, Seek, Write}, thread, time::Duration};
 
 use cirrus_egui::{notifier::{Notifier, ToastLevel, toast::ToastText}, scheduler::Scheduler};
 use cirrus_path::get_user_cache_cloudy_folder_path;
-use fs2::FileExt;
 
 use crate::error::{Error, Result};
 
@@ -186,7 +185,7 @@ impl MonitorSize {
 
                 log::debug!("Appling file lock to 'monitor_size' cache file...");
 
-                match monitor_size_file.try_lock_exclusive() {
+                match monitor_size_file.try_lock() {
                     Ok(_) => {
                         log::debug!("File locked successfully! Writing monitor resolution to 'monitor_size' cache file...");
 
@@ -200,7 +199,7 @@ impl MonitorSize {
 
                         Ok(())
                     },
-                    Err(_) => {
+                    Err(TryLockError::WouldBlock) => {
                         log::error!(
                             "The 'monitor_size' cache file is currently locked by another instance \
                             of Roseate, hence we cannot update the file at this moment.",
@@ -208,6 +207,9 @@ impl MonitorSize {
 
                         Ok(())
                     },
+                    Err(error) => Err(
+                        Error::WriteCachedMonitorSizeFailure { error: error.to_string() }
+                    )
                 }
             },
             Err(error) => Err(

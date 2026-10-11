@@ -67,23 +67,22 @@ eframe = { version = "=0.33.2", default-features = false, optional = true, featu
     "default_fonts",
     "glow",
 ]}
-egui_extras = { version = "=0.33.2", default-features = false, features = ["image", "http"]}
-
-egui_animation = "0.10.0"
 egui-notify = "0.21.0"
-rfd = "0.15.3"
+egui_animation = "0.10.0"
+egui_extras = { version = "=0.33.2", default-features = false, features = ["image", "http"] }
+
+rfd = "0.17.2"
 simple-easing = "1.0.1"
-log = "0.4.27"
-env_logger = "0.11.8"
+log = { workspace = true }
+env_logger = { workspace = true }
 re_format = "0.27.3"
 cap = "0.1.2"
-clap = {version = "4.5.37", features = ["derive"]}
-textwrap = "0.16.2"
+clap = { version = "4.5.37", features = ["derive"] }
+textwrap = { version = "0.16.4", default-features = false, features = ["std"] }
 dirs = "6.0.0"
-fs2 = "0.4.3"
 serde_derive = "1.0"
-serde = {version = "1.0", features = ["derive"]}
-chrono = "0.4.42"
+serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4.42", default-features = false, features = ["clock", "std"] }
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
 # patches
@@ -91,8 +90,8 @@ rand = "0.9.4"
 rustls-webpki = "0.103.13"
 
 # additional crates
-country-emoji = {version = "0.3.2", optional = true}
-reverse_geocoder = {version = "4.1.1", optional = true}
+country-emoji = { version = "0.3.2", optional = true }
+reverse_geocoder = { version = "4.1.1", optional = true }
 
 [dev-dependencies]
 toml = "1.1"
