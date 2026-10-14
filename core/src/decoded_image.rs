@@ -4,8 +4,6 @@ pub type ImageSize = (u32, u32);
 
 #[derive(Debug)]
 pub enum DecodedImageContent {
-    // NOTE: we do not support outputting channels higher than a u8 yet so 
-    // there's no point of storing a decoded image in RAM as anything bigger than a u8
     Static(Pixels),
     Animated(Vec<(Pixels, f32)>),
 }
