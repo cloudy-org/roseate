@@ -89,7 +89,7 @@ experimental_dynamic_sampling = {enabled = false, also_downsample = true}
 # experimental_multi_threaded_sampling = {enabled = false, threads = 8}
 # 
 # This is VERY experimental and can break.
-experimental_multi_threaded_sampling = false
+experimental_multi_threaded_sampling = true
 
 [ui]
 
