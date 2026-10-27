@@ -162,7 +162,6 @@ fn main() -> eframe::Result {
     let load_initially_on_separate_thread = image_optimizations.load_initially_on_separate_thread;
 
     let mut image_selector = ImageSelector::new();
-    // TODO: rename to ImageLoader and make ImageSelector what stores and owns the Image struct
     let mut image_loader = ImageLoader::new(image_optimizations);
 
     if let Some(image_path_string) = cli_args.image {
