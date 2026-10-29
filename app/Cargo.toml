@@ -87,7 +87,7 @@ derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
 # patches
 rand = "0.9.4"
-rustls-webpki = "0.103.13"
+rustls-webpki = "0.103.16"
 
 # additional crates
 country-emoji = { version = "0.3.2", optional = true }
