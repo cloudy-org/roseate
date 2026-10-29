@@ -18,12 +18,14 @@ decoder = "image-rs"
 # The optimisation mode controls and defines how 
 # images are loaded and managed within the image viewer.
 # 
-# Balanced: A decent balance between low memory usage and speed (the default).
+# Balanced: Balances low memory usage and speed (the default mode).
 # 
-# Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+# Speed: Loads the image as fast as possible, degrading memory performance and image quality.
 # 
-# Quality: You don't care about memory usage, you just want the highest quality and sharpest image possible.
-mode = "balanced" # PLEASE READ THIS: If you don't comment the "mode" key, the optimizations set below will NOT apply.
+# Quality: Sacrifices memory usage and speed for highest possible image quality.
+# 
+# Custom: Allows for adjusting individual settings of each optimisation.
+mode = "balanced"
 
 # Downsamples the image roughly to the resolution of your monitor.
 # 
