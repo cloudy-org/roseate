@@ -249,7 +249,7 @@ impl eframe::App for Roseate {
 
                 let image_optimizations = self.image_loader.image_optimizations.clone();
 
-                // TODO: should we pass optimizations into .upload() and hold them in app.rs??
+                // TODO: should we pass optimisations into .upload() and hold them in app.rs??
                 match self.image_loader.upload(ctx, &self.image_selector, &mut self.notifier) {
                     Some(uploaded_image) => {
                         egui::Frame::NONE

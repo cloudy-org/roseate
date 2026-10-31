@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
-use crate::{config::models::image_optimizations::ImageOptimizations, image::backend::DefaultDecodingBackend};
+use crate::{config::models::image_optimisations::ImageOptimisations, image::backend::DefaultDecodingBackend};
 use std::hash::Hash;
 
 #[derive(Serialize, Deserialize, Default, Hash, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct Image {
-    pub optimizations: ImageOptimizations,
+    #[serde(alias = "optimizations")]
+    pub optimisations: ImageOptimisations,
     pub backend: Backend,
 }
 

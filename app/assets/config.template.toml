@@ -14,7 +14,7 @@ version = 1
 # WARNING: "zune-image" is not implemented yet (https://github.com/cloudy-org/roseate/issues/102)!
 decoder = "image-rs"
 
-[image.optimizations]
+[image.optimisations]
 # The optimisation mode controls and defines how 
 # images are loaded and managed within the image viewer.
 # 

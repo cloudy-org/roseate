@@ -156,13 +156,13 @@ fn main() -> eframe::Result {
         ),
     }
 
-    let image_optimizations = config.image.optimizations.get_optimizations()
+    let image_optimisations = config.image.optimisations.get_optimizations()
         .normalize();
 
-    let load_initially_on_separate_thread = image_optimizations.load_initially_on_separate_thread;
+    let load_initially_on_separate_thread = image_optimisations.load_initially_on_separate_thread;
 
     let mut image_selector = ImageSelector::new();
-    let mut image_loader = ImageLoader::new(image_optimizations);
+    let mut image_loader = ImageLoader::new(image_optimisations);
 
     if let Some(image_path_string) = cli_args.image {
         info!("Image '{}' loading from path...", image_path_string);

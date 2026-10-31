@@ -5,7 +5,7 @@ use eframe::egui::{self, Response};
 use eframe::egui::{Color32, CursorIcon, Label, Margin, OpenUrl, Pos2, RichText, TextureHandle, Ui, Vec2, WidgetText};
 use log::debug;
 
-use crate::{image_loader::{image_resource::ImageResource, optimization::ImageOptimizations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
+use crate::{image_loader::{image_resource::ImageResource, optimization::ImageOptimisations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::expensive_data::ExpensiveData};
 
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
@@ -34,7 +34,7 @@ impl ImageInfoWindow {
         &mut self,
         ui: &Ui,
         uploaded_image: &UploadedImage,
-        image_optimizations: &ImageOptimizations,
+        image_optimizations: &ImageOptimisations,
         monitor_size: &MonitorSize,
         show: &mut bool,
         show_extra: bool,
@@ -122,7 +122,7 @@ impl ImageInfoWindow {
                                         ui.add(
                                             egui::Image::from_texture(texture)
                                                 // 16 is the padding from
-                                                // the image optimizations grid
+                                                // the image optimisations grid
                                                 .max_size([180.0 + 16.0, 140.0].into())
                                                 .corner_radius(8)
                                         );
@@ -196,7 +196,7 @@ impl ImageInfoWindow {
             }).unwrap().response
     }
 
-    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimizations, monitor_size: &MonitorSize) -> Response {
+    fn show_image_optimizations_grid(ui: &mut Ui, image_optimizations: &ImageOptimisations, monitor_size: &MonitorSize) -> Response {
         egui::Frame::default()
             .inner_margin(8)
             .corner_radius(8)

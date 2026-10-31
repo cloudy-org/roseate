@@ -7,12 +7,12 @@ use egui_notify::ToastLevel;
 use log::{debug, info, warn};
 use roseate_core::{decoded_image::ImageSize, format::ImageFormat, modifications::{ImageModification, ImageModifications}};
 
-use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{optimization::ImageOptimizations, state::{ImageLoaderState, InnerState}, uploading::UploadedImage}, image_selector::ImageSelector, monitor_size::MonitorSize};
+use crate::{image::{Image, backend::DefaultDecodingBackend}, image_loader::{optimization::ImageOptimisations, state::{ImageLoaderState, InnerState}, uploading::UploadedImage}, image_selector::ImageSelector, monitor_size::MonitorSize};
 
 pub struct ImageLoader {
     pub state: ImageLoaderState,
 
-    pub image_optimizations: ImageOptimizations,
+    pub image_optimizations: ImageOptimisations,
 
     pub(super) dynamic_sample_schedule: Option<Scheduler>,
     pub(super) last_zoom_factor: f32,
@@ -27,7 +27,7 @@ pub struct ImageLoader {
 }
 
 impl ImageLoader {
-    pub fn new(image_optimizations: ImageOptimizations) -> Self {
+    pub fn new(image_optimizations: ImageOptimisations) -> Self {
         Self {
             state: ImageLoaderState::default(),
 
@@ -256,7 +256,7 @@ impl ImageLoader {
 
     /// Method that handles choosing which type of modifications 
     /// should be done to the image at this time. It decides that on a number of various factors, 
-    /// like image optimizations applied by the user, monitor size, zoom factor and etc.
+    /// like image optimisations applied by the user, monitor size, zoom factor and etc.
     fn get_image_modifications(&mut self, image_size: &ImageSize, monitor_size: &MonitorSize) -> ImageModifications {
         let mut image_modifications = HashSet::new();
 

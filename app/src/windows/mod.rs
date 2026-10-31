@@ -5,7 +5,7 @@ use cirrus_soft_binds::egui::parse_and_get_egui_input_reader_from_string;
 use eframe::egui::{Context, InputState, Key, Rect, Ui};
 use egui_notify::ToastLevel;
 
-use crate::{image_loader::{optimization::ImageOptimizations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
+use crate::{image_loader::{optimization::ImageOptimisations, uploading::UploadedImage}, monitor_size::MonitorSize, windows::info::ImageInfoWindow};
 
 mod info;
 
@@ -114,7 +114,7 @@ impl WindowsManager {
         &mut self,
         ui: &mut Ui,
         uploaded_image: &UploadedImage,
-        image_optimizations: &ImageOptimizations,
+        image_optimizations: &ImageOptimisations,
         monitor_size: &MonitorSize,
         show_location_in_image_info: bool
     ) {

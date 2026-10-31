@@ -23,15 +23,17 @@
 **Roseate** is a **free** and **open-source**, GPU accelerated, cross-platform and simplistic but modern looking image viewer seeking to become highly configurable and fast.
 
 ```toml
-[image.optimizations]
+[image.optimisations]
 # The optimisation mode controls and defines how 
 # images are loaded and managed within the image viewer.
 # 
-# Balanced: A decent balance between low memory usage and speed (the default).
+# Balanced: Balances low memory usage and speed (the default mode).
 # 
-# Speed: You don't mind higher memory usage and just want images to load as fast as possible.
+# Speed: Loads the image as fast as possible, degrading memory performance and image quality.
 # 
-# Quality: You don't care about memory usage, you just want the highest quality and sharpest image possible.
+# Quality: Sacrifices memory usage and speed for highest possible image quality.
+# 
+# Custom: Allows for manual adjusting of each individual optimisation.
 mode = "balanced"
 ```
 

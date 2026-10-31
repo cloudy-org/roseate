@@ -4,21 +4,21 @@ use crate::{image_loader::optimization};
 
 #[derive(Serialize, Deserialize, Hash, Clone, Debug, PartialEq)]
 #[serde(default)]
-pub struct ImageOptimizations {
+pub struct ImageOptimisations {
     pub mode: String,
-    #[serde(deserialize_with = "deserialize_image_optimization_field_value")]
+    #[serde(deserialize_with = "deserialize_image_optimisation_field_value")]
     pub monitor_downsampling: MonitorDownsampling,
-    #[serde(deserialize_with = "deserialize_image_optimization_field_value")]
+    #[serde(deserialize_with = "deserialize_image_optimisation_field_value")]
     pub load_initially_on_separate_thread: LoadInitiallyOnSeparateThread,
-    #[serde(deserialize_with = "deserialize_image_optimization_field_value")]
+    #[serde(deserialize_with = "deserialize_image_optimisation_field_value")]
     pub experimental_consume_pixels_during_gpu_upload: ConsumePixelsDuringGPUUpload,
-    #[serde(deserialize_with = "deserialize_image_optimization_field_value")]
+    #[serde(deserialize_with = "deserialize_image_optimisation_field_value")]
     pub experimental_dynamic_sampling: DynamicSampling,
-    #[serde(deserialize_with = "deserialize_image_optimization_field_value")]
+    #[serde(deserialize_with = "deserialize_image_optimisation_field_value")]
     pub experimental_multi_threaded_sampling: MultiThreadedSampling,
 }
 
-impl Default for ImageOptimizations {
+impl Default for ImageOptimisations {
     fn default() -> Self {
         Self {
             mode: String::from("balanced"),
@@ -31,14 +31,14 @@ impl Default for ImageOptimizations {
     }
 }
 
-impl ImageOptimizations {
-    /// Returns the optimizations the user has configured in config.toml.
-    pub fn get_optimizations(&self) -> optimization::ImageOptimizations {
+impl ImageOptimisations {
+    /// Returns the optimisations the user has configured in config.toml.
+    pub fn get_optimizations(&self) -> optimization::ImageOptimisations {
         match self.mode.to_lowercase().as_str() {
             "c" | "custom" => {
                 // TODO: figure out a way to avoid having duplicates of optimization 
                 // structs (e.g: "optimization::MonitorDownsampling" and "MonitorDownsampling")
-                optimization::ImageOptimizations {
+                optimization::ImageOptimisations {
                     monitor_downsampling: match self.monitor_downsampling.enabled {
                         true => Some(
                             optimization::MonitorDownsampling {
@@ -67,9 +67,9 @@ impl ImageOptimizations {
                     }
                 }
             },
-            "s" | "speed" => optimization::ImageOptimizations::speed(),
-            "q" | "quality" => optimization::ImageOptimizations::quality(),
-            "b" | "balanced" | &_ => optimization::ImageOptimizations::balanced(),
+            "s" | "speed" => optimization::ImageOptimisations::speed(),
+            "q" | "quality" => optimization::ImageOptimisations::quality(),
+            "b" | "balanced" | &_ => optimization::ImageOptimisations::balanced(),
         }
     }
 }
@@ -216,7 +216,7 @@ enum ImageOptimizationFieldValue<T> {
     Struct(T),
 }
 
-fn deserialize_image_optimization_field_value<'de, D, T>(
+fn deserialize_image_optimisation_field_value<'de, D, T>(
     deserializer: D,
 ) -> Result<T, D::Error>
 where

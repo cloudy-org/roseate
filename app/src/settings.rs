@@ -158,18 +158,18 @@ impl SettingsMenu {
         );
 
         // image optimization
-        let enable_custom_image_optimisations = config.image.optimizations.mode == "custom";
+        let enable_custom_image_optimisations = config.image.optimisations.mode == "custom";
 
-        let monitor_downsampling_docs_key_path = config_key_path!(config.image.optimizations.monitor_downsampling);
-        let load_initially_on_separate_thread_docs_key_path = config_key_path!(config.image.optimizations.load_initially_on_separate_thread);
+        let monitor_downsampling_docs_key_path = config_key_path!(config.image.optimisations.monitor_downsampling);
+        let load_initially_on_separate_thread_docs_key_path = config_key_path!(config.image.optimisations.load_initially_on_separate_thread);
 
         settings.add_section(
             AnySection::ChildSections {
                 title: Some(String::from("Image Optimisations")),
                 sections: vec![
                     Section::new(
-                        config_key_path!(config.image.optimizations.mode),
-                        &mut config.image.optimizations.mode,
+                        config_key_path!(config.image.optimisations.mode),
+                        &mut config.image.optimisations.mode,
                         SectionOverrides {
                             choices: Some(
                                 vec![
@@ -190,8 +190,8 @@ impl SettingsMenu {
                         title: Some("Customisable optimisations".into()),
                         sections: vec![
                             Section::new(
-                                config_key_path!(config.image.optimizations.monitor_downsampling.enabled),
-                                &mut config.image.optimizations.monitor_downsampling.enabled,
+                                config_key_path!(config.image.optimisations.monitor_downsampling.enabled),
+                                &mut config.image.optimisations.monitor_downsampling.enabled,
                                 SectionOverrides {
                                     section_disabled: !enable_custom_image_optimisations,
                                     docs_config_key_path: Some(monitor_downsampling_docs_key_path),
@@ -203,8 +203,8 @@ impl SettingsMenu {
                                 }
                             ).into(),
                             Section::new(
-                                config_key_path!(config.image.optimizations.monitor_downsampling.strength),
-                                &mut config.image.optimizations.monitor_downsampling.strength,
+                                config_key_path!(config.image.optimisations.monitor_downsampling.strength),
+                                &mut config.image.optimisations.monitor_downsampling.strength,
                                 SectionOverrides {
                                     section_disabled: !enable_custom_image_optimisations,
                                     int_range: Some(0.1..=2.0),
@@ -216,8 +216,8 @@ impl SettingsMenu {
                                 }
                             ).into(),
                             Section::new(
-                                config_key_path!(config.image.optimizations.load_initially_on_separate_thread.enabled),
-                                &mut config.image.optimizations.load_initially_on_separate_thread.enabled,
+                                config_key_path!(config.image.optimisations.load_initially_on_separate_thread.enabled),
+                                &mut config.image.optimisations.load_initially_on_separate_thread.enabled,
                                 SectionOverrides {
                                     section_disabled: !enable_custom_image_optimisations,
                                     docs_config_key_path: Some(load_initially_on_separate_thread_docs_key_path),

@@ -6,7 +6,7 @@ use roseate_core::decoded_image::ImageSize;
 use crate::monitor_size::MonitorSize;
 
 #[derive(Debug, Clone)]
-pub struct ImageOptimizations {
+pub struct ImageOptimisations {
     pub monitor_downsampling: Option<MonitorDownsampling>,
     pub dynamic_sampling: Option<DynamicSampling>,
     pub consume_pixels_during_gpu_upload: bool,
@@ -14,7 +14,7 @@ pub struct ImageOptimizations {
     pub multi_threaded_sampling: Option<MultiThreadedSampling>,
 }
 
-impl ImageOptimizations {
+impl ImageOptimisations {
     pub fn balanced() -> Self {
         Self {
             monitor_downsampling: Some(MonitorDownsampling::default()),
@@ -43,7 +43,7 @@ impl ImageOptimizations {
 
     // NOTE: Efficient mode will be added when support for loading
     // multiple images is added. Efficient mode will try to disable 
-    // anything that is inefficient in the slightest and set optimizations 
+    // anything that is inefficient in the slightest and set optimisations 
     // like 'consume_pixels_during_gpu_upload' to FALSE so decoded images stay 
     // in cpu memory for rapid and efficient reuploading to the gpu while 
     // cycling through images a carousel mode.
