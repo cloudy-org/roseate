@@ -86,7 +86,7 @@ chrono = { version = "0.4.42", default-features = false, features = ["clock", "s
 derive_more = { version = "2.1.0", features = ["from", "display", "debug"] }
 
 # patches
-rand = "0.9.4"
+rustls = "0.23.46" # GHSA-h2v8-394m-p7vv, GHSA-2mjx-qc3c-rqvc, GHSA-c8m5-c952-6cm4
 rustls-webpki = "0.103.16"
 
 # additional crates
