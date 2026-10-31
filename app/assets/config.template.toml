@@ -24,7 +24,7 @@ decoder = "image-rs"
 # 
 # Quality: Sacrifices memory usage and speed for highest possible image quality.
 # 
-# Custom: Allows for adjusting individual settings of each optimisation.
+# Custom: Allows for manual adjusting of each individual optimisation.
 mode = "balanced"
 
 # Downsamples the image roughly to the resolution of your monitor.

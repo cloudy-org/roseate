@@ -26,79 +26,6 @@ impl SettingsMenu {
     pub fn show(&mut self, ui: &mut Ui, theme: &Theme, config: &mut Config) {
         let mut settings = Settings::new();
 
-        // image optimization
-        let enable_custom_image_optimisations = config.image.optimizations.mode == "custom";
-
-        settings.add_section(
-            AnySection::ChildSections {
-                title: Some(String::from("Image Optimisations")),
-                sections: vec![
-                    Section::new(
-                        config_key_path!(config.image.optimizations.mode),
-                        &mut config.image.optimizations.mode,
-                        SectionOverrides {
-                            choices: Some(
-                                vec![
-                                    String::from("balanced").into(),
-                                    String::from("speed").into(),
-                                    String::from("quality").into(),
-                                    String::from("custom").into(),
-                                ]
-                            ),
-                            ..Default::default()
-                        },
-                        SectionDisplayInfo {
-                            name: Some("Optimisation mode".into()),
-                            ..Default::default()
-                        }
-                    ).into(),
-                    AnySection::ChildSections {
-                        title: Some("Customisable optimisations".into()),
-                        sections: vec![
-                            Section::new(
-                                config_key_path!(config.image.optimizations.monitor_downsampling.enabled),
-                                &mut config.image.optimizations.monitor_downsampling.enabled,
-                                SectionOverrides {
-                                    section_disabled: !enable_custom_image_optimisations,
-                                    ..Default::default()
-                                },
-                                SectionDisplayInfo {
-                                    name: Some("Enable monitor downsampling".into()),
-                                    ..Default::default()
-                                }
-                            ).into(),
-                            Section::new(
-                                config_key_path!(config.image.optimizations.monitor_downsampling.strength),
-                                &mut config.image.optimizations.monitor_downsampling.strength,
-                                SectionOverrides {
-                                    section_disabled: !enable_custom_image_optimisations,
-                                    int_range: Some(0.1..=2.0),
-                                    ..Default::default()
-                                },
-                                SectionDisplayInfo {
-                                    name: Some("Set monitor downsampling strength".into()),
-                                    ..Default::default()
-                                }
-                            ).into(),
-                            // Load initially on separate thread
-                            Section::new(
-                                config_key_path!(config.image.optimizations.load_initially_on_separate_thread.enabled),
-                                &mut config.image.optimizations.load_initially_on_separate_thread.enabled,
-                                SectionOverrides {
-                                    section_disabled: !enable_custom_image_optimisations,
-                                    ..Default::default()
-                                },
-                                SectionDisplayInfo {
-                                    name: Some("Enable load initially on separate thread".into()),
-                                    ..Default::default()
-                                }
-                            ).into()
-                        ]
-                    },
-                ]
-            }
-        );
-
         // ui controls
         settings.add_section(
             AnySection::ChildSections {
@@ -199,6 +126,18 @@ impl SettingsMenu {
         );
 
         settings.add_section(
+            Section::new(
+                config_key_path!(config.ui.image_info.show_location),
+                &mut config.ui.image_info.show_location,
+                SectionOverrides::default(),
+                SectionDisplayInfo {
+                    name: Some(String::from("Show image location")),
+                    ..Default::default()
+                },
+            )
+        );
+
+        settings.add_section(
             AnySection::ChildSections {
                 title: Some(String::from("Home Menu")),
                 sections: vec![
@@ -218,16 +157,81 @@ impl SettingsMenu {
             }
         );
 
+        // image optimization
+        let enable_custom_image_optimisations = config.image.optimizations.mode == "custom";
+
+        let monitor_downsampling_docs_key_path = config_key_path!(config.image.optimizations.monitor_downsampling);
+        let load_initially_on_separate_thread_docs_key_path = config_key_path!(config.image.optimizations.load_initially_on_separate_thread);
+
         settings.add_section(
-            Section::new(
-                config_key_path!(config.ui.image_info.show_location),
-                &mut config.ui.image_info.show_location,
-                SectionOverrides::default(),
-                SectionDisplayInfo {
-                    name: Some(String::from("Show image location")),
-                    ..Default::default()
-                },
-            )
+            AnySection::ChildSections {
+                title: Some(String::from("Image Optimisations")),
+                sections: vec![
+                    Section::new(
+                        config_key_path!(config.image.optimizations.mode),
+                        &mut config.image.optimizations.mode,
+                        SectionOverrides {
+                            choices: Some(
+                                vec![
+                                    String::from("balanced").into(),
+                                    String::from("speed").into(),
+                                    String::from("quality").into(),
+                                    String::from("custom").into(),
+                                ]
+                            ),
+                            ..Default::default()
+                        },
+                        SectionDisplayInfo {
+                            name: Some("Optimisation mode".into()),
+                            ..Default::default()
+                        }
+                    ).into(),
+                    AnySection::ChildSections {
+                        title: Some("Customisable optimisations".into()),
+                        sections: vec![
+                            Section::new(
+                                config_key_path!(config.image.optimizations.monitor_downsampling.enabled),
+                                &mut config.image.optimizations.monitor_downsampling.enabled,
+                                SectionOverrides {
+                                    section_disabled: !enable_custom_image_optimisations,
+                                    docs_config_key_path: Some(monitor_downsampling_docs_key_path),
+                                    ..Default::default()
+                                },
+                                SectionDisplayInfo {
+                                    name: Some("Enable monitor downsampling".into()),
+                                    ..Default::default()
+                                }
+                            ).into(),
+                            Section::new(
+                                config_key_path!(config.image.optimizations.monitor_downsampling.strength),
+                                &mut config.image.optimizations.monitor_downsampling.strength,
+                                SectionOverrides {
+                                    section_disabled: !enable_custom_image_optimisations,
+                                    int_range: Some(0.1..=2.0),
+                                    ..Default::default()
+                                },
+                                SectionDisplayInfo {
+                                    name: Some("Set monitor downsampling strength".into()),
+                                    ..Default::default()
+                                }
+                            ).into(),
+                            Section::new(
+                                config_key_path!(config.image.optimizations.load_initially_on_separate_thread.enabled),
+                                &mut config.image.optimizations.load_initially_on_separate_thread.enabled,
+                                SectionOverrides {
+                                    section_disabled: !enable_custom_image_optimisations,
+                                    docs_config_key_path: Some(load_initially_on_separate_thread_docs_key_path),
+                                    ..Default::default()
+                                },
+                                SectionDisplayInfo {
+                                    name: Some("Enable load initially on separate thread".into()),
+                                    ..Default::default()
+                                }
+                            ).into()
+                        ]
+                    },
+                ]
+            }
         );
 
         settings.add_section(
