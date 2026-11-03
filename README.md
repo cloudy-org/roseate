@@ -106,7 +106,7 @@ git clone https://github.com/cloudy-org/roseate
 cd roseate
 
 # latest tagged version
-git checkout v0.1.0-alpha.26
+git checkout v0.1.0-alpha.27
 
 git submodule update --init --recursive
 ```
